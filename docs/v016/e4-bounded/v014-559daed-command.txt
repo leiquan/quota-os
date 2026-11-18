@@ -1,0 +1,9 @@
+label: bounded icount e4 control. Untouched prebuilt from v014 commit 559daede18af8e201a41e41ab5e046ba7c8b66ec. Not a PASS unless the kernel prints it before SIGKILL.
+external_timeout_s: 75
+kill: SIGKILL
+image: /tmp/v014-559daed-prebuilt/quotaos.bin
+sha256: cbca322f60f042c317c2cf02657c733df3010a2258e7a3f929720d86ddafcba0
+utc: 2026-11-17T06:35:57Z
+qemu: QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)
+command:
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M -nographic -nic none -kernel /tmp/v014-559daed-prebuilt/quotaos.bin -append e4 -icount shift=4,sleep=off

@@ -60,11 +60,13 @@ static uint64_t us(uint64_t t)
     return ticks_to_us(t);
 }
 
+static int menu_button_yes;
+
 static int ask(const char *prompt)
 {
     printf("%s", prompt);
-    if (qa) {
-        printf("y (qa)\n");
+    if (qa || menu_button_yes) {
+        printf("y (button)\n");
         return 1;
     }
     char ans[16];
@@ -618,12 +620,539 @@ static void run_qa(int long_run)
         asm volatile("wfi");
 }
 
+static const char *menu_title[18] = {
+    "1 overview",
+    "2 install Pixel Racer",
+    "3 admit until full",
+    "4 reject too big",
+    "5 tier-1 on time",
+    "6 tier-1 slot cut",
+    "7 slots never lent",
+    "8 tier-2 minimum",
+    "9 tier-3 overload",
+    "10 runaway",
+    "11 device tier-1",
+    "12 overcommit",
+    "13 budget token",
+    "14 device timeout",
+    "15 interrupt storm",
+    "16 bandwidth cap",
+    "17 cache colors",
+    "18 IPC hold",
+};
+
+static const char *menu_block(int id)
+{
+    switch (id) {
+    case 6:
+    case 10:
+        return "binds a spinning task into a tier-1 slot";
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+        return "sched_bench blocks the shell for the whole window";
+    case 18:
+        return "four sched_bench windows block the shell";
+    default:
+        return 0;
+    }
+}
+
+static char menu_note[120];
+static int menu_id;
+static int menu_phase;
+static int menu_stop;
+static struct running_app *menu_a;
+static struct running_app *menu_b;
+static uint64_t menu_a1, menu_b1;
+
+static void menu_copy(char *dst, int cap, const char *src)
+{
+    int i = 0;
+    if (cap <= 0)
+        return;
+    for (; src[i] && i < cap - 1; i++)
+        dst[i] = src[i];
+    dst[i] = 0;
+}
+
+static void menu_note_set(const char *s)
+{
+    menu_copy(menu_note, (int)sizeof menu_note, s);
+}
+
+static void menu_release(void)
+{
+    if (menu_a && menu_a->task && menu_a->task->state != TASK_DEAD)
+        task_kill(menu_a->task);
+    if (menu_b && menu_b->task && menu_b->task->state != TASK_DEAD)
+        task_kill(menu_b->task);
+    if (menu_a)
+        resource_release(menu_a);
+    if (menu_b)
+        resource_release(menu_b);
+    menu_a = 0;
+    menu_b = 0;
+}
+
+static void menu_shell_line(void)
+{
+    struct task *sh = sched_find("shell");
+    if (sh && sh->w.periods) {
+        printf("[menu] shell avg %lu us/period over %u. LVGL draw and input on this tier-3 task.\n",
+               ticks_to_us(sh->w.used_sum / sh->w.periods), sh->w.periods);
+        printf("[menu] the serial bench blocks the shell, so it does not include this cost.\n");
+    }
+    printf("[menu] host clock unless boot says icount. An average is not a real-time bound.\n");
+}
+
+static void snap_take(void);
+
+static void menu_finish_window(void)
+{
+    if (menu_id == 8 && menu_phase == 1 && !menu_stop) {
+        menu_a1 = menu_a && menu_a->task ? menu_a->task->w.used_min : 0;
+        menu_b1 = menu_b && menu_b->task ? menu_b->task->w.used_min : 0;
+        print_t2_head();
+        if (menu_a && menu_a->task)
+            print_t2(menu_a->task);
+        if (menu_b && menu_b->task)
+            print_t2(menu_b->task);
+        printf("Phase 2: memory/CPU pressure ON, suggested is reclaimed.\n");
+        resource_set_pressure(1);
+        hogs(8);
+        menu_phase = 2;
+        if (sched_bench_async(np) != 0) {
+            resource_set_pressure(0);
+            menu_release();
+            menu_phase = 0;
+            menu_note_set("phase 2 bench busy");
+            printf("[menu] done 8\n");
+        }
+        return;
+    }
+    snap_take();
+    if (menu_id == 5) {
+        sched_print_window();
+        sched_print_kernel();
+        verdict_t1();
+    } else if (menu_id == 7) {
+        sched_print_slots();
+        print_t2_head();
+        if (menu_a && menu_a->task)
+            print_t2(menu_a->task);
+        printf("结果: 空出来的槽时间全部空转，Tier 2/3 在槽内 %lu tick。\n", sched_foreign_window());
+        menu_release();
+    } else if (menu_id == 8) {
+        print_t2_head();
+        if (menu_a && menu_a->task)
+            print_t2(menu_a->task);
+        if (menu_b && menu_b->task)
+            print_t2(menu_b->task);
+        resource_set_pressure(0);
+        {
+            uint32_t short_n = 0;
+            if (menu_a && menu_a->task)
+                short_n += menu_a->task->w.short_periods;
+            if (menu_b && menu_b->task)
+                short_n += menu_b->task->w.short_periods;
+            printf("结果: 无压力时最少拿到 %lu/%lu us，有压力时 %lu/%lu us；\n  低于最低值的周期 %u 个。\n",
+                   ticks_to_us(menu_a1), ticks_to_us(menu_b1),
+                   ticks_to_us(menu_a && menu_a->task ? menu_a->task->w.used_min : 0),
+                   ticks_to_us(menu_b && menu_b->task ? menu_b->task->w.used_min : 0), short_n);
+        }
+        menu_release();
+    } else if (menu_id == 9) {
+        sched_print_window();
+        print_t2_head();
+        if (menu_a && menu_a->task)
+            print_t2(menu_a->task);
+        if (menu_b && menu_b->task)
+            print_t2_job(menu_b->task);
+        verdict_t1();
+        if (menu_a && menu_a->task && menu_b && menu_b->task)
+            printf("结果: Tier 2 低于最低值 %u 个周期，audio-mix 错过 %u 次。\n",
+                   menu_a->task->w.short_periods, menu_b->task->w.misses);
+        menu_release();
+    }
+    menu_shell_line();
+    if (menu_id == 8 && menu_stop) {
+        resource_set_pressure(0);
+        menu_release();
+    }
+    menu_phase = 0;
+    menu_stop = 0;
+    menu_note_set("window done");
+    printf("[menu] done %d\n", menu_id);
+}
+
+static int snap_have, snap_id, snap_p99_ok, snap_capped, snap_t2_ok;
+static uint32_t snap_miss, snap_samples, snap_shell, snap_short, snap_job;
+static uint32_t snap_ns, snap_uf;
+static uint64_t snap_bound;
+static uint64_t snap_lat, snap_p99, snap_a, snap_b, snap_skip;
+
+static uint32_t p99_nearest(uint32_t *v, uint32_t n)
+{
+    uint32_t i, rank;
+    for (i = 1; i < n; i++) {
+        uint32_t x = v[i];
+        uint32_t j = i;
+        while (j && v[j - 1] > x) {
+            v[j] = v[j - 1];
+            j--;
+        }
+        v[j] = x;
+    }
+    /* ceil(0.99 * n) = (n * 99 + 99) / 100, then index rank-1. */
+    rank = (n * 99u + 99u) / 100u;
+    if (rank < 1)
+        rank = 1;
+    if (rank > n)
+        rank = n;
+    return v[rank - 1];
+}
+
+static uint32_t snap_lat_buf[512];
+
+static void snap_take(void)
+{
+    uint32_t *buf = snap_lat_buf;
+    uint32_t miss = 0;
+    uint64_t jitter = 0, lat = 0;
+    int capped = 0;
+    uint32_t n;
+    int i;
+    t1_summary(&miss, &jitter);
+    for (i = 0; i < MAX_TASKS; i++) {
+        struct task *t = sched_task_at(i);
+        if (!t || t->tier != TIER1 || t->kind != KIND_JOB || !t->w.jobs)
+            continue;
+        if (ticks_to_us(t->w.lat_max) > lat)
+            lat = ticks_to_us(t->w.lat_max);
+    }
+    sched_window_misses(&snap_a, &snap_b);
+    snap_skip = sched_window_skipped();
+    sched_open_account(&snap_ns, &snap_uf, 0, &snap_bound);
+    n = sched_lat_copy(buf, 512, &capped);
+    snap_samples = n;
+    snap_capped = capped;
+    snap_p99_ok = 0;
+    snap_p99 = 0;
+    if (n >= 20 && !capped) {
+        snap_p99 = p99_nearest(buf, n);
+        snap_p99_ok = 1;
+    }
+    snap_miss = miss;
+    snap_lat = lat;
+    snap_have = 1;
+    snap_id = menu_id;
+    snap_t2_ok = 0;
+    if (menu_id == 9 && menu_a && menu_a->task && menu_b && menu_b->task) {
+        snap_t2_ok = 1;
+        snap_short = menu_a->task->w.short_periods;
+        snap_job = menu_b->task->w.misses;
+    }
+    {
+        struct task *sh = sched_find("shell");
+        snap_shell = (sh && sh->w.periods) ? (uint32_t)ticks_to_us(sh->w.used_sum / sh->w.periods) : 0;
+    }
+    printf("[menu] T1 miss %u class a %lu class b %lu skipped %lu. Class a counts. Not a pass line.\n",
+           miss, snap_a, snap_b, snap_skip);
+    printf("[menu] done max %lu us samples %u capped %d (completions only)\n", lat, n, capped);
+    printf("[menu] not_started %u unfinished %u open bound %lu us (not a completion)\n",
+           snap_ns, snap_uf, snap_bound);
+    if (snap_p99_ok)
+        printf("[menu] p99 %lu us nearest-rank ceil(0.99*n) n=%u\n", snap_p99, n);
+    else
+        printf("[menu] p99 not measured. Need 20 stored samples and no cap. n=%u capped %d\n", n, capped);
+}
+
+void demo_menu_detail(struct menu_detail *d)
+{
+    if (!d)
+        return;
+    memset(d, 0, sizeof *d);
+    if (menu_phase && !sched_bench_busy())
+        menu_finish_window();
+    d->running = menu_phase || sched_bench_busy();
+    d->id = d->running ? menu_id : snap_id;
+    d->total = np;
+    if (d->running) {
+        uint32_t left = sched_bench_left();
+        d->progress = np > left ? np - left : 0;
+    } else if (snap_have) {
+        d->progress = np;
+    }
+    d->have_window = snap_have && !d->running;
+    d->t1_miss = snap_miss;
+    d->class_a = snap_a;
+    d->class_b = snap_b;
+    d->skipped = snap_skip;
+    d->lat_max_us = snap_lat;
+    d->samples = snap_samples;
+    d->not_started = snap_ns;
+    d->unfinished = snap_uf;
+    d->open_bound_us = snap_bound;
+    d->p99_ok = snap_p99_ok;
+    d->p99_us = snap_p99;
+    d->capped = snap_capped;
+    d->shell_us = snap_shell;
+    d->t2_ok = snap_t2_ok;
+    d->t2_short = snap_short;
+    d->job_miss = snap_job;
+    if (menu_note[0])
+        menu_copy(d->note, (int)sizeof d->note, menu_note);
+    else
+        menu_copy(d->note, (int)sizeof d->note, "idle");
+}
+
+void demo_menu_stop(void)
+{
+    if (!menu_phase && !sched_bench_busy()) {
+        menu_note_set("idle");
+        printf("[menu] stop ignored, idle\n");
+        return;
+    }
+    menu_stop = 1;
+    sched_bench_stop();
+    printf("[menu] stop: bounded window ends next period\n");
+}
+
+void demo_menu_legend(char *buf, int cap)
+{
+    char tmp[160];
+    uint32_t t2 = resource_cpu_min_sum_us();
+    uint32_t capu = resource_app_cpu_capacity_us();
+    uint32_t left = capu > t2 ? capu - t2 : 0;
+    /* Quotas are the admission numbers. Color is only a legend. */
+    int n = 0;
+    const char *s;
+    tmp[0] = 0;
+    s = "T1 quota ";
+    while (*s && n < (int)sizeof tmp - 1)
+        tmp[n++] = *s++;
+    /* decimal helpers inline */
+    {
+        char num[16];
+        uint32_t v;
+        int k;
+        const uint32_t vals[4] = {resource_t1_cpu_us(), resource_t1_mem_kb(), t2, left};
+        const char *mid[4] = {"us ", "KB  T2 min ", "us  T3 left ", "us"};
+        for (k = 0; k < 4; k++) {
+            int ni = 0;
+            v = vals[k];
+            if (!v)
+                num[ni++] = '0';
+            else {
+                char rev[16];
+                int r = 0;
+                while (v && r < 15) {
+                    rev[r++] = (char)('0' + v % 10);
+                    v /= 10;
+                }
+                while (r)
+                    num[ni++] = rev[--r];
+            }
+            num[ni] = 0;
+            s = num;
+            while (*s && n < (int)sizeof tmp - 1)
+                tmp[n++] = *s++;
+            s = mid[k];
+            while (*s && n < (int)sizeof tmp - 1)
+                tmp[n++] = *s++;
+        }
+    }
+    tmp[n] = 0;
+    menu_copy(buf, cap, tmp);
+}
+
+static int menu_arm(int id)
+{
+    printf("\n=== GUI menu %d, same counters as the serial item, %u periods ===\n", id, np);
+    if (id == 5) {
+        printf("8 tier-3 busy loops. Each tier-1 job must start in its slot.\n");
+        hogs(8);
+    } else if (id == 7) {
+        menu_a = demo_app("greedy-app", 1000, 6000, KIND_SPIN, 0, 0);
+        if (!menu_a)
+            return -1;
+        menu_a->task->bench_owned = 1;
+        hogs(8);
+    } else if (id == 8) {
+        menu_a = demo_app("app-A", 2000, 1000, KIND_SPIN, 0, 0);
+        menu_b = menu_a ? demo_app("app-B", 2000, 2000, KIND_SPIN, 0, 0) : 0;
+        if (!menu_b) {
+            menu_release();
+            return -1;
+        }
+        hogs(8);
+        printf("Phase 1: no pressure.\n");
+    } else if (id == 9) {
+        menu_a = demo_app("game", 2000, 1000, KIND_SPIN, 0, 0);
+        menu_b = menu_a ? demo_app("audio-mix", 1000, 0, KIND_JOB, 400, 4000) : 0;
+        if (!menu_b) {
+            menu_release();
+            return -1;
+        }
+        menu_a->task->bench_owned = 1;
+        menu_b->task->bench_owned = 1;
+        hogs(32);
+        printf("32 tier-3 busy loops, with a tier-2 game and audio-mix.\n");
+    }
+    if (sched_bench_async(np) != 0) {
+        menu_release();
+        menu_note_set("bench busy");
+        return -1;
+    }
+    menu_id = id;
+    menu_phase = 1;
+    printf("[menu] running %d. The shell stays scheduled.\n", id);
+    return 0;
+}
+
+static void menu_pixel(void)
+{
+    int n = 0, i;
+    const struct app_manifest *cat = resource_catalog(&n);
+    for (i = 0; i < resource_running_count(); i++) {
+        struct running_app *a = resource_running(i);
+        if (a && strcmp(a->name, "Pixel Racer") == 0) {
+            stop(a);
+            menu_note_set("Pixel Racer stopped");
+            printf("[menu] done 2\n");
+            return;
+        }
+    }
+    if (n < 1)
+        return;
+    menu_button_yes = 1;
+    install(&cat[0]);
+    menu_button_yes = 0;
+    menu_note_set("Pixel Racer install attempted");
+    printf("[menu] done 2\n");
+}
+
+int demo_menu_count(void)
+{
+    return 18;
+}
+
+void demo_menu_line(int index, char *buf, int cap)
+{
+    int id = index + 1;
+    const char *why = menu_block(id);
+    const char *title = (index >= 0 && index < 18) ? menu_title[index] : "?";
+    if (why)
+        menu_copy(buf, cap, title);
+    else
+        menu_copy(buf, cap, title);
+    if (why && cap > 20) {
+        int n = 0;
+        while (buf[n])
+            n++;
+        if (n < cap - 16) {
+            const char *tag = "  -- not connected";
+            int k = 0;
+            while (tag[k] && n + k < cap - 1) {
+                buf[n + k] = tag[k];
+                k++;
+            }
+            buf[n + k] = 0;
+        }
+    }
+    (void)why;
+}
+
+int demo_menu_start(int id)
+{
+    const char *why;
+    if (id < 1 || id > 18)
+        return -1;
+    if (menu_phase || sched_bench_busy()) {
+        menu_note_set("busy");
+        printf("[menu] busy\n");
+        return -1;
+    }
+    why = menu_block(id);
+    if (why) {
+        printf("[menu] %d not connected: %s\n", id, why);
+        menu_note_set(why);
+        printf("[menu] done %d\n", id);
+        return -2;
+    }
+    menu_id = id;
+    if (id == 1) {
+        cmd_overview();
+        menu_note_set("overview printed");
+        printf("[menu] done 1\n");
+        return 0;
+    }
+    if (id == 2) {
+        menu_pixel();
+        return 0;
+    }
+    if (id == 3) {
+        menu_button_yes = 1;
+        cmd_full();
+        menu_button_yes = 0;
+        menu_note_set("admit cycle done");
+        printf("[menu] done 3\n");
+        return 0;
+    }
+    if (id == 4) {
+        cmd_old_device();
+        menu_note_set("oversize checks printed");
+        printf("[menu] done 4\n");
+        return 0;
+    }
+    if (id == 11) {
+        decl_demo_device_tier1();
+        menu_note_set("device checks printed");
+        printf("[menu] done 11\n");
+        return 0;
+    }
+    if (id == 12) {
+        decl_demo_overcommit();
+        menu_note_set("overcommit checks printed");
+        printf("[menu] done 12\n");
+        return 0;
+    }
+    if (id == 17) {
+        e4_demo_color(0);
+        menu_note_set("color report printed");
+        printf("[menu] done 17\n");
+        return 0;
+    }
+    return menu_arm(id);
+}
+
+void demo_menu_status(char *buf, int cap)
+{
+    if (menu_phase && !sched_bench_busy())
+        menu_finish_window();
+    if (menu_phase) {
+        menu_copy(buf, cap, "running");
+        return;
+    }
+    if (menu_note[0])
+        menu_copy(buf, cap, menu_note);
+    else
+        menu_copy(buf, cap, "idle");
+}
+
 void shell_main(void)
 {
     printf("[boot] shell task running\n");
     decl_init();
     decl_verify_devices();
     const char *args = dtb_bootargs();
+    if (strcmp(args, "webkit") == 0) {
+        webkit_autostart();
+        for (;;)
+            asm volatile("wfi");
+    }
     if (strcmp(args, "e1") == 0) {
         decl_demo_device_tier1();
         decl_demo_overcommit();
@@ -667,6 +1196,20 @@ void shell_main(void)
         run_qa(0);
     if (strcmp(args, "qa-long") == 0)
         run_qa(1);
+    /* Empty bootargs are the owner's UTM default. That path is LVGL.
+     * The serial menu is only -append serial. e4, webkit, qa stay explicit. */
+    if (strcmp(args, "serial") != 0) {
+        if (args[0] == 0)
+            printf("[boot] no bootarg, starting LVGL\n");
+        else if (strcmp(args, "lvgl") == 0)
+            printf("[boot] bootarg lvgl, starting LVGL\n");
+        else
+            printf("[boot] bootarg %s is not serial, starting LVGL\n", args);
+        lvgl_autostart();
+        for (;;)
+            asm volatile("wfi");
+    }
+    printf("[boot] serial menu\n");
     cmd_help();
     for (;;) {
         printf("select> ");

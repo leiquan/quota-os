@@ -1,0 +1,10 @@
+LVGL v9.3.0
+commit c033a98afddd65aaafeebea625382a94020fe4a7
+tag v9.3.0
+https://github.com/lvgl/lvgl
+licence: third_party/lvgl/LICENCE.txt (MIT)
+
+The src tree is that commit with src/libs and src/drivers removed and
+with only lv_font.c, lv_font_fmt_txt.c, lv_font_montserrat_14.c, and
+lv_binfont_loader.c kept under src/font. Those extras are not used.
+The port configuration is port/quotaos/lv_conf.h.

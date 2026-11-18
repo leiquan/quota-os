@@ -1,0 +1,17 @@
+diff --git a/Source/bmalloc/bmalloc/BPlatform.h b/Source/bmalloc/bmalloc/BPlatform.h
+index b5612278..cd3a239c 100644
+--- a/Source/bmalloc/bmalloc/BPlatform.h
++++ b/Source/bmalloc/bmalloc/BPlatform.h
+@@ -468,6 +468,7 @@
+ #endif
+ #endif
+ 
++#if !defined(GIGACAGE_ENABLED)
+ #if ((BOS(DARWIN) || BOS(LINUX)) && \
+     !BUSE(MIMALLOC) && \
+     (BCPU(X86_64) || (BCPU(ARM64) && !defined(__ILP32__) && (!BPLATFORM(IOS_FAMILY) || BPLATFORM(IOS)))))
+@@ -475,3 +476,4 @@
+ #else
+ #define GIGACAGE_ENABLED 0
+ #endif
++#endif

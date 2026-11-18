@@ -1,0 +1,21 @@
+label: BASELINE reproduction of delivered prebuilt image at cloned HEAD
+cloned_HEAD: 4c2a5599af53df6d87fe9a10ffe7fbec29768c5c
+image: /workspace/prebuilt/quotaos.bin
+image_sha256: 99ec3fa2ea6ab795a3297feeda020a175afae126b894323267b22614e7078bb6
+image_bytes: 89000
+utc: 2026-11-17T05:50:03Z
+command:
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M -nographic -nic none -kernel /workspace/prebuilt/quotaos.bin
+argv:
+  qemu-system-aarch64
+  -machine
+  virt,gic-version=2
+  -cpu
+  cortex-a72
+  -m
+  128M
+  -nographic
+  -nic
+  none
+  -kernel
+  /workspace/prebuilt/quotaos.bin

@@ -2,7 +2,7 @@
 #pragma once
 
 /* 版本号：每个提交加 1，三位补零。启动横幅和 README 抬头都显示它。 */
-#define QUOTAOS_VERSION     "015"
+#define QUOTAOS_VERSION     "016"
 /* Tier 2 应用用 IPC 时准入多留的余量：调用者预算在 IPC 内核路径里用完时超出的部分从这里出 */
 #define IPC_HEADROOM_US     120   /* 大于实测最长的一次内核停留（qa-long 6622 tick = 106 us） */
 
@@ -200,6 +200,10 @@ static inline uint32_t mmio_rd(uint64_t a)
     return *(volatile uint32_t *)a;
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void uart_init(void);
 void uart_putc(char c);
 void printf(const char *fmt, ...);
@@ -207,11 +211,14 @@ void readline(char *buf, int cap);
 void put_padded(const char *s, int cols);
 
 void *memset(void *dst, int c, size_t n);
+void *memcpy(void *dst, const void *src, size_t n);
 int strcmp(const char *a, const char *b);
 void str_copy(char *dst, const char *src, int cap);
 
 uint64_t dtb_ram_bytes(uint64_t hinted);
 int dtb_find_compatible(const char *compat, uint64_t *out, int max);
+/* 每个匹配节点的第一段 reg 基址。返回个数。 */
+int dtb_find_bases(const char *compat, uint64_t *bases, int max);
 const char *dtb_bootargs(void);
 
 void gic_init(void);
@@ -228,6 +235,8 @@ void busy_ticks(uint64_t t);
 
 int dtb_fault_expected(void);
 void dtb_note_fault(void);
+int mmu_fault_expected(void);
+void mmu_note_fault(void);
 
 void resource_init(uint64_t ram_bytes);
 const struct tier1_decl *resource_tier1(int *count);
@@ -260,6 +269,16 @@ struct task *sched_find(const char *name);
 struct task *sched_task_at(int index);
 void sched_start(void (*shell_entry)(void));
 void sched_bench(uint32_t periods);
+int sched_bench_async(uint32_t periods);
+int sched_bench_busy(void);
+uint32_t sched_bench_left(void);
+void sched_bench_stop(void);
+int demo_menu_count(void);
+void demo_menu_line(int index, char *buf, int cap);
+int demo_menu_start(int id);
+void demo_menu_status(char *buf, int cap);
+void demo_menu_stop(void);
+void demo_menu_legend(char *buf, int cap);
 void sched_print_window(void);
 void sched_print_kernel(void);
 void sched_print_slots(void);
@@ -306,6 +325,34 @@ void e2_hold_demo(uint32_t periods, int qa_line);
 void sched_set_ipc_hold_rule(int on);
 void sched_total_misses(uint64_t *a, uint64_t *b);
 void sched_window_misses(uint64_t *a, uint64_t *b);
+uint64_t sched_window_skipped(void);
+void sched_open_account(uint32_t *ns, uint32_t *uf, uint32_t *sk, uint64_t *bound_us);
+uint32_t sched_lat_copy(uint32_t *dst, uint32_t cap, int *capped);
+struct menu_detail {
+    int id;
+    int running;
+    uint32_t progress;
+    uint32_t total;
+    int have_window;
+    uint32_t t1_miss;
+    uint64_t class_a;
+    uint64_t class_b;
+    uint64_t skipped;
+    uint64_t lat_max_us;
+    uint32_t samples;
+    uint32_t not_started;
+    uint32_t unfinished;
+    uint64_t open_bound_us;
+    int p99_ok;
+    uint64_t p99_us;
+    int capped;
+    uint32_t shell_us;
+    uint32_t t2_short;
+    uint32_t job_miss;
+    int t2_ok;
+    char note[96];
+};
+void demo_menu_detail(struct menu_detail *d);
 
 void decl_init(void);
 struct sim_dev *decl_dev(int i);
@@ -354,7 +401,18 @@ void dev_period(void);
 uint64_t sched_period_now(void);
 int sched_in_t1_window(uint64_t now);
 void gic_ppi_enable(uint32_t id, int on);
+void mmu_init(void);
+int mmu_protect(uint64_t addr, uint64_t len, int prot);
+uint32_t system_reserve_kb(void);
+/* webkit boot only. 0 on every other boot, including e4. */
+uint64_t webkit_structure_bytes(void);
+uint64_t webkit_structure_base(void);
+void boot_check_reservations(uint64_t structure, uint64_t window, uint64_t arena, uint64_t arena_end);
+/* End of the JSC arena. The weak default is the image end, so a kernel
+ * without the engine keeps the old framebuffer floor. */
+uint64_t jsc_arena_end(void);
 void color_init(uint64_t ram_bytes);
+void color_pool_range(uint64_t *start, uint64_t *end);
 uint64_t color_padding_kb(void);
 uint32_t color_alloc_shared(uint32_t n);
 void color_free_shared(void);
@@ -376,8 +434,52 @@ void handle_unhandled(uint64_t frame_sp, uint64_t kind);
 
 void kmain(uint64_t dtb);
 void shell_main(void);
+void webkit_autostart(void);
+int kernel_reserve_alloc(uint64_t bytes, uint64_t align, uint64_t *pa);
+int wk_reserve(uint64_t bytes, int executable, unsigned guard_pages, uint64_t *pa);
+void *wk_os_reserve(uint64_t bytes, uint64_t align, int executable, unsigned guard_pages);
+void wk_os_release(void *p, uint64_t bytes);
+int wk_os_commit(void *p, uint64_t bytes, int executable);
+void wk_os_decommit(void *p, uint64_t bytes);
+int wk_os_protect(void *p, uint64_t bytes, int readable, int writable);
+void wk_os_zero(void *p, uint64_t bytes);
+int cxx_runtime_test(void);
+int fb_device_self_test(uint32_t **pixels, uint32_t *w, uint32_t *h, uint32_t *stride);
+/* 0 when the surface was reserved. Bytes are inside the 16 MB system reserve. */
+int fb_reserve(void);
+int fb_reserved_range(uint64_t *start, uint64_t *bytes);
+/* Publish the reserved surface through ramfb. Does not draw a demo. */
+int fb_present(void);
+void fb_geometry(uint32_t *w, uint32_t *h);
+
+/* Fixed budgets for the LVGL demo. The heap is LVGL's pool (no expand).
+ * The draw buffer and framebuffer are separate and do not grow. */
+#define LVGL_HEAP_BYTES (256u * 1024u)
+#define LVGL_DRAW_BYTES (640u * 48u * 4u)
+#define LVGL_FB_BYTES (640u * 480u * 4u)
+
+#define QUOTA_INPUT_KEY 1u
+#define QUOTA_INPUT_POINTER 2u
+struct quota_input {
+    uint8_t kind;
+    uint16_t code;
+    uint16_t value;
+    int16_t x, y;
+};
+int input_init(void);
+int input_poll(uint16_t *code, uint16_t *value);
+void input_set_span(uint32_t w, uint32_t h);
+int input_service_poll(void);
+int input_pop(struct quota_input *ev);
+uint32_t input_drop_count(void);
+void lvgl_autostart(void);
+int lvgl_demo_run(uint32_t *pixels, uint32_t w, uint32_t h, uint32_t stride);
 void services_start(void);
 void job_body(uint64_t start);
 
 void start_first_task(uint64_t frame_sp);
 void job_resume(void);
+
+#ifdef __cplusplus
+}
+#endif

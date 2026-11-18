@@ -1,0 +1,64 @@
+
+Quota OS microkernel
+Version: 016 (af050b5)
+基于三级资源声明的微内核，
+保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] EL1h, MMU off. No hardware isolation.
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB snapshot 7540 bytes (header said 1048576)
+[boot] DTB memory 134217728 bytes
+[boot] system reserve 350 us/period, 32768 KB;
+       tier-1 1500 us/period, 13312 KB; guard 80 us/period
+[boot] webkit mode reserve 32768 KB (baseline 16384 KB). Tier-1 table unchanged.
+[boot] cache colors: 32 (model: 2 MB 16-way cache, 4 KB pages);
+       tier-1 pages in 7 own colors, padding 8192 KB
+[boot] kernel image+bss 13871 KB of the 32768 KB system reserve
+[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] clock: host time (not icount; timings are reference only)
+[boot] simulated device IRQ line: EL1 physical timer, PPI 30
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 3125000, period 625000 ticks, guard 1250 ticks
+[boot] shell task running
+[dev] 3 new simulated devices start in Tier 3; verifying
+      (8 jobs, 8 aborts each, IRQs masked, before the next guard)
+[dev] sim-dma: job 396/400 us, stop 17/20 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-blk: job 1991/2000 us, stop 1770/2000 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-cam: job 291/300 us, stop 18/30 us (measured/declared)
+      [非 icount，仅供参考]
+[webkit] autostart on the Tier-3 shell task
+[webkit] app mem capacity 76800 KB
+[webkit] inspected 4d967f4ca7bd tag WebKit-7625.2.8.18.3
+[webkit] that tree's WPE project version is 2.53.3
+[webkit] engine linked: no
+[webkit] HTML/CSS/JS is not running
+[webkit] unfinished: no QuotaOS port in WebKit ALL_PORTS
+[webkit] unfinished: WebCore is forced off without JavaScriptCore
+[webkit] unfinished: OSAllocatorPOSIX uses mmap, mprotect, guard pages
+[webkit] unfinished: MMU is off, so that allocator has no VM
+[wk] refuse executable 4096 bytes (MMU off)
+[wk] refuse 1 guard pages (MMU off)
+[wk] reserved 4096 bytes at 0x41fff000 in system reserve
+[webkit] OSAllocator probe exec -1 guard -1 plain 0
+[webkit] commit 0 protect-ro -1 cxx 42
+[webkit] unfinished: WPE needs ICU, libxml2, sqlite, harfbuzz, png, jpeg, webp
+[webkit] unfinished: WPE also needs glib, libsoup, epoxy, and a UI process
+[webkit] unfinished: virtio EV_KEY is not a PlatformKeyboardEvent
+[webkit] unfinished: a contiguous app heap would use Tier-1 colors
+[fb] reserve surface 640x480 at 0x41ed2000
+[fb] self-test checksum 0xfffda800 (not a WebKit paint)
+[fb] etc/ramfb not in fw_cfg (9 files)
+[input] virtio-mmio nodes 32
+[input] no virtio-input (id 18)
+[jsc] arena 0x40e0c000 16728064 bytes, pool 0x42000000
+[jsc] constructors 5
+[jsc] /dev/urandom is the virtual counter, not a device file
+[jsc] mmap addr 0x0 len 137438953472 prot 0x3 flags 0x4022
+[jsc] mmap refused len 137438953472 used 0
+[jsc] mmap addr 0x0 len 134217728 prot 0x3 flags 0x4022
+[jsc] mmap refused len 134217728 used 0
+
+PANIC sync ec=0x3c esr=0xf200bb08 elr=0x407f0b9c

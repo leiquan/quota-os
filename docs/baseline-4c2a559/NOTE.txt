@@ -1,0 +1,84 @@
+Baseline reproduction on this cloud task. Independent QA was not run.
+This directory is the baseline, before the native-port edits.
+
+Cloned HEAD: 4c2a5599af53df6d87fe9a10ffe7fbec29768c5c
+Branch at clone: rework-partitioning
+Host: Ubuntu 24.04.5, x86_64
+Toolchain: aarch64-linux-gnu-gcc 13.3.0 (Ubuntu 13.3.0-6ubuntu2~24.04.1)
+           binutils-aarch64-linux-gnu 2.42-4ubuntu2.10
+QEMU: 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18), package qemu-system-arm
+      This is not the QEMU 10.0 mentioned in the historical README.
+
+Images
+------
+Delivered prebuilt (committed at HEAD, booted before any rebuild):
+  prebuilt/quotaos.bin
+  99ec3fa2ea6ab795a3297feeda020a175afae126b894323267b22614e7078bb6
+  89000 bytes
+  prebuilt/quotaos.elf
+  daf0c558b3f398ec9b3cb557be1b35f1bb915fa0a144d3683c105f3811929da8
+  168288 bytes
+These match the v015 commit message and docs/accept-v015/kernel-sha256.txt.
+
+Rebuild of the same sources on this machine:
+  command: make clean && make SRC_COMMIT=559daed
+  log: make-src-commit-559daed.log
+  build/quotaos.bin
+  a250441ec05477dfcbc0195ad1103930dc2b5358b226f6ae92d8cc6785594efe
+  build/quotaos.elf
+  4c2bb947b6d2fb93de1b6480eea11d3ae672891e8e6fcbcdb6f880559b6f9101
+  copies: rebuild-gcc13.3.0/
+Byte match against the delivered image: no.
+text size 86896 (delivered) vs 82916 (this gcc). The tree claims
+byte-identical output only for the same compiler. This gcc is not
+that compiler. The mismatch is recorded, not papered over.
+prebuilt/ in the worktree was restored to the delivered bytes after
+the rebuild; make copies into prebuilt/.
+
+Boots (raw serial is unedited QEMU stdout; stderr files are separate)
+-----------------------------------------------------------------
+128M delivered image, reached select>, then menu 1 (developer self-test
+of the shell, not an acceptance suite):
+  boot-128m-command.txt
+  boot-128m-serial.raw
+  boot-128m-qemu-stderr.raw (empty)
+Banner: Version: 015 (559daed). GICv2 found. Host clock, not icount.
+Menu 1 ran and returned to select>. The same boot's "measured since boot"
+kernel max was 80451 ticks against reserve 21875 (margin negative).
+That line is host time. It is not an icount acceptance result and it
+is not evidence of hardware isolation.
+
+64M delivered image, same machine flags, did not reach select>:
+  boot-64m-command.txt
+  boot-64m-serial.raw
+It printed the 64 MB memory line, cache colors (11 own colors, padding
+3584 KB), then:
+  [boot] ERROR: no GICv2 ... or GICv3 ...
+  [boot] halted: no supported interrupt controller
+dumpdtb of virt,gic-version=2 at 64M and 128M both contain
+compatible = "arm,cortex-a15-gic". The halt is not "this QEMU has no
+GIC". Developer analysis of the DTB header plus color_init's writes:
+the in-guest DTB is about 7510 bytes of structure+strings inside a
+header whose totalsize is 1048576. color_init runs after the memory
+node is parsed and writes the first word of each Tier-1 page.
+  64M DTB at 0x42000000: writes hit offsets 0 and 4096 (inside the
+  struct). The GIC walk then fails.
+  128M DTB at 0x44000000: the only hit is offset 0 (magic). The walk
+  does not re-check the magic, so GICv2 still comes up.
+This 64M halt is a baseline result on QEMU 8.2.2. It is not a pass.
+
+128M rebuilt image (hash a250441e..., not the delivered image):
+  boot-rebuild-128m-command.txt
+  boot-rebuild-128m-serial.raw
+Reached select>. Version: 015 (559daed). kernel image+bss 558 KB
+(delivered boot printed 562 KB). Developer self-test of the rebuild
+only. Not independent QA.
+
+What was not run
+----------------
+tools/acceptance.py (qa, e1, e2, e3, e4, e2h), menu regression, and
+the 30-round icount suites were not re-run for this baseline. Task
+creation and a successful compile are not boot success. The 128M
+select> lines above are the boot evidence.
+MMU is off and tasks run at EL1h in the sources (boot/startup.S).
+Nothing in these logs is hardware isolation.

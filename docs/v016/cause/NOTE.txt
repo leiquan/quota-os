@@ -1,0 +1,26 @@
+Cause of the icount stall on QEMU 8.2.2, from the guest, not a guess.
+
+Unfixed image, -icount shift=4,sleep=off, -append e4.
+diag-wfi-icount-8s.raw is a build that still executes wfi and prints
+once on the way into idle:
+
+  [diag] slot-idle now 693043 cval 718750 ctl 0x1 shell 1
+  [diag] idle-entry now 694782 cval 718750 ctl 0x1 shell 1
+
+shell state 1 is TASK_READY. The slot owner was not ready, so the
+scheduler idled. CNTV_CTL is 0x1 (timer enabled, not masked). CVAL is
+25707 ticks (about 411 us) ahead of now. Nothing else was printed in
+the next 8 seconds of host time.
+
+icount-d-int-2s.txt: qemu -d int for 2 seconds, then SIGKILL.
+4 exception returns, no continuing IRQ stream. The last eret PC in
+that log is idle_entry (wfi). Same kernel without icount,
+normal-d-int-2s.txt, 266 IRQs in 2 seconds.
+
+fix-verify-icount.raw: idle spins when clock_is_icount() is true.
+The three device lines appear (sim-dma 396/400, sim-blk 1991/2000,
+sim-cam 291/300). That build is the one whose e4 log is in
+../e4-fix/v016-icount-complete.raw.
+
+The diag image that still uses wfi is not the committed prebuilt.
+The committed prebuilt is the spin-on-icount image.

@@ -1,0 +1,84 @@
+Default kernel. LVGL screen. Not the old serial menu.
+
+Boot arguments empty, or absent, start LVGL. They do not fall through
+to select>. The serial menu on this image is -append serial.
+-append e4 still runs e4. -append webkit still runs the JSC guest
+only when that image is the JSC file, not this one.
+
+Machine
+  virt, GICv2, Cortex-A72, 128 MB. Do not change those.
+  Banner Version: 016 (66a295b). 66a295b is the parent of the commit
+  that introduced these bytes.
+  White page. Home lists the tests that run: draw, stress, admit.
+  Coverage is one page. Click and keyboard are the input page.
+  The right side prints the numbers.
+
+SHA-256
+  quotaos.bin 6feb8d4b5318d425c2f64da7c5ef192617a5031ca0fb07e48733239d25737bf5
+  quotaos.elf bfc82905c12b13006fb422caa214a379baa89fd7429cdea4372dbde0d212dea8
+  size quotaos.bin 685480
+
+Not this file
+  66a295b slim home, 682896 bytes,
+  sha256 1c91348a3e0935f677ea8ccf0ecdc8e1b75c82ce313daf7fd84b0169a3332164
+  60fa448 crowded groups, 682232 bytes,
+  sha256 dc71eb9a2ec4124d79c13b5e506d11f6614a124d35abf91fcb6278d09d2dfded
+  ac565ac white cursor, 667656 bytes,
+  sha256 198eb516bd00188a68bae7a4538adb40a8b6a1b5410512fae187700a31738988
+  11b8eb6 eighteen-row menu, 674264 bytes,
+  sha256 8f7d4e077730c12a288faff06b3c7c94d8077b532e7cbd904c5f1625d270c416
+  quotaos-lvgl.bin is the same bytes.
+
+Previous serial drop-in, kept under a new name
+  quotaos-serial.bin afed7949f5b3adc6dcb3d6c86e05356ed69fd315eca55fbeafae656f62880e05
+  quotaos-serial.elf bf6338345233296ffac12393f37e477078299ec91c65ce68ab90fa5e656b8f64
+  93744 bytes. Banner Version: 016 (af050b5). That file still opens select>.
+
+QEMU 8.2.2 command that showed the button and the text field
+  qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M \
+    -display none -nic none \
+    -device ramfb \
+    -device virtio-keyboard-device \
+    -device virtio-tablet-device \
+    -kernel prebuilt/quotaos.bin
+
+No -append. Home, then tier-3 load (menu 9, 200 periods).
+Same script, tools/run-gui-stress.py, before and after.
+Before (66a295b) host-03: 3 display-vsync not_started,
+lat_us 1404 1379 2532, panel lat max 359 us.
+After host-01: T1 miss 5, class a 5, done max 451 us,
+samples 395, not_started 4, unfinished 1, open bound 1823 us.
+After icount, three rounds: miss 0, done max 80 us, samples 400.
+Done max and p99 are completions only. Open bound is
+observation minus ideal release, not a completion.
+Class a counts. Slot lengths stay 500 us and 300 us.
+p99 is nearest-rank ceil(0.99*n)=(n*99+99)/100, index rank-1.
+Not a 30-round acceptance. Pages and panel light are not measured.
+Input page: Count 1, text ab. Coverage names serial items
+6, 10, 13, 14, 15, 16, 18.
+Logs docs/v016/lvgl/slim.raw docs/v016/lvgl/slim-icount.raw
+Screenshots docs/v016/lvgl/slim-home.png docs/v016/lvgl/slim-result.png
+docs/v016/lvgl/slim-icount.png docs/v016/lvgl/slim-cover.png
+docs/v016/lvgl/slim-input.png
+QEMU also prints: Could not open option rom 'vgabios-ramfb.bin'.
+The guest still programs etc/ramfb.
+
+Without those three devices the serial log says
+  [boot] no bootarg, starting LVGL
+  [fb] etc/ramfb not in fw_cfg
+and does not print select>. docs/v016/lvgl/default-nodev.raw
+
+The owner has shown this guest on ramfb. In UTM's custom arguments,
+each argv is its own row:
+  -device
+  virtio-keyboard-device
+  -device
+  virtio-tablet-device
+Putting those four tokens on one row does not attach the devices.
+Button and text entry on UTM are not confirmed. QEMU is the run above.
+
+Same file, icount e4. This does not draw, so it is not the GUI stress.
+  python3 tools/e4_bound.py prebuilt/quotaos.bin docs/v016/lvgl/e4-slim.raw 40 icount
+item9 PASS, item10 PASS, QA DONE. Tier-1 stays 13312 KB and 1500 us.
+This screen is one EL1 address space with the MMU off. It is not
+a tier-1 hardware isolation claim.

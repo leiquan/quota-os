@@ -97,10 +97,51 @@ uint64_t resource_ram_kb(void)
     return ram_kb;
 }
 
+static int boot_is_webkit(void)
+{
+    const char *args = dtb_bootargs();
+    return args[0] == 'w' && strcmp(args, "webkit") == 0;
+}
+
+/* The kernel image stays in the 16 MB reserve on every boot. webkit mode
+ * also keeps a 64 MB structure-heap window at the top of RAM, because
+ * JavaScriptCore's StructureID encoding needs a power-of-two reservation
+ * aligned to its own size. The smallest size that encoder still accepts
+ * is a 32 MB heap, which the POSIX allocator maps as 64 MB so it can align
+ * the result. Tier-1 declarations do not change. */
+uint32_t system_reserve_kb(void)
+{
+    extern char __image_start[], __image_end[];
+    uint64_t base = (uint64_t)__image_start & ~((16ull << 20) - 1);
+    /* Image plus the 640x480 surface. Stay at 16 MB when that already fits. */
+    uint64_t need = ((uint64_t)__image_end - base) + (640ull * 480ull * 4ull);
+    uint32_t kb = (uint32_t)((need + 1023ull) / 1024ull);
+    if (kb < KERNEL_RESERVE_KB)
+        kb = KERNEL_RESERVE_KB;
+    /* 2 MB alignment keeps the colored pool on a block boundary. */
+    kb = (kb + 2047u) & ~2047u;
+    return kb;
+}
+
+uint64_t webkit_structure_bytes(void)
+{
+    return boot_is_webkit() ? (64ull << 20) : 0;
+}
+
+uint64_t webkit_structure_base(void)
+{
+    if (!webkit_structure_bytes())
+        return 0;
+    extern char __image_start[];
+    uint64_t base = (uint64_t)__image_start & ~((16ull << 20) - 1);
+    return base + ram_kb * 1024 - webkit_structure_bytes();
+}
+
 uint64_t resource_app_mem_capacity_kb(void)
 {
     /* v012 起再扣掉缓存着色补齐（Tier 1 颜色里别人不能用的页） */
-    uint64_t fixed = (uint64_t)KERNEL_RESERVE_KB + resource_t1_mem_kb() + color_padding_kb();
+    uint64_t fixed = (uint64_t)system_reserve_kb() + webkit_structure_bytes() / 1024
+        + resource_t1_mem_kb() + color_padding_kb();
     return ram_kb > fixed ? ram_kb - fixed : 0;
 }
 
@@ -143,9 +184,56 @@ void resource_init(uint64_t ram_bytes)
     ram_kb = ram_bytes / 1024;
     pressure = 0;
     reason[0] = 0;
+    uint32_t reserve_kb = system_reserve_kb();
     printf("[boot] system reserve %u us/period, %u KB;\n       tier-1 %u us/period, %u KB; guard %u us/period\n",
-           SYS_RESERVE_US, KERNEL_RESERVE_KB, resource_t1_cpu_us(), resource_t1_mem_kb(),
+           SYS_RESERVE_US, reserve_kb, resource_t1_cpu_us(), resource_t1_mem_kb(),
            resource_guard_us());
+    if (reserve_kb > KERNEL_RESERVE_KB)
+        printf("[boot] system reserve grew from %u KB to %u KB to hold the image and framebuffer; tier-1 declarations unchanged\n",
+               KERNEL_RESERVE_KB, reserve_kb);
+    if (webkit_structure_bytes())
+        printf("[boot] webkit admission: structure reservation %lu KB is inside the 128 MB budget; system reserve %u KB includes the framebuffer; tier-1 declarations unchanged (%u KB, %u us)\n",
+               webkit_structure_bytes() / 1024, reserve_kb, resource_t1_mem_kb(), resource_t1_cpu_us());
+    printf("[boot] EL1 identity map, when on, is not separate-process isolation. Three-tier hardware isolation is not claimed.\n");
+}
+
+static int ranges_overlap(uint64_t a0, uint64_t a1, uint64_t b0, uint64_t b1)
+{
+    return a1 > a0 && b1 > b0 && a0 < b1 && b0 < a1;
+}
+
+void boot_check_reservations(uint64_t structure, uint64_t window, uint64_t arena, uint64_t arena_end)
+{
+    extern char __image_start[], __image_end[];
+    uint64_t image0 = (uint64_t)__image_start;
+    uint64_t image1 = (uint64_t)__image_end;
+    uint64_t pool0 = 0, pool1 = 0, fb0 = 0, fb_n = 0;
+    color_pool_range(&pool0, &pool1);
+    int have_fb = fb_reserved_range(&fb0, &fb_n) == 0;
+    uint64_t fb1 = fb0 + fb_n;
+    uint64_t parent1 = structure + window;
+    uint64_t heap1 = structure + window / 2;
+    /* The 64 MB window is one parent reservation. The structure heap and the
+     * malloc arena are its two children. The parent contains the arena, so a
+     * check of those two printed ranges is not an overlap failure. */
+    int siblings = !ranges_overlap(structure, heap1, arena, arena_end)
+        && arena == heap1 && arena_end == parent1;
+    int bad = !siblings;
+    if (ranges_overlap(image0, image1, pool0, pool1))
+        bad = 1;
+    if (ranges_overlap(image0, image1, structure, parent1))
+        bad = 1;
+    if (ranges_overlap(pool0, pool1, structure, parent1))
+        bad = 1;
+    if (have_fb && (ranges_overlap(image0, image1, fb0, fb1) || ranges_overlap(fb0, fb1, pool0, pool1)
+            || ranges_overlap(fb0, fb1, structure, parent1) || fb0 < image1 || fb1 > pool0))
+        bad = 1;
+    printf("[boot] independent image 0x%lx-0x%lx fb 0x%lx-0x%lx pool 0x%lx-0x%lx parent 0x%lx-0x%lx\n",
+           image0, image1, have_fb ? fb0 : 0, have_fb ? fb1 : 0, pool0, pool1, structure, parent1);
+    printf("[boot] parent children structure-heap 0x%lx-0x%lx arena 0x%lx-0x%lx disjoint %d\n",
+           structure, heap1, arena, arena_end, siblings);
+    printf("[boot] reservation bad %d; framebuffer %lu KB stays inside the %u KB system reserve\n",
+           bad, have_fb ? fb_n / 1024 : 0, system_reserve_kb());
 }
 
 int resource_pressure(void)

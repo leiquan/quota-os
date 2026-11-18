@@ -1,0 +1,20 @@
+icount e4 stall, QEMU 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18).
+
+Cause: -icount shift=4,sleep=off does not advance virtual time while the
+guest is in wfi. Device verification runs with interrupts enabled
+between trials. An empty Tier-1 slot has no READY owner, so the
+scheduler enters idle. idle executed wfi. A diagnostic build printed
+  slot-idle now 693043 cval 718750 ctl 0x1 shell 1
+and then idle-entry at now 694782 with the same cval. CNTV_CTL 0x1
+means the timer is enabled and unmasked. The compare value was about
+411 us ahead. No later line appeared. qemu -d int for 2 seconds showed
+4 exception returns and no continuing IRQ stream. The same kernel
+without icount took 266 IRQs in 2 seconds.
+
+Fix: idle spins when clock_is_icount() is true, and still uses wfi on
+the host clock. Slot end, guard, and admission are unchanged. The
+Cortex-A72 can execute instructions from RAM; this bug was the
+icount/WFI clock, not a missing CPU execute permission.
+
+Plain serial boot does not use icount, so it never reaches this stall.
+The icount log next to this note is the run that does.

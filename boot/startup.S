@@ -68,6 +68,11 @@ past_header:
     eret
 
 el1_entry:
+    /* Allow FP/SIMD at EL1. The CLoop image uses it. Handlers do not. */
+    mrs     x1, cpacr_el1
+    orr     x1, x1, #(3 << 20)
+    msr     cpacr_el1, x1
+    isb
     msr     DAIFSet, #0xf
     ldr     x1, =_boot_stack_top
     mov     sp, x1

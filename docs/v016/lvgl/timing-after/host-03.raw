@@ -1,0 +1,163 @@
+
+Quota OS microkernel
+Version: 016 (66a295b)
+基于三级资源声明的微内核，
+保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] EL1h, MMU off. No hardware isolation.
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB snapshot 7512 bytes (header said 1048576)
+[boot] DTB memory 134217728 bytes
+[boot] system reserve 350 us/period, 16384 KB;
+       tier-1 1500 us/period, 13312 KB; guard 80 us/period
+[boot] EL1 identity map, when on, is not separate-process isolation. Three-tier hardware isolation is not claimed.
+[boot] cache colors: 32 (model: 2 MB 16-way cache, 4 KB pages);
+       tier-1 pages in 7 own colors, padding 11776 KB
+[boot] kernel image+bss 1693 KB of the 16384 KB system reserve
+[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] clock: host time (not icount; timings are reference only)
+[boot] simulated device IRQ line: EL1 physical timer, PPI 30
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 1250000, period 625000 ticks, guard 1250 ticks
+[boot] shell task running
+[dev] 3 new simulated devices start in Tier 3; verifying
+      (8 jobs, 8 aborts each, IRQs masked, before the next guard)
+[dev] sim-dma: job 474/400 us, stop 15/20 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-blk: job 1991/2000 us, stop 1770/2000 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-cam: job 291/300 us, stop 27/30 us (measured/declared)
+      [非 icount，仅供参考]
+[health] sim-dma 实测超出声明 (verify job): measured 474 us > declared 400 us,
+  period 0; sim-dma demoted to Tier 3 [非 icount，仅供参考]
+[health] display-vsync: sim-dma Tier 1 revoked (实测超出声明);
+  policy degrade -> Tier 3
+[boot] no bootarg, starting LVGL
+[lvgl] autostart on the Tier-3 shell task
+[lvgl] this task does not mask IRQs and it is not a tier-1 slot.
+[lvgl] one kernel address space. Three-tier hardware isolation is not claimed.
+[admit] lvgl heap 256 KB draw 120 KB framebuffer 1200 KB, fixed, pool expand 0
+[admit] oversubscription probe 1
+REFUSED: device does not meet minimum requirements
+  minimum memory 4294967295 KB > 89600 KB for apps
+  (RAM 131072 KB - system reserve - tier-1 - color padding)
+No app can be closed to make room: this device is too small.
+[admit] lvgl-demo accepted 1576 KB. cpu_min is 0. The shell stays tier 3.
+[fb] reserved 1228800 bytes at 0x40ed4000 inside the system reserve
+[fb] ramfb published 640x480 stride 2560 at 0x40ed4000 from fw_cfg 0x9020000
+[input] virtio-mmio nodes 32 queue cap 32
+[input] pointer "QEMU Virtio Tablet" base 0xa003c00 queue 8 abs 1 range x 0..32767 y 0..32767
+[input] keyboard "QEMU Virtio Keyboard" base 0xa003e00 queue 8 abs 0 range x 0..0 y 0..0
+[lvgl] upstream 9.3.0 heap 262144 draw 122880
+[lvgl] white background, dark text
+[lvgl] software cursor 16x16 black fill white outline hotspot 0,0
+[lvgl] load9 box 23,197 230x32
+[lvgl] input box 23,107 230x32
+[lvgl] cover box 23,411 230x32
+[lvgl] back box 16,56 230x32
+[lvgl] plus box 24,104 140x40
+[menu] serial 6 10 13 14 15 16 18 stay on the coverage page
+[lvgl] ready
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[input] raw ptr type 3 code 0 value 7076
+[input] raw ptr type 3 code 1 value 14570
+[input] raw ptr type 0 code 0 value 0
+[lvgl] pointer 137,212 down 0
+[input] raw ptr type 1 code 272 value 1
+[input] raw ptr type 0 code 0 value 0
+[lvgl] pointer 137,212 down 1
+[lvgl] fb commit click 2524 us n=1 (not panel light)
+[input] raw ptr type 1 code 272 value 0
+[input] raw ptr type 0 code 0 value 0
+[lvgl] pointer 137,212 down 0
+[menu] button 9
+
+=== GUI menu 9, same counters as the serial item, 200 periods ===
+32 tier-3 busy loops, with a tier-2 game and audio-mix.
+[menu] running 9. The shell stays scheduled.
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 3000us  T3 left 5070us
+[menu] T1 miss 4 class a 4 class b 0 skipped 0. Class a counts. Not a pass line.
+[menu] done max 380 us samples 396 capped 0 (completions only)
+[menu] not_started 4 unfinished 0 open bound 746 us (not a completion)
+[menu] p99 142 us nearest-rank ceil(0.99*n) n=396
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     3        116      18714   18598    23764
+  timer-server      1    200     1        123       5987    5864     8548
+  display-vsync last release: period 262, tick 165062500,
+    epoch+k*P+offset 165062500
+  timer-server last release: period 262, tick 165218750,
+    epoch+k*P+offset 165218750
+T1MISS task=display-vsync period=82 reason=not_started start_t=-1
+  lat_t=38352 lat_us=613 deadline_us=500 J_us=1144 class=a
+T1MISS task=display-vsync period=129 reason=not_started start_t=-1
+  lat_t=46640 lat_us=746 deadline_us=500 J_us=1431 class=a
+T1MISS task=timer-server period=132 reason=not_started start_t=-1
+  lat_t=22032 lat_us=352 deadline_us=300 J_us=1443 class=a
+T1MISS task=display-vsync period=238 reason=not_started start_t=-1
+  lat_t=35385 lat_us=566 deadline_us=500 J_us=1483 class=a
+misses: class a (clock jump) 4, class b (kernel) 0, skipped periods 0
+done lat_max is completions only. not_started 4 unfinished 0
+open lower bound 746 us (observation - ideal release, not a completion)
+skipped counter 0 counts every open job, not only tier 1.
+tier-1 reason=skipped 0, and each of those is also a T1 miss.
+T1CHAIN n=4 dropped=0. Stored only when a tier-1 job misses.
+T1CHAIN no extra stores on a job that completes inside its slot.
+T1CHAIN task=display-vsync period=82 reason=not_started source=timer prev=game
+  ideal 52562500 release 52562500 match
+  cval 52561250 entry 52600852 entry-cval 633 us
+  seen 52600852 now 52601178 slot_end 52593750
+  seen-release 613 us now-release 618 us deadline 500 us
+  jumps in [prev period, seen] 14 largest 633 us (52561250..52600852)
+  jump covers release 52561250..52600852 (633 us)
+T1CHAIN task=display-vsync period=129 reason=not_started source=timer prev=game
+  ideal 81937500 release 81937500 match
+  cval 81936250 entry 81984140 entry-cval 766 us
+  seen 81984140 now 81985835 slot_end 81968750
+  seen-release 746 us now-release 773 us deadline 500 us
+  jumps in [prev period, seen] 14 largest 766 us (81936250..81984140)
+  jump covers release 81936250..81984140 (766 us)
+T1CHAIN task=timer-server period=132 reason=not_started source=timer prev=game
+  ideal 83968750 release 83968750 match
+  cval 83967500 entry 83990782 entry-cval 372 us
+  seen 83990782 now 83991115 slot_end 83987500
+  seen-release 352 us now-release 357 us deadline 300 us
+  jumps in [prev period, seen] 14 largest 412 us (83461074..83486828)
+  jump covers release 83967500..83990782 (372 us)
+T1CHAIN task=display-vsync period=238 reason=not_started source=timer prev=game
+  ideal 150062500 release 150062500 match
+  cval 150061250 entry 150097885 entry-cval 586 us
+  seen 150097885 now 150098134 slot_end 150093750
+  seen-release 566 us now-release 570 us deadline 500 us
+  jumps in [prev period, seen] 13 largest 586 us (150061250..150097885)
+  jump covers release 150061250..150097885 (586 us)
+T1CHAIN pk advances only when a kernel entry sees CNTVCT past the period end.
+T1CHAIN entry-cval is CNTVCT minus the compare value this guest wrote.
+T1CHAIN a timer source was taken with guest IRQs unmasked at the interrupted instruction.
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  game            2000    1000      3010     3024     3273      0
+  audio-mix: jobs 200, misses 0, worst response 605 us (deadline 4000 us)
+结果: Tier 1 错过 4 次，起点抖动 18598 tick，
+  槽内 Tier 2/3 共 451597 tick。
+结果: Tier 2 低于最低值 0 个周期，audio-mix 错过 0 次。
+[menu] shell avg 151 us/period over 200. LVGL draw and input on this tier-3 task.
+[menu] the serial bench blocks the shell, so it does not include this cost.
+[menu] host clock unless boot says icount. An average is not a real-time bound.
+[menu] done 9
+[lvgl] detail
+menu 9 done 200/200
+T1 miss 4
+class a 4  b 0  skipped 0
+class a counts, not a pass
+host clock, not a pass
+done max 380 us n=396
+p99 142 us nearest-rank ceil(0.99*n)
+not_started 4 unfinished 0
+open bound 746 us not a completion
+shell 151 us/period
+quota T1 1500us 13312KB
+pages not measured
+panel light not measured
+tier2 short 0  job miss 0
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us

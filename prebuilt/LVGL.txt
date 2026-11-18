@@ -1,0 +1,21 @@
+Same bytes as prebuilt/quotaos.bin. Kept so the lvgl name still exists.
+
+Banner Version: 016 (66a295b). 685480 bytes. Done max and open bound are separate.
+sha256 6feb8d4b5318d425c2f64da7c5ef192617a5031ca0fb07e48733239d25737bf5
+
+Earlier files, not this one:
+66a295b slim home, 682896 bytes,
+sha256 1c91348a3e0935f677ea8ccf0ecdc8e1b75c82ce313daf7fd84b0169a3332164
+60fa448 crowded groups, 682232 bytes,
+sha256 dc71eb9a2ec4124d79c13b5e506d11f6614a124d35abf91fcb6278d09d2dfded
+ac565ac white cursor, 667656 bytes,
+sha256 198eb516bd00188a68bae7a4538adb40a8b6a1b5410512fae187700a31738988
+11b8eb6 row menu, 674264 bytes,
+sha256 8f7d4e077730c12a288faff06b3c7c94d8077b532e7cbd904c5f1625d270c416
+
+Empty boot arguments start LVGL. The earlier file that required
+-append lvgl was 666176 bytes, sha256
+259eed530e9b4fe8bc1102c69a9c80cfbdbc390970f1a05bae1e5689563146ba,
+banner 1253502. Its log remains docs/v016/lvgl/trial.raw.
+
+See RUN.txt for the QEMU command, the screenshot, and the serial file.

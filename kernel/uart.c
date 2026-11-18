@@ -81,3 +81,14 @@ void readline(char *buf, int cap)
     }
     buf[n] = 0;
 }
+
+__attribute__((weak)) void mmu_init(void) {}
+__attribute__((weak)) int mmu_protect(uint64_t addr, uint64_t len, int prot)
+{
+    (void)addr;
+    (void)len;
+    (void)prot;
+    return -1;
+}
+__attribute__((weak)) int mmu_fault_expected(void) { return 0; }
+__attribute__((weak)) void mmu_note_fault(void) {}

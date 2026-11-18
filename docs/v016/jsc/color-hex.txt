@@ -1,0 +1,41 @@
+CSS hex path on the guest. Not HTML layout. Not a GUI.
+
+Image prebuilt/quotaos-jsc.bin
+  13063200 bytes
+  sha256 e12747256945585006d43211fb59ed95ec05da14b9ca57f3b7390a05b62769ed
+  elf sha256 5e9e016a1764b557ce7f5ad2888f1ecdfd039d51ac587f7ce65795dc205d7e56
+  Banner Version: 016 (641dc8c). 641dc8c is the parent of the commit that
+  introduced these bytes.
+
+The earlier JSC image (13061280 bytes, sha256
+c10dff5acdf433d266ff8a0417465298f02fedd346564ba247eb04ea7a7328d1,
+banner dde2a8e) stays at
+/opt/cursor/artifacts/quotaos-jsc-dde2a8e/.
+
+Command, QEMU 8.2.2, no extra display device:
+
+  qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M \
+    -nographic -nic none -kernel prebuilt/quotaos-jsc.bin -append webkit
+
+Raw log: docs/v016/jsc/webkit-color.raw
+Same-binary icount e4: docs/v016/jsc/e4-color.raw
+  item9 PASS, item10 PASS, QA DONE. Developer self-test, not independent QA.
+
+The guest still prints ownership PASS, 1+2, and abc with icu 0.
+Then the platform adapter calls upstream
+CSSParserFastPaths::parseHexColor("#c80000") and writes that color
+through fb_reserved_range. The log line is:
+
+  [webcore] CSSParserFastPaths hex c80000 rgba 0xffc80000 painted 307200/307200 ok 1 reject_zz 0
+
+307200 is 640x480. "zz" is rejected. This is not GraphicsContext::fillRect
+and not an HTML page. Stock virt still prints etc/ramfb not in fw_cfg.
+No keyboard or mouse path is wired. No UTM device is specified.
+
+System reserve stayed 16384 KB. Tier-1 stayed 13312 KB and 1500 us.
+Image 0x40080000-0x40ecc190. Framebuffer 0x40ed4000-0x41000000.
+The shell task stays tier 3.
+
+Layers: port/quotaos/LAYERS.txt
+Headers: tools/generate-webcore-derived.sh
+Objects: tools/build-webcore-color.sh

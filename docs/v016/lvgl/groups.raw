@@ -1,0 +1,162 @@
+
+Quota OS microkernel
+Version: 016 (11b8eb6)
+基于三级资源声明的微内核，
+保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] EL1h, MMU off. No hardware isolation.
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB snapshot 7512 bytes (header said 1048576)
+[boot] DTB memory 134217728 bytes
+[boot] system reserve 350 us/period, 16384 KB;
+       tier-1 1500 us/period, 13312 KB; guard 80 us/period
+[boot] EL1 identity map, when on, is not separate-process isolation. Three-tier hardware isolation is not claimed.
+[boot] cache colors: 32 (model: 2 MB 16-way cache, 4 KB pages);
+       tier-1 pages in 7 own colors, padding 11776 KB
+[boot] kernel image+bss 1649 KB of the 16384 KB system reserve
+[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] clock: host time (not icount; timings are reference only)
+[boot] simulated device IRQ line: EL1 physical timer, PPI 30
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 34375000, period 625000 ticks, guard 1250 ticks
+[boot] shell task running
+[dev] 3 new simulated devices start in Tier 3; verifying
+      (8 jobs, 8 aborts each, IRQs masked, before the next guard)
+[dev] sim-dma: job 396/400 us, stop 15/20 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-blk: job 1991/2000 us, stop 1770/2000 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-cam: job 291/300 us, stop 7/30 us (measured/declared)
+      [非 icount，仅供参考]
+[boot] no bootarg, starting LVGL
+[lvgl] autostart on the Tier-3 shell task
+[lvgl] this task does not mask IRQs and it is not a tier-1 slot.
+[lvgl] one kernel address space. Three-tier hardware isolation is not claimed.
+[admit] lvgl heap 256 KB draw 120 KB framebuffer 1200 KB, fixed, pool expand 0
+[admit] oversubscription probe 1
+REFUSED: device does not meet minimum requirements
+  minimum memory 4294967295 KB > 89600 KB for apps
+  (RAM 131072 KB - system reserve - tier-1 - color padding)
+No app can be closed to make room: this device is too small.
+[admit] lvgl-demo accepted 1576 KB. cpu_min is 0. The shell stays tier 3.
+[fb] reserved 1228800 bytes at 0x40ed4000 inside the system reserve
+[fb] ramfb published 640x480 stride 2560 at 0x40ed4000 from fw_cfg 0x9020000
+[input] virtio-mmio nodes 32 queue cap 32
+[input] pointer "QEMU Virtio Tablet" base 0xa003c00 queue 8 abs 1 range x 0..32767 y 0..32767
+[input] keyboard "QEMU Virtio Keyboard" base 0xa003e00 queue 8 abs 0 range x 0..0 y 0..0
+[lvgl] upstream 9.3.0 heap 262144 draw 122880
+[lvgl] white background, dark text
+[lvgl] software cursor 16x16 black fill white outline hotspot 0,0
+[lvgl] stress5 box 10,160 590x32
+[lvgl] button box 8,300 120x36
+[menu] serial 6 10 13 14 15 16 18 stay not connected
+[menu] runaway and ram crash are not started
+[lvgl] ready
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 0 text [] status [idle | click not measured | key not measured | scroll not measured | light not measured]
+[input] raw ptr type 3 code 0 value 28715
+[input] raw ptr type 3 code 1 value 2736
+[input] raw ptr type 0 code 0 value 0
+[lvgl] pointer 559,39 down 0
+[input] raw ptr type 3 code 0 value 8204
+[input] raw ptr type 3 code 1 value 27362
+[input] raw ptr type 0 code 0 value 0
+[lvgl] pointer 159,399 down 0
+[input] raw ptr type 3 code 0 value 15639
+[input] raw ptr type 3 code 1 value 5472
+[input] raw ptr type 0 code 0 value 0
+[lvgl] pointer 304,79 down 0
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 0 text [] status [idle | click not measured | key not measured | scroll not measured | light not measured]
+[input] raw ptr type 1 code 272 value 1
+[input] raw ptr type 0 code 0 value 0
+[lvgl] pointer 304,79 down 1
+[lvgl] fb commit click 2639 us n=1 (not panel light)
+[input] raw ptr type 1 code 272 value 0
+[lvgl] pointer 304,79 down 0
+[menu] button 100
+[lvgl] scroll once, one row, animation off
+[lvgl] fb commit scroll 3259 us n=1 (not panel light)
+[lvgl] pointer 304,175 down 0
+[lvgl] pointer 304,175 down 1
+[lvgl] fb commit click 1508 us n=2 (not panel light)
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 0 text [] status [idle | click sampled | key not measured | scroll sampled | light not measured]
+[lvgl] pointer 304,175 down 0
+[menu] button 9
+
+=== GUI menu 9, same counters as the serial item, 200 periods ===
+32 tier-3 busy loops, with a tier-2 game and audio-mix.
+[menu] running 9. The shell stays scheduled.
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 3000us  T3 left 5070us
+[lvgl] alive count 0 text [] status [running | click sampled | key not measured | scroll sampled | light not measured]
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 3000us  T3 left 5070us
+[lvgl] alive count 0 text [] status [running | click sampled | key not measured | scroll sampled | light not measured]
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     0        115      10699   10584    15738
+  timer-server      1    200     2        135      12058   11923    14657
+  display-vsync last release: period 430, tick 303187500,
+    epoch+k*P+offset 303187500
+  timer-server last release: period 430, tick 303343750,
+    epoch+k*P+offset 303343750
+T1MISS task=timer-server period=271 reason=not_started start_t=-1
+  lat_t=34264 lat_us=548 deadline_us=300 J_us=1145 class=a
+T1MISS task=timer-server period=317 reason=not_started start_t=-1
+  lat_t=26206 lat_us=419 deadline_us=300 J_us=1095 class=a
+misses: class a (clock jump) 2, class b (kernel) 0, skipped periods 0
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  game            2000    1000      3009     3019     3100      0
+  audio-mix: jobs 200, misses 0, worst response 537 us (deadline 4000 us)
+结果: Tier 1 错过 2 次，起点抖动 11923 tick，
+  槽内 Tier 2/3 共 351127 tick。
+结果: Tier 2 低于最低值 0 个周期，audio-mix 错过 0 次。
+[menu] shell avg 143 us/period over 200. LVGL draw and input on this tier-3 task.
+[menu] the serial bench blocks the shell, so it does not include this cost.
+[menu] host clock unless boot says icount. An average is not a real-time bound.
+[menu] p99 not measured. No latency histogram is collected.
+[menu] done 9
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 0 text [] status [window done | click sampled | key not measured | scroll sampled | light not measured]
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 0 text [] status [window done | click sampled | key not measured | scroll sampled | light not measured]
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 0 text [] status [window done | click sampled | key not measured | scroll sampled | light not measured]
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 0 text [] status [window done | click sampled | key not measured | scroll sampled | light not measured]
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 0 text [] status [window done | click sampled | key not measured | scroll sampled | light not measured]
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 0 text [] status [window done | click sampled | key not measured | scroll sampled | light not measured]
+[lvgl] pointer 67,317 down 0
+[lvgl] pointer 67,317 down 1
+[lvgl] fb commit click 1007 us n=3 (not panel light)
+[lvgl] pointer 67,317 down 0
+[lvgl] click count 1
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 1 text [] status [window done | click sampled | key not measured | scroll sampled | light not measured]
+[lvgl] key code 30 value 1 char 97
+[lvgl] key code 30 value 0 char 97
+[lvgl] fb commit key 1944 us n=1 (not panel light)
+[lvgl] key code 48 value 1 char 98
+[lvgl] key code 48 value 0 char 98
+[lvgl] fb commit key 655 us n=2 (not panel light)
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 1 text [ab] status [window done | click sampled | key sampled | scroll sampled | light not measured]
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 1 text [ab] status [window done | click sampled | key sampled | scroll sampled | light not measured]
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 1 text [ab] status [window done | click sampled | key sampled | scroll sampled | light not measured]
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 1 text [ab] status [window done | click sampled | key sampled | scroll sampled | light not measured]
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 1 text [ab] status [window done | click sampled | key sampled | scroll sampled | light not measured]
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 1 text [ab] status [window done | click sampled | key sampled | scroll sampled | light not measured]
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 1 text [ab] status [window done | click sampled | key sampled | scroll sampled | light not measured]
+[lvgl] legend T1 quota 1500us 13312KB  T2 min 0us  T3 left 8070us
+[lvgl] alive count 1 text [ab] status [window done | click sampled | key sampled | scroll sampled | light not measured]
+[lvgl] result clicks 1 text [ab] drops 0
+[lvgl] demo returned 0 input_init 0 drops 0

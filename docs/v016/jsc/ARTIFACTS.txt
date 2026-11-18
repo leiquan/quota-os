@@ -1,0 +1,37 @@
+Three different kernels. Do not treat them as one image.
+
+1. Serial drop-in, now prebuilt/quotaos-serial.bin
+   It used to be prebuilt/quotaos.bin. The default name is the LVGL image.
+   93744 bytes
+   sha256 afed7949f5b3adc6dcb3d6c86e05356ed69fd315eca55fbeafae656f62880e05
+   Banner Version: 016 (af050b5). MMU off. Serial menu. Not JavaScriptCore.
+   The e4 package /opt/cursor/artifacts/quota-os-e4-icount-afed7949.tar.gz
+   (sha256 39e408a9a54b18e951271ed8d75483ba024439b20ad69eabc42827b6034179fc)
+   records this kernel's hash and an icount log. It is not the JSC image.
+
+2. Older serial rebuild, not shipped in prebuilt/
+   /cursor/stores/self/artifacts/quota-os-e4-baseline/docs/baseline-4c2a559/rebuild-gcc13.3.0/quotaos.bin
+   85024 bytes
+   sha256 a250441ec05477dfcbc0195ad1103930dc2b5358b226f6ae92d8cc6785594efe
+   This is a baseline serial kernel. It is not JavaScriptCore and it is
+   not the current drop-in.
+
+3. Earlier JSC image, no longer the file in prebuilt/
+   13059840 bytes
+   sha256 86177f32237d66a128c29806a5dca67c2b663d3a23243848278db450e56e20d5
+   Banner Version: 016 (f6d58fd). CLoop guest, not a GUI.
+   Raw log: docs/v016/jsc/webkit-fb-reserve.raw
+   icount e4 on this same binary: docs/v016/jsc/e4-fb-reserve.raw
+   Developer self-test, not independent QA.
+
+4. Current prebuilt/quotaos-jsc.bin
+   13063200 bytes
+   sha256 e12747256945585006d43211fb59ed95ec05da14b9ca57f3b7390a05b62769ed
+   Banner Version: 016 (641dc8c). JSC plus CSSParserFastPaths hex color.
+   Not HTML layout and not a GUI.
+   Raw log: docs/v016/jsc/webkit-color.raw
+   icount e4 on this same binary: docs/v016/jsc/e4-color.raw
+   The dde2a8e image (13061280 bytes, sha256
+   c10dff5acdf433d266ff8a0417465298f02fedd346564ba247eb04ea7a7328d1)
+   remains at /opt/cursor/artifacts/quotaos-jsc-dde2a8e/.
+   Developer self-test, not independent QA.

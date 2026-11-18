@@ -1,0 +1,16 @@
+
+Quota OS microkernel
+Version: 015 (559daed)
+基于三级资源声明的微内核，
+保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] x0=0x42000000 physical RAM span 64 MB (probed)
+[boot] DTB at 0x42000000
+[boot] DTB memory 67108864 bytes
+[boot] system reserve 350 us/period, 16384 KB;
+       tier-1 1500 us/period, 13312 KB; guard 80 us/period
+[boot] cache colors: 32 (model: 2 MB 16-way cache, 4 KB pages);
+       tier-1 pages in 11 own colors, padding 3584 KB
+[boot] kernel image+bss 562 KB of the 16384 KB system reserve
+[boot] ERROR: no GICv2 (arm,cortex-a15-gic / arm,gic-400) or GICv3 (arm,gic-v3)
+       interrupt-controller node in the device tree.
+[boot] halted: no supported interrupt controller, the scheduler cannot run.

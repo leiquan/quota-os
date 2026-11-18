@@ -1,0 +1,47 @@
+Quota OS layers. Dependencies point downward.
+
+1. Kernel (kernel/, boot/)
+   Scheduling, three-tier admission, MMU, and the in-kernel framebuffer
+   and input services. No HTML, CSS, or WebCore types.
+   Tier-1 declarations stay the compiled constants. WebKit does not
+   enlarge them. The EL1 identity map is page protection in one kernel
+   address space. It is not separate-process isolation. That isolation
+   is not implemented.
+
+2. System services, transitional
+   fb_reserve / fb_reserved_range and input_init live in the kernel.
+   They are not protected service processes. A later transport can
+   replace these entry points. Callers must not mask IRQs across a
+   tier-1 slot. The WebKit guest runs on the tier-3 shell, so its CPU
+   is the tier-3 quantum.
+
+3. Platform adaptation (port/quotaos/, tools/generate-webcore-derived.sh)
+   The only place that includes upstream WebCore. It calls kernel
+   services. It does not talk to the UART, GIC, or page tables.
+   Upstream generators write build/webcore-derived. Settings flags that
+   CSSProperties.json names and Settings.yaml omits are bool settings
+   defaulting to false, produced by that script.
+
+4. Guest / demo
+   quotaos_jsc_guest runs the JSC scripts and asks the platform adapter
+   to paint. It does not parse CSS itself.
+   lvgl_demo_run builds the button and the text field. It reads the
+   input queue and draws through the flush callback. It does not touch
+   virtio or fw_cfg.
+
+LVGL image
+   tools/build-lvgl-guest.sh
+   Upstream v9.3.0, commit c033a98afddd65aaafeebea625382a94020fe4a7,
+   licence third_party/lvgl/LICENCE.txt
+   Output build/quotaos-lvgl.bin. Installed as prebuilt/quotaos.bin.
+   prebuilt/quotaos-lvgl.bin is a copy of that file.
+   prebuilt/quotaos-serial.bin is the previous serial drop-in.
+
+Build targets
+   tools/generate-webcore-derived.sh   headers from the pinned WebKit tree
+   tools/link-jsc-guest.sh             JSC guest plus the WebCore objects
+                                       listed in that script
+   prebuilt/quotaos.bin                LVGL image, empty bootargs
+   prebuilt/quotaos-serial.bin         previous serial drop-in
+   prebuilt/quotaos-jsc.bin            JSC guest. Replace it only when the
+                                       banner matches the parent commit.

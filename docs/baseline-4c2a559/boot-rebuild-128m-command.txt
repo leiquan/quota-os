@@ -1,0 +1,9 @@
+label: developer self-test of the image rebuilt on this machine
+NOT the delivered prebuilt (hashes differ; see sha256-rebuilt-src-commit-559daed.txt)
+cloned_HEAD: 4c2a5599af53df6d87fe9a10ffe7fbec29768c5c
+SRC_COMMIT: 559daed
+image: /tmp/quota-baseline/rebuild-559daed-gcc13.3.0/quotaos.bin
+image_sha256: a250441ec05477dfcbc0195ad1103930dc2b5358b226f6ae92d8cc6785594efe
+utc: 2026-11-17T05:56:58Z
+command:
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M -nographic -nic none -kernel /tmp/quota-baseline/rebuild-559daed-gcc13.3.0/quotaos.bin

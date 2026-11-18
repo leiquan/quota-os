@@ -1,0 +1,16 @@
+e4 stall: fixed, and the icount path was run. A plain serial boot is
+host clock, so it never hits the WFI stall. docs/v016/cxx/e4-icount.raw
+is -icount shift=4,sleep=off -append e4 on this image (banner e964b92).
+It prints the three device measurement lines, E4 item9 PASS,
+E4 item10 PASS, and QA DONE. Developer self-test, not independent QA.
+
+C++ runtime: kernel/cxxrt.cpp. Guest result in webkit-append.raw:
+  [webkit] commit 0 protect-ro -1 cxx 42
+42 is a virtual call on an object from operator new. delete does not
+reuse the 64 KB heap. protect-ro -1 is the MMU-off refusal.
+
+OSAllocator: port/quotaos/OSAllocatorQuotaOS.cpp compiled against
+WebKit 4d967f4ca7bdd75319e732247e714c2bc634555e. nm -u of that object
+is only wk_os_*. It is not linked into prebuilt: the headers need
+libstdc++ at compile time, and `make` must stay reproducible without
+that tree. See osalloc-check.txt.

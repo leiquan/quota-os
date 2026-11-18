@@ -56,6 +56,41 @@ static uint32_t be32_at(const uint8_t *p)
            ((uint32_t)p[2] << 8) | (uint32_t)p[3];
 }
 
+/*
+ * color_init 会写每个 Tier 1 页的第一个字。QEMU 8.2 把 DTB 放在页池里
+ * （64M 时在 0x42000000），那一笔写进结构体中间，后面的 GIC 查找就失败。
+ * 在着色之前把真正用到的字节拷到内核 BSS。系统预留本来就盖住这块 BSS，
+ * 不改准入数字。
+ */
+static uint8_t dtb_copy[65536];
+
+static void snapshot_dtb(void)
+{
+    const uint8_t *dtb = dtb_base;
+    if (be32_at(dtb) != 0xd00dfeedu)
+        return;
+    uint32_t totalsize = be32_at(dtb + 4);
+    uint32_t version = be32_at(dtb + 20);
+    uint32_t end = totalsize;
+    if (version >= 17) {
+        uint32_t struct_end = be32_at(dtb + 8) + be32_at(dtb + 36);
+        uint32_t strings_end = be32_at(dtb + 12) + be32_at(dtb + 32);
+        end = struct_end > strings_end ? struct_end : strings_end;
+    }
+    end = (end + 3u) & ~3u;
+    if (end < 40 || end > totalsize || end > sizeof dtb_copy) {
+        printf("[boot] DTB snapshot skipped, need %u bytes\n", end);
+        return;
+    }
+    memcpy(dtb_copy, dtb, end);
+    dtb_copy[4] = (uint8_t)(end >> 24);
+    dtb_copy[5] = (uint8_t)(end >> 16);
+    dtb_copy[6] = (uint8_t)(end >> 8);
+    dtb_copy[7] = (uint8_t)end;
+    dtb_base = dtb_copy;
+    printf("[boot] DTB snapshot %u bytes (header said %u)\n", end, totalsize);
+}
+
 static uint64_t parse_memory(const uint8_t *dtb)
 {
     uint32_t off_struct = be32_at(dtb + 8);
@@ -148,7 +183,8 @@ uint64_t dtb_ram_bytes(uint64_t hinted)
 
     printf("[boot] DTB at 0x%lx\n", dtb);
     dtb_base = (const uint8_t *)dtb;
-    uint64_t ram = parse_memory((const uint8_t *)dtb);
+    snapshot_dtb();
+    uint64_t ram = parse_memory(dtb_base);
     if (ram == 0) {
         printf("[boot] DTB has no memory node, using probed size\n");
         return span;
@@ -253,6 +289,80 @@ int dtb_find_compatible(const char *want, uint64_t *out, int max)
         }
     }
     return 0;
+}
+
+/* 同 dtb_find_compatible，但收集每一个匹配节点的第一段 reg 基址。 */
+int dtb_find_bases(const char *want, uint64_t *bases, int max)
+{
+    if (!dtb_base || max <= 0)
+        return 0;
+    const uint8_t *dtb = dtb_base;
+    const uint8_t *p = dtb + be32_at(dtb + 8);
+    const uint8_t *end = dtb + be32_at(dtb + 4);
+    const char *strings = (const char *)(dtb + be32_at(dtb + 12));
+    enum { MAXD = 16 };
+    int ac[MAXD], sc[MAXD], match[MAXD];
+    const uint8_t *reg[MAXD];
+    uint32_t reg_len[MAXD];
+    int depth = 0, n = 0;
+
+    while (p + 4 <= end && n < max) {
+        uint32_t tok = be32_at(p);
+        p += 4;
+        if (tok == 1 || tok == 2) {
+            if (depth > 0 && depth < MAXD && match[depth] && reg[depth]) {
+                int cells = ac[depth - 1] + sc[depth - 1];
+                if (cells && reg_len[depth] >= (uint32_t)cells * 4) {
+                    uint64_t base = 0;
+                    for (int k = 0; k < ac[depth - 1]; k++)
+                        base = (base << 32) | be32_at(reg[depth] + k * 4);
+                    bases[n++] = base;
+                }
+            }
+            if (depth > 0 && depth < MAXD)
+                match[depth] = 0;
+        }
+        if (tok == 1) {
+            while (p < end && *p)
+                p++;
+            p = (const uint8_t *)(((uintptr_t)p + 4u) & ~(uintptr_t)3u);
+            depth++;
+            if (depth >= MAXD)
+                return n;
+            ac[depth] = 2;
+            sc[depth] = 1;
+            match[depth] = 0;
+            reg[depth] = 0;
+            reg_len[depth] = 0;
+        } else if (tok == 2) {
+            if (depth > 0)
+                depth--;
+        } else if (tok == 3) {
+            if (p + 8 > end)
+                break;
+            uint32_t len = be32_at(p);
+            const char *name = strings + be32_at(p + 4);
+            p += 8;
+            if (p + len > end)
+                break;
+            if (strcmp(name, "#address-cells") == 0 && len >= 4)
+                ac[depth] = (int)be32_at(p);
+            else if (strcmp(name, "#size-cells") == 0 && len >= 4)
+                sc[depth] = (int)be32_at(p);
+            else if (strcmp(name, "compatible") == 0)
+                match[depth] = str_in_list((const char *)p, len, want);
+            else if (strcmp(name, "reg") == 0) {
+                reg[depth] = p;
+                reg_len[depth] = len;
+            }
+            p += (len + 3u) & ~3u;
+        } else if (tok == 4) {
+            continue;
+        } else {
+            break;
+        }
+    }
+    return n;
 }
 
 /* /chosen/bootargs（QEMU -append）。没有就返回空串。 */

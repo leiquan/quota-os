@@ -1,0 +1,63 @@
+diff --git a/Source/JavaScriptCore/bytecode/BytecodeList.rb b/Source/JavaScriptCore/bytecode/BytecodeList.rb
+index a6e470e2..620e336e 100644
+--- a/Source/JavaScriptCore/bytecode/BytecodeList.rb
++++ b/Source/JavaScriptCore/bytecode/BytecodeList.rb
+@@ -1570,5 +1570,11 @@ op :llint_cloop_did_return_from_js_28
+ op :llint_cloop_did_return_from_js_29
+ op :llint_cloop_did_return_from_js_30
+ op :llint_cloop_did_return_from_js_31
++op :llint_cloop_did_return_from_js_32
++op :llint_cloop_did_return_from_js_33
++op :llint_cloop_did_return_from_js_34
++op :llint_cloop_did_return_from_js_35
++op :llint_cloop_did_return_from_js_36
++op :llint_cloop_did_return_from_js_37
+ 
+ end_section :CLoopReturnHelpers
+diff --git a/Source/JavaScriptCore/bytecode/Repatch.cpp b/Source/JavaScriptCore/bytecode/Repatch.cpp
+index 8d01130c..53308d2d 100644
+--- a/Source/JavaScriptCore/bytecode/Repatch.cpp
++++ b/Source/JavaScriptCore/bytecode/Repatch.cpp
+@@ -25,6 +25,7 @@
+ 
+ #include "config.h"
+ #include "Repatch.h"
++#include "CallLinkInfo.h"
+ 
+ #include "BinarySwitch.h"
+ #include "CCallHelpers.h"
+diff --git a/Source/JavaScriptCore/llint/LowLevelInterpreter.cpp b/Source/JavaScriptCore/llint/LowLevelInterpreter.cpp
+index b1e51de8..0c400da2 100644
+--- a/Source/JavaScriptCore/llint/LowLevelInterpreter.cpp
++++ b/Source/JavaScriptCore/llint/LowLevelInterpreter.cpp
+@@ -145,6 +145,8 @@ public:
+     ALWAYS_INLINE uint32_t u32() const { return m_value; }
+     ALWAYS_INLINE int8_t i8() const { return m_value; }
+     ALWAYS_INLINE uint8_t u8() const { return m_value; }
++    ALWAYS_INLINE int16_t i16() const { return m_value; }
++    ALWAYS_INLINE uint16_t u16() const { return m_value; }
+ 
+     ALWAYS_INLINE intptr_t* ip() const { return std::bit_cast<intptr_t*>(m_value); }
+     ALWAYS_INLINE int8_t* i8p() const { return std::bit_cast<int8_t*>(m_value); }
+diff --git a/Source/JavaScriptCore/offlineasm/cloop.rb b/Source/JavaScriptCore/offlineasm/cloop.rb
+index d8dce4a5..7d970ca3 100644
+--- a/Source/JavaScriptCore/offlineasm/cloop.rb
++++ b/Source/JavaScriptCore/offlineasm/cloop.rb
+@@ -41,6 +41,8 @@ def cloopMapType(type)
+     when :uint64;         ".u64()"
+     when :int8;           ".i8()"
+     when :uint8;          ".u8()"
++    when :int16;          ".i16()"
++    when :uint16;         ".u16()"
+     when :int8Ptr;        ".i8p()"
+     when :voidPtr;        ".vp()"
+     when :nativeFunc;     ".nativeFunc()"
+@@ -701,7 +703,7 @@ class Instruction
+         when "loadhsq"
+             $asm.putc "#{operands[1].clLValue(:uint64)} = (int64_t)#{operands[0].int16MemRef};"
+         when "storeh"
+-            $asm.putc "*#{operands[1].uint16MemRef} = #{operands[0].clValue(:int16)};"
++            $asm.putc "#{operands[1].uint16MemRef} = #{operands[0].clValue(:int16)};"
+         when "loadd"
+             $asm.putc "#{operands[1].clLValue(:double)} = #{operands[0].dblMemRef};"
+         when "stored"

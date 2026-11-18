@@ -1,4 +1,4 @@
-# Quota OS（版本 015）
+# Quota OS（版本 016）
 
 基于三级资源声明的微内核，保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
 
@@ -7,6 +7,33 @@ A microkernel built on three-tier resource declarations: tier-1 tasks never stal
 AArch64，跑在 QEMU `virt` 上，用真实的 ARM 通用定时器和 GIC 中断。还是原型：单核、无 MMU 隔离、没有真实设备驱动，不能用于生产。
 
 License: [Apache-2.0](LICENSE)
+
+## 现在能直接跑的映像
+
+`prebuilt/quotaos.bin` 是白底彩色四组菜单，软件指针仍是黑底白边。主页只放已经能跑的入口。右侧把完成样本和未完成观察分开：done max / p99 只含完成作业，not_started、unfinished 和 open bound 另计。不传 `-append` 就进这个界面。固定配置仍是 virt、GICv2、Cortex-A72、128 MB。横幅 `Version: 016 (66a295b)`。`66a295b` 是包含这版字节的提交的父提交。
+
+sha256：`quotaos.bin` `6feb8d4b5318d425c2f64da7c5ef192617a5031ca0fb07e48733239d25737bf5`，`quotaos.elf` `bfc82905c12b13006fb422caa214a379baa89fd7429cdea4372dbde0d212dea8`。685480 字节。`prebuilt/quotaos-lvgl.bin` 是同一份拷贝。
+
+上一份精简菜单是提交 `66a295b`，682896 字节，sha256 `1c91348a3e0935f677ea8ccf0ecdc8e1b75c82ce313daf7fd84b0169a3332164`。它的面板 lat max 只统计完成作业。分组菜单 `60fa448` 是 682232 字节，sha256 `dc71eb9a2ec4124d79c13b5e506d11f6614a124d35abf91fcb6278d09d2dfded`。白底指针里程碑仍是 `ac565ac`。这几份都不是现在的默认文件。
+
+上一份串口内核完整留在 `prebuilt/quotaos-serial.bin`（93744 字节，sha256 `afed7949f5b3adc6dcb3d6c86e05356ed69fd315eca55fbeafae656f62880e05`，elf `bf6338345233296ffac12393f37e477078299ec91c65ce68ab90fa5e656b8f64`，横幅 `Version: 016 (af050b5)`）。下面历史段落里的 e4 日志对应的是那份串口内核，不是现在的默认文件。
+
+要看见分组并点击，QEMU 需要这三个设备。下面这条命令在 QEMU 8.2.2 上跑过。主页点 tier-3 load，跑菜单 9 的 200 周期。同一脚本修前修后各跑宿主时钟 3 轮和 icount 3 轮。修前的 `66a295b` 在宿主 host-03 上有 3 次 `display-vsync` not_started（1404、1379、2532 us），面板 lat max 只有 359 us。修好后宿主 host-01 是 T1 miss 5、class a 5、done max 451 us、样本 395、open bound 1823 us、not_started 4、unfinished 1。icount 三轮都是 miss 0、done max 80 us、样本 400。class a 照算，500 us 和 300 us 的槽长没有放宽。这不是 30 轮验收，也不是硬件隔离。e4 不代替这次 GUI 压力。到屏幕发光未测，页数未测。截图 `docs/v016/lvgl/timing-host-01.png`。修前日志 `docs/v016/lvgl/timing-before/`，修后 `docs/v016/lvgl/timing-after/`。
+
+```bash
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M \
+  -display none -nic none \
+  -device ramfb \
+  -device virtio-keyboard-device \
+  -device virtio-tablet-device \
+  -kernel prebuilt/quotaos.bin
+```
+
+QEMU 会打印 `Could not open option rom 'vgabios-ramfb.bin'`。客户机仍然写了 `etc/ramfb`，`screendump` 拿到了上面的画面。
+
+不加大设备、也不加 `-append` 时，串口是 `[boot] no bootarg, starting LVGL`，然后 `[fb] etc/ramfb not in fw_cfg`。这不是 `select>`。串口菜单只要 `-append serial`。`-append e4` 仍是 e4：同一份精简映像上 item9 PASS、item10 PASS、QA DONE（`docs/v016/lvgl/e4-slim.raw`）。这不是上面的 GUI 压力结果。串口菜单没有删，`-append serial` 仍是原来的 18 项。未接入的 6、10、13、14、15、16、18 写在覆盖范围页，不占主屏。Tier-1 仍是 13312 KB、1500 us。这一屏不是一级任务的硬件隔离。启动行仍是 EL1、MMU 关、一个内核地址空间。
+
+文档里的 UTM 会删掉 Display，所以只换 `quotaos.bin` 不能承诺屏幕上有画面。UTM 这次没有实测，下面不写新的菜单名。
 
 ## 版本号规则
 
@@ -371,6 +398,27 @@ e3 超时演示的数字和 v014 差得多：v014 提交作业 1783、完成 110
 
 菜单回归（普通模式，`docs/regress-v015/menus-v015-gicv{2,3}.txt`）两个内存配置都跑完，class b 错过 0。菜单 18 现在跑四段，脚本给它的等待时间从 90 s 改为 180 s。GICv2 那次菜单 14 里 `sim-dma` 中止用了 46 us（声明 20 us），日志标「非 icount，仅供参考」。
 
+## v016：DTB 快照、显示和键盘接线。WebKit 引擎没有链进来
+
+这一版不是图形 WebKit。`-append webkit` 的串口写着 `engine linked: no` 和 `HTML/CSS/JS is not running`。ramfb 画的是四条色带（设备自测，checksum `0xfffda800`），不是网页。virtio 键盘收到的是 `EV_KEY code 30`，日志写明它不是 `PlatformKeyboardEvent`。启动行是 `[boot] EL1h, MMU off. No hardware isolation.` MMU 关着，没有硬件隔离。
+
+源码对照过的 WebKit 是 tag `WebKit-7625.2.8.18.3`，提交 `4d967f4ca7bdd75319e732247e714c2bc634555e`（那棵树里的 WPE 版本号 2.53.3）。没有把源码树放进仓库。用 `aarch64-linux-gnu-g++ -std=c++20 -ffreestanding` 编译 `Source/WTF/wtf/posix/OSAllocatorPOSIX.cpp` 失败，第一条错误是 `bmalloc/BPlatform.h` 不存在（`docs/v016/compile-OSAllocatorPOSIX.txt`）。`WebKitCommon.cmake` 里没有 JavaScriptCore 就把 WebCore 关掉，没有 WebCore 就把 WebKit 关掉。`ALL_PORTS` 里没有 Quota OS。
+
+下一件能在这个内核里写的移植依赖是 `WTF::OSAllocator`（`reserve` / `commit` / `decommit`、保护区、可执行页）。POSIX 实现走 `mmap` 和 `mprotect`。MMU 关着，可执行页和保护区做不了，只能拒绝。内存必须在 Tier 1 着色之前从连续区域划出来，而且只在 `-append webkit` 时划，这样 128M 上的准入数字保持现在测到的：CPU 容量 8070 us，应用内存 89600 KB，着色补齐 11776 KB。这个分配器本版没有做。没有它，JavaScriptCore 和 WebCore 链不进来。后面还缺独立的 C++ 运行时、bmalloc、ICU、libxml2、sqlite、harfbuzz、png、jpeg、webp，以及把 `GraphicsContext` 画到已经有的 XRGB8888 表面、把 `EV_KEY` 做成 `PlatformKeyboardEvent`。WPE 2.53.3 还要 glib、libsoup、epoxy。
+
+64M：交付的 v015 映像在本机 QEMU 8.2.2 上停在「没有 GIC」（`docs/baseline-4c2a559/boot-64m-serial.raw`）。原因是着色去写 Tier 1 页，写进了放在页池里的 DTB。v016 在着色前把 DTB 拷进内核 BSS。64M 现在能到 `select>`，补齐仍是 3584 KB，菜单 1 的应用内存容量 32256 KB（`docs/v016/final-64-serial.raw`）。128M 菜单 1 的准入式子仍是 `reserve 350 + tier-1 1500 + tier-2 min 0`（`docs/v016/final-128-serial.raw`）。
+
+e4 的 icount 在改 idle 之前没有 PASS。`tools/acceptance.py` 要等到 `QA DONE` 才落盘，所以卡住时看起来像没输出。未改的映像有一次跑了约 14 分钟后被 SIGKILL，串口停在设备验证那一行（`docs/v016/e4-sigterm-ignored-serial.raw`；当时用的 `timeout 20` 只发了 SIGTERM，QEMU 没退出，所以那份不是 20 秒的记录）。同一条命令、外部 75 秒、到点 SIGKILL、边跑边写串口，三份都停在同一行：v014 提交 `559daede18af8e201a41e41ab5e046ba7c8b66ec` 的原 prebuilt（sha256 `cbca322f60f042c317c2cf02657c733df3010a2258e7a3f929720d86ddafcba0`），交付的 v015（sha256 `99ec3fa2ea6ab795a3297feeda020a175afae126b894323267b22614e7078bb6`），和当时的本版（sha256 `8dbd8a40329c16a2c7c5de704cb1ea5c5ffc9abb9867977818b69f81aa18c95a`）。那三份都不是 PASS。原因是后来量出来的，不是当时猜的：QEMU 8.2.2 的 `-icount shift=4,sleep=off` 在 `wfi` 里不把虚拟时间推到已经写好的比较值。诊断映像在空槽里打印 `slot-idle now 693043 cval 718750 ctl 0x1 shell 1`（shell 仍是 READY，槽主人不在，定时器开着，比较值还在 411 us 之后），然后 `idle` 执行 `wfi`，8 秒内没有下一条。`-d int` 两秒里 icount 只有 4 次异常返回，最后一条 eret 的 PC `0x40084c94` 是 `idle_entry` 的 `wfi`；同一映像不加 icount，两秒里有 266 次 IRQ。icount 下 `idle` 改为空转，比较值到了中断照常进来。槽尾、保护区、准入没有改。设备验证仍跑 8 次作业和 8 次中止。修过的映像 sha256 `4fc7ce6d401c1e47765743732e5c2cebdef0f85451608eb0c25a13e07146bb9b`，icount e4 在约 3 秒时打印 `E4 item9 PASS`、`E4 item10 PASS`、`QA DONE`（Tier 1 错过 0，item9 超出最多 12，上限 81）。这是开发自测，不是独立 QA。同一映像不加 icount 的对照里 item9 是 FAIL（超出最多 68780，超过 81；class b 错过 0），不记成通过。回归脚本 `tools/e4_bound.py` 边写边存，到点 SIGKILL；只有内核自己打出两行 PASS 和 `QA DONE` 才退出 0。v014 原映像用它跑 20 秒仍是 NOT-PASS。
+
+```bash
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M \
+  -nographic -nic none -kernel <image> -append e4 -icount shift=4,sleep=off
+```
+
+停住的原始记录还在 `docs/v016/e4-bounded/`（v014 1145 字节、v015 1145、当时的 v016 1245，都没有 `sim-dma` 行）。诊断串口在 `docs/v016/cause/`。修过之后的 icount 记录在 `docs/v016/e4-fix/v016-icount-complete.raw`，普通时钟对照在 `v016-normal-control.raw`。本机 QEMU 是 8.2.2（Debian `1:8.2.2+ds-0ubuntu1.18`），不是旧记录用的 QEMU 10.0。仓库里更早的 e4 PASS 不能代替这次的日志。
+
+工具链：`aarch64-linux-gnu-gcc` 13.3.0。在 `4c2a559` 上 `make SRC_COMMIT=559daed` 得不到交付映像的 sha256（交付的 bin 是 `99ec3fa2…`，这次编译器得到 `a250441e…`）。记录在 `docs/baseline-4c2a559/`。修 idle 之前的本版映像是 `8dbd8a40…`（`docs/v016/sha256-final.txt`）。现在的映像是上面的 `4fc7ce6d…`。这些都是开发自测，不是独立 QA。WebKit 仍然没有链进来。
+
 ## 编译
 
 一条命令：
@@ -430,10 +478,12 @@ UTM 是沙盒应用，在 QEMU 参数里手写 `-kernel /路径/quotaos.bin` 会
    - **QEMU Machine Properties** 填 `gic-version=2`（新版在 QEMU 页、Arguments 上方；旧版在 System 页，要先打开 Show Advanced Settings）。从 252a90d 起内核也能从设备树认出 GICv3，不填也能启动（命令行 QEMU 10.0 的 `gic-version=2/3/max` 验证过，日志 `docs/gic-C/`；UTM 上还没有实测）。
    - QEMU → Arguments 里可加 `-cpu cortex-a72`。**不要**写 `-kernel`，UTM 会自己加。
    - 左边栏 Devices 下把 Display 删掉，再新建一个 Serial（Built-in Terminal）。较新的 UTM 在没有显示设备时会自动打开串口窗口，已有就不用再加。
-7. 启动。串口窗口里出现和下面「菜单」相同的界面。
+7. 启动。当前 `quotaos.bin` 启动参数为空，串口里是 `[boot] no bootarg, starting LVGL`，不是下面的菜单。下面的菜单属于 `quotaos-serial.bin`，或这版加引导参数 `serial`。
 8. 启动横幅里会有一行 `[boot] GICv3 from DTB: …`（或 `GICv2 …`），说明认出了中断控制器。如果是 `[boot] ERROR: no GICv2 … or GICv3 … interrupt-controller node`，说明设备树里没有这两种 GIC，内核会停在这里，不会 PANIC。
 
 旧版本（2259e51 及以前）只会 GICv2，在 UTM 的 GICv3 上写 GICv2 CPU 接口 0x08010000 会 `PANIC sync ec=0x25 esr=0x96000050 elr=0x400821e0`，当时必须在 QEMU Machine Properties 里填 `gic-version=2`。现在不需要了；填了也照样能跑。
+
+当前 `prebuilt/quotaos.bin` 启动参数为空时进入白底 LVGL，不再进入 `select>`。董事长已用 ramfb 看到过画面。自定义参数每个 argv 单独一条，依次是 `-device`、`virtio-keyboard-device`、`-device`、`virtio-tablet-device`。四段写在同一条里不会生效。Arguments 里的 `-cpu cortex-a72` 保持不变，不要写 `-kernel`。QEMU 8.2.2 上点 +1 和输入 ab 已测过。UTM 上的按钮和文本还没有确认。串口菜单用 `prebuilt/quotaos-serial.bin`，或这版加引导参数 `serial`。
 
 UTM 和不加 icount 的 QEMU 里，客户机时钟跟着宿主机走，宿主机一卡就会出现时钟跳动，看到的时延和错过次数只作参考。
 

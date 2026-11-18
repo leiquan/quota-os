@@ -1,0 +1,2 @@
+4fc7ce6d401c1e47765743732e5c2cebdef0f85451608eb0c25a13e07146bb9b  build/quotaos.bin
+2b84a05adb13a49797cebe2ca5ad1c12797de785d79c290b7f108f172e26bc25  build/quotaos.elf

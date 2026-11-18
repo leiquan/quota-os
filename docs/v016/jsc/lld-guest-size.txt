@@ -1,0 +1,12 @@
+lld 18.1.3 -m aarch64linux --gc-sections --no-undefined
+entry quotaos_jsc_guest -> JSEvaluateScript / JSGlobalContextCreate
+   text	   data	    bss	    dec	    hex	filename
+13094964	 363776	 737088	14195828	 d89c74	/workspace/build/quotaos-jsc.elf
+undef 0
+0000000040e0bf30 B __image_end
+0000000040080000 T __image_start
+826988752bb491fa7407ae6e352946f68844cdc8b1d2518cb6bc607c35f745f4  /workspace/build/quotaos-jsc.bin
+beab804d862109101f7c43c7fb5939398e4d7e41121c138c1f09804b168543dd  /workspace/build/quotaos-jsc.elf
+mmap refused 137438953472 (128GiB MAP_NORESERVE) and 134217728
+then libpas pas_crash_with_info_impl0 brk #0xbb08
+e4 on this image: see e4-jsc-image.raw

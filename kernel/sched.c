@@ -29,6 +29,8 @@ extern volatile uint64_t k_arm_abs, k_arm_rel, k_cval;
 
 static struct task tasks[MAX_TASKS];
 static uint8_t stacks[MAX_TASKS][STACK_SIZE] __attribute__((aligned(16)));
+/* LVGL layout runs on the shell. The other tasks stay on the 8 KB stack. */
+static uint8_t shell_stack[32 * 1024] __attribute__((aligned(16)));
 static struct task *cur;
 static struct task *idle_task;
 static struct task *shell_task;
@@ -181,6 +183,102 @@ static uint64_t jump_total(uint64_t t0, uint64_t t1)
 
 /* ---------- 错过记录 ---------- */
 
+/* 只在出错时记几项。正常完成的作业不进这张表，所以窗口里没有错过时没有额外开销。 */
+#define CHAIN_N 24
+struct chain_rec {
+    int reason;
+    int source;
+    int task;
+    int prev;
+    uint64_t period;
+    uint64_t release;
+    uint64_t ideal;
+    uint64_t cval;
+    uint64_t entry;
+    uint64_t seen;
+    uint64_t now;
+    uint64_t slot_end;
+    uint64_t jump_a, jump_b;
+    uint64_t cover_a, cover_b;
+    uint32_t jump_n;
+    int cover;
+};
+static struct chain_rec chain[CHAIN_N];
+static uint32_t chain_n, chain_drop;
+static uint32_t open_ns, open_uf, open_sk;
+static uint64_t open_bound;
+static int obs_source;
+static struct task *obs_prev;
+static uint64_t obs_cval, obs_entry, obs_now;
+
+static void chain_reset(void)
+{
+    chain_n = chain_drop = 0;
+    open_ns = open_uf = open_sk = 0;
+    open_bound = 0;
+}
+
+static void chain_note(struct task *t, int reason, uint64_t seen)
+{
+    struct chain_rec *c;
+    uint64_t ps, t0, ideal;
+    uint32_t i, n;
+    if (!rec || !t || t->tier != TIER1)
+        return;
+    if (reason == 2)
+        open_ns++;
+    else if (reason == 1)
+        open_uf++;
+    else if (reason == 3)
+        open_sk++;
+    /* 未启动、未完成没有完成时刻。seen - release 只是观察到时的下界。 */
+    if ((reason == 1 || reason == 2) && seen > t->release_ts &&
+        seen - t->release_ts > open_bound)
+        open_bound = seen - t->release_ts;
+    if (chain_n >= CHAIN_N) {
+        chain_drop++;
+        return;
+    }
+    c = &chain[chain_n++];
+    memset(c, 0, sizeof *c);
+    c->reason = reason;
+    c->source = obs_source;
+    c->task = t->id;
+    c->prev = obs_prev ? obs_prev->id : -1;
+    c->period = t->job_period;
+    c->release = t->release_ts;
+    ideal = epoch + t->job_period * P;
+    if (t->slot >= 0)
+        ideal += slot_off[t->slot];
+    c->ideal = ideal;
+    c->cval = obs_cval;
+    c->entry = obs_entry;
+    c->seen = seen;
+    c->now = obs_now;
+    c->slot_end = t->release_ts + t->deadline_t;
+    ps = epoch + t->job_period * P;
+    t0 = ps >= epoch + P ? ps - P : epoch;
+    n = 0;
+    for (i = jn > JUMP_LOG ? jn - JUMP_LOG : 0; i < jn; i++) {
+        uint64_t a = jlog[i % JUMP_LOG].a, b = jlog[i % JUMP_LOG].b;
+        uint64_t len;
+        if (b <= t0 || a >= seen || b <= a)
+            continue;
+        len = b - a;
+        if (n == 0 || len > c->jump_b - c->jump_a) {
+            c->jump_a = a;
+            c->jump_b = b;
+        }
+        if (!c->cover && a <= t->release_ts && b > t->release_ts) {
+            c->cover = 1;
+            c->cover_a = a;
+            c->cover_b = b;
+        }
+        n++;
+    }
+    c->jump_n = n;
+}
+
 static void miss(struct task *t, int reason, uint64_t done)
 {
     t->misses++;
@@ -209,6 +307,8 @@ static void miss(struct task *t, int reason, uint64_t done)
         ks[0].miss_b++;
         ks[1].miss_b += rec;
     }
+    if (rec)
+        chain_note(t, reason, done);
     if (!rec)
         return;
     struct miss_rec *m = 0;
@@ -259,8 +359,18 @@ static void spin_entry(void)
         asm volatile("" ::: "memory");
 }
 
+/*
+ * QEMU 8.2.2 -icount sleep=off 在 WFI 里不把虚拟时间推到下一个定时器。
+ * 空槽进了 idle 就再也不会有定时器中断，设备验证停在第一条作业前。
+ * icount 下改成空转，计数器仍按指令走，比较值到了中断照常进来。
+ * 普通时钟仍用 WFI。槽尾、保护区和准入都没改。
+ */
 static void idle_entry(void)
 {
+    if (clock_is_icount()) {
+        for (;;)
+            asm volatile("" ::: "memory");
+    }
     for (;;)
         asm volatile("wfi");
 }
@@ -282,14 +392,19 @@ struct task *task_create(const char *name, int tier, int kind)
         if (tasks[i].state != TASK_EMPTY && tasks[i].state != TASK_DEAD)
             continue;
         struct task *t = &tasks[i];
+        uint32_t stack_bytes = STACK_SIZE;
         memset(t, 0, sizeof *t);
         t->id = i;
         t->stack = stacks[i];
+        if (kind == KIND_SHELL) {
+            t->stack = shell_stack;
+            stack_bytes = (uint32_t)sizeof shell_stack;
+        }
         t->tier = tier;
         t->kind = kind;
         t->slot = -1;
         str_copy(t->name, name, NAME_LEN);
-        uintptr_t top = ((uintptr_t)t->stack + STACK_SIZE) & ~(uintptr_t)15u;
+        uintptr_t top = ((uintptr_t)t->stack + stack_bytes) & ~(uintptr_t)15u;
         struct irq_frame *f = (struct irq_frame *)(top - sizeof(struct irq_frame));
         memset(f, 0, sizeof *f);
         f->elr = kind == KIND_JOB ? (uint64_t)job_resume :
@@ -520,6 +635,32 @@ static void kernel_stint(uint64_t a, uint64_t b, int guard)
 
 /* ---------- 周期边界 ---------- */
 
+#define LAT_CAP 512u
+static uint32_t lat_buf[LAT_CAP];
+static uint32_t lat_n;
+static int lat_capped;
+
+static void lat_reset(void)
+{
+    lat_n = 0;
+    lat_capped = 0;
+}
+
+static void lat_add(struct task *t, uint64_t at)
+{
+    uint64_t us;
+    if (!rec || !t || t->tier != TIER1 || t->kind != KIND_JOB)
+        return;
+    if (at < t->release_ts)
+        return;
+    if (lat_n >= LAT_CAP) {
+        lat_capped = 1;
+        return;
+    }
+    us = ticks_to_us(at - t->release_ts);
+    lat_buf[lat_n++] = us > 0xffffffffull ? 0xffffffffu : (uint32_t)us;
+}
+
 static void job_done(struct task *t, uint64_t at)
 {
     if (!t->job_open)
@@ -530,13 +671,17 @@ static void job_done(struct task *t, uint64_t at)
     uint64_t lat = at - t->release_ts;
     if (rec && lat > t->w.lat_max)
         t->w.lat_max = lat;
-    if (lat > t->deadline_t)
+    lat_add(t, at);
+    if (lat > t->deadline_t) {
+        obs_now = at;
         miss(t, 0, at);
+    }
 }
 
 /* 槽尾已过、作业还开着：这一刻就判错过，完成时刻记为内核看到它的这一刻。 */
 static void check_slot_ends(uint64_t seen, uint64_t now)
 {
+    obs_now = now;
     for (int i = 0; i < nslots; i++) {
         struct task *o = slot_owner[i];
         if (!o || o->kind != KIND_JOB || !o->job_open)
@@ -545,6 +690,7 @@ static void check_slot_ends(uint64_t seen, uint64_t now)
             continue;
         o->jobs++;
         o->w.jobs += rec;
+        /* 没完成的作业不写入完成时延直方图。seen 只是观察到槽尾已过。 */
         miss(o, o->job_started ? 1 : 2, seen);
         o->job_open = 0;
     }
@@ -552,6 +698,7 @@ static void check_slot_ends(uint64_t seen, uint64_t now)
 
 static void end_period(uint64_t now, int skipped)
 {
+    obs_now = now;
     for (int i = 0; i < MAX_TASKS; i++) {
         struct task *t = &tasks[i];
         if (t->state == TASK_EMPTY || t->state == TASK_DEAD || t == idle_task)
@@ -659,8 +806,11 @@ static void finish_bench(void)
         if (tasks[i].bench_owned && tasks[i].state != TASK_EMPTY)
             kill_locked(&tasks[i]);
     rebuild_lists();
-    shell_task->wait_bench = 0;
-    shell_task->state = TASK_READY;
+    /* The serial menu parks the shell. A GUI window does not. */
+    if (shell_task->wait_bench) {
+        shell_task->wait_bench = 0;
+        shell_task->state = TASK_READY;
+    }
 }
 
 static void ipc_release_held(void);
@@ -682,6 +832,8 @@ static void begin_period(void)
             if (tasks[i].state != TASK_EMPTY && tasks[i].state != TASK_DEAD)
                 win_reset(&tasks[i]);
         bench_state = 2;
+        lat_reset();
+        chain_reset();
         ipc_snap(ipc.snap0);
         ipc.t_w0 = pstart;
         ipc.p_w0 = pk;
@@ -1035,6 +1187,11 @@ static uint64_t schedule(uint64_t sp, int timer)
     uint64_t entry = k_entry_ts;
     uint64_t eret = k_eret_ts;
     struct task *prev = cur;
+    obs_source = timer;
+    obs_prev = prev;
+    obs_cval = k_cval;
+    obs_entry = entry;
+    obs_now = entry;
 
     if (prev_stint_sc && !prev_guard && eret > prev_entry) {
         uint64_t d = eret - prev_entry;
@@ -1226,12 +1383,17 @@ uint64_t handle_sync(uint64_t frame_sp)
         k_ipc_op = (int)(esr & 0xffff);
         return schedule(frame_sp, 0);
     }
-    if (dtb_fault_expected() && (ec == 0x24 || ec == 0x25)) {
-        dtb_note_fault();
+    if ((dtb_fault_expected() || mmu_fault_expected()) && (ec == 0x24 || ec == 0x25)) {
+        if (dtb_fault_expected())
+            dtb_note_fault();
+        else
+            mmu_note_fault();
         f->elr += 4;
         return frame_sp;
     }
-    printf("\nPANIC sync ec=0x%x esr=0x%lx elr=0x%lx\n", ec, esr, f->elr);
+    uint64_t far = 0;
+    asm volatile("mrs %0, far_el1" : "=r"(far));
+    printf("\nPANIC sync ec=0x%x esr=0x%lx elr=0x%lx far=0x%lx\n", ec, esr, f->elr, far);
     for (;;)
         asm volatile("wfi");
 }
@@ -1257,6 +1419,38 @@ void sched_bench(uint32_t periods)
     asm volatile("svc #0" ::: "memory");
     while (shell_task->wait_bench)
         asm volatile("svc #0" ::: "memory");
+}
+
+int sched_bench_async(uint32_t periods)
+{
+    int rc = 0;
+    asm volatile("msr daifset, #2" ::: "memory");
+    if (bench_state)
+        rc = -1;
+    else {
+        bench_left = periods;
+        bench_state = 1;
+    }
+    asm volatile("msr daifclr, #2" ::: "memory");
+    return rc;
+}
+
+int sched_bench_busy(void)
+{
+    return bench_state != 0;
+}
+
+void sched_bench_stop(void)
+{
+    asm volatile("msr daifset, #2" ::: "memory");
+    if (bench_state == 2 && bench_left > 1)
+        bench_left = 1;
+    asm volatile("msr daifclr, #2" ::: "memory");
+}
+
+uint32_t sched_bench_left(void)
+{
+    return bench_left;
 }
 
 static const char *reason_name[] = {"late", "unfinished", "not_started", "skipped"};
@@ -1310,6 +1504,44 @@ void sched_print_window(void)
         printf("T1MISS (%u more class b not shown)\n", bn - MISS_LOG_B);
     printf("misses: class a (clock jump) %lu, class b (kernel) %lu, skipped periods %lu\n",
            ks[1].miss_a, ks[1].miss_b, ks[1].skipped);
+    printf("done lat_max is completions only. not_started %u unfinished %u\n",
+           open_ns, open_uf);
+    printf("open lower bound %lu us (observation - ideal release, not a completion)\n",
+           open_bound ? ticks_to_us(open_bound) : 0);
+    printf("skipped counter %lu counts every open job, not only tier 1.\n", ks[1].skipped);
+    printf("tier-1 reason=skipped %u, and each of those is also a T1 miss.\n", open_sk);
+    printf("T1CHAIN n=%u dropped=%u. Stored only when a tier-1 job misses.\n",
+           chain_n, chain_drop);
+    printf("T1CHAIN no extra stores on a job that completes inside its slot.\n");
+    for (uint32_t i = 0; i < chain_n; i++) {
+        struct chain_rec *c = &chain[i];
+        const char *src = c->source == 1 ? "timer" : c->source == 2 ? "dev" : "svc";
+        const char *prev = (c->prev >= 0 && c->prev < MAX_TASKS) ? tasks[c->prev].name : "-";
+        uint64_t gap = c->entry >= c->cval ? c->entry - c->cval : 0;
+        uint64_t sr = c->seen >= c->release ? c->seen - c->release : 0;
+        uint64_t nr = c->now >= c->release ? c->now - c->release : 0;
+        printf("T1CHAIN task=%s period=%lu reason=%s source=%s prev=%s\n",
+               tasks[c->task].name, c->period, reason_name[c->reason], src, prev);
+        printf("  ideal %lu release %lu %s\n", c->ideal, c->release,
+               c->ideal == c->release ? "match" : "DIFF");
+        printf("  cval %lu entry %lu entry-cval %lu us\n", c->cval, c->entry, ticks_to_us(gap));
+        printf("  seen %lu now %lu slot_end %lu\n", c->seen, c->now, c->slot_end);
+        printf("  seen-release %lu us now-release %lu us deadline %lu us\n",
+               ticks_to_us(sr), ticks_to_us(nr), ticks_to_us(c->slot_end - c->release));
+        if (c->jump_n)
+            printf("  jumps in [prev period, seen] %u largest %lu us (%lu..%lu)\n",
+                   c->jump_n, ticks_to_us(c->jump_b - c->jump_a), c->jump_a, c->jump_b);
+        else
+            printf("  jumps in [prev period, seen] 0\n");
+        if (c->cover)
+            printf("  jump covers release %lu..%lu (%lu us)\n",
+                   c->cover_a, c->cover_b, ticks_to_us(c->cover_b - c->cover_a));
+        else
+            printf("  jump covers release no\n");
+    }
+    printf("T1CHAIN pk advances only when a kernel entry sees CNTVCT past the period end.\n");
+    printf("T1CHAIN entry-cval is CNTVCT minus the compare value this guest wrote.\n");
+    printf("T1CHAIN a timer source was taken with guest IRQs unmasked at the interrupted instruction.\n");
 }
 
 void sched_print_slots(void)
@@ -1461,4 +1693,31 @@ void sched_window_misses(uint64_t *a, uint64_t *b)
 {
     *a = ks[1].miss_a;
     *b = ks[1].miss_b;
+}
+
+uint64_t sched_window_skipped(void)
+{
+    return ks[1].skipped;
+}
+
+void sched_open_account(uint32_t *ns, uint32_t *uf, uint32_t *sk, uint64_t *bound_us)
+{
+    if (ns)
+        *ns = open_ns;
+    if (uf)
+        *uf = open_uf;
+    if (sk)
+        *sk = open_sk;
+    if (bound_us)
+        *bound_us = open_bound ? ticks_to_us(open_bound) : 0;
+}
+
+uint32_t sched_lat_copy(uint32_t *dst, uint32_t cap, int *capped)
+{
+    uint32_t n = lat_n < cap ? lat_n : cap;
+    for (uint32_t i = 0; i < n; i++)
+        dst[i] = lat_buf[i];
+    if (capped)
+        *capped = lat_capped || lat_n > cap;
+    return n;
 }

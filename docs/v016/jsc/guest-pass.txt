@@ -1,0 +1,27 @@
+qemu-system-aarch64 8.2.2
+-machine virt,gic-version=2 -cpu cortex-a72 -m 128M -nographic -nic none
+-kernel build/quotaos-jsc.bin -append webkit
+
+ld.lld 18.1.3 -m aarch64linux --gc-sections --no-undefined
+aarch64-linux-gnu-gcc/g++ 13.3.0
+ENABLE_JIT=0 ENABLE_C_LOOP=1 ENABLE_YARR_JIT=0 ENABLE_WEBASSEMBLY=0
+USE_SYSTEM_MALLOC=1 GIGACAGE_ENABLED=0
+
+bin 13058432 780643435cf67f0bb7ef046529bcb292217054473b122593f5a61c27af06872d
+elf 18496376 a7cd0245a1d8b117ca73b12719aa66672a02f2031e4cb1ff2ea5b14a2ec9ca15
+__image_end 0x40eec190 (before pool 0x41000000)
+banner still Version 016 (af050b5); this image is not copied to prebuilt/
+
+Developer self-test, not independent QA. The guest log stops when the
+harness kills QEMU after the PASS line. It is not a panic.
+
+[mmu] protect none-fault=1 read=1 write-fault=1 rw=1
+[jsc] 1+2 -> number 3000/1000 icu 0
+[jsc] 'ab'+'c' -> string [abc] icu 0
+[jsc] guest PASS
+layout: pool 0x41000000 <= structure 0x44000000 < arena 0x46000000-0x48000000
+admission adds 65536 KB structure reservation; system reserve stays 16384 KB
+e4 icount on this same binary: e4-system-malloc.raw item9 PASS item10 PASS QA DONE
+raw guest log: webkit-guest-pass.raw
+framebuffer: the 4 KB page tables plus the 1 MB CLoop stack leave no room
+in the 16 MB reserve for 1228800 bytes. prebuilt/ is unchanged.

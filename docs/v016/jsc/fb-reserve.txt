@@ -1,0 +1,30 @@
+Same commands as the f6d58fd guest, rebuilt with the framebuffer reservation.
+Developer self-test, not independent QA.
+
+qemu-system-aarch64 8.2.2
+-machine virt,gic-version=2 -cpu cortex-a72 -m 128M -nographic -nic none
+-kernel prebuilt/quotaos-jsc.bin -append webkit
+
+ld.lld 18.1.3. aarch64-linux-gnu-gcc/g++ 13.3.0.
+ENABLE_JIT=0 ENABLE_C_LOOP=1 ENABLE_YARR_JIT=0 ENABLE_WEBASSEMBLY=0
+USE_SYSTEM_MALLOC=1 GIGACAGE_ENABLED=0
+
+bin 13059840 86177f32237d66a128c29806a5dca67c2b663d3a23243848278db450e56e20d5
+elf 18498016 3766bd5108c0395304bbd21e6a89d3a76f4bfdb335dbe4dec26cbf12931d4b57
+banner Version: 016 (f6d58fd)
+
+[boot] ranges image 0x40080000-0x40ecc190 fb 0x40ed4000-0x41000000
+       pool 0x41000000-0x44000000 structure 0x44000000-0x48000000
+       arena 0x46000000-0x48000000
+[boot] reservation overlap 0; framebuffer 1200 KB stays inside the 16384 KB system reserve
+tier-1 stays 13312 KB and 1500 us. RAM stays 128 MB.
+[jsc] 1+2 -> number 3000/1000 icu 0
+[jsc] 'ab'+'c' -> string [abc] icu 0
+[jsc] guest PASS
+
+icount e4 on this binary: e4-fb-reserve.raw item9 PASS item10 PASS QA DONE.
+e4 bootargs is "e4", so that run does not take the structure window.
+page pool 0x41000000, 28672 pages.
+
+The EL1 identity map is one kernel address space. The log says it is not
+separate user processes and not completed three-tier isolation.

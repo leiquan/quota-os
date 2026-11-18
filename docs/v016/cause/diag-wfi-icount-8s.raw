@@ -1,0 +1,26 @@
+
+Quota OS microkernel
+Version: 016 (2bdd644)
+基于三级资源声明的微内核，
+保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] EL1h, MMU off. No hardware isolation.
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB snapshot 7536 bytes (header said 1048576)
+[boot] DTB memory 134217728 bytes
+[boot] system reserve 350 us/period, 16384 KB;
+       tier-1 1500 us/period, 13312 KB; guard 80 us/period
+[boot] cache colors: 32 (model: 2 MB 16-way cache, 4 KB pages);
+       tier-1 pages in 7 own colors, padding 11776 KB
+[boot] kernel image+bss 629 KB of the 16384 KB system reserve
+[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] clock: icount (counter driven by instruction count)
+[boot] simulated device IRQ line: EL1 physical timer, PPI 30
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 625000, period 625000 ticks, guard 1250 ticks
+[boot] shell task running
+[dev] 3 new simulated devices start in Tier 3; verifying
+      (8 jobs, 8 aborts each, IRQs masked, before the next guard)
+[diag] slot-idle now 693043 cval 718750 ctl 0x1 shell 1
+[diag] idle-entry now 694782 cval 718750 ctl 0x1 shell 1
