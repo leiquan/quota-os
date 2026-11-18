@@ -1,0 +1,427 @@
+
+Quota OS microkernel
+Version: 007 (82db71a)
+基于三级资源声明的微内核，保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB memory 134217728 bytes
+[boot] system reserve 350 us/period, 16384 KB; tier-1 1500 us/period, 13312 KB; guard 40 us/period
+[boot] kernel image+bss 465 KB of the 16384 KB system reserve
+[boot] GICv3 from DTB: distributor 0x8000000, redistributor 0x80a0000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 625000, period 625000 ticks, guard 625 ticks
+[boot] shell task running
+
+=== 1 资源总览 / resource overview ===
+RAM 131072 KB. CPU period 10000 us. 1 tick = 16 ns.
+
+[系统预留] kernel, fixed, never lent
+  CPU 350 us/period = 21875 ticks
+  measured since boot: max 0 ticks/period (period 0 of 0)
+  memory 16384 KB
+
+[Tier 1] one fixed slot per task; unused time stays idle
+  task           slot offset_us len_us max_used_us waste_us mem_kb
+  display-vsync     0      1000    500           0      500   2048
+  timer-server      1      3500    300           0      300   1024
+  gic-server        2      6000    300           0      300   2048
+  blk-driver        3      8000    400           0      400   4096
+  net-driver        -         -      -           -        -   4096
+  total CPU 1500 us/period, memory 13312 KB
+
+[Tier 2] admitted apps (minimum is guaranteed, suggested is spare only)
+  (none)
+  minimum sum: CPU 0 / 8110 us, memory 0 / 101376 KB
+  admission: reserve 350 + tier-1 1500 + tier-2 min 0 + guard 40 = 1890 <= 10000 us
+
+[Tier 3] everyone else, round robin 1000 us, leftover only
+  CPU not promised to anyone: 8110 us/period
+pressure: off
+
+=== 3 资源不够：拒绝并说关谁 / not enough: which app to close ===
+The demo starts Pixel Racer, Cinema Play and Studio Cut in turn
+(3000 us minimum each) until admission says no.
+allow the demo to start them? (y/n) allow> y (qa)
+start Pixel Racer: OK, 3000 us/period minimum.
+start Cinema Play: OK, 3000 us/period minimum.
+start Studio Cut:
+REFUSED: not enough resources for Studio Cut
+  CPU left 2110 us/period, minimum needs 3000
+  memory left 84992 KB, minimum needs 8192
+Please close Pixel Racer first (frees 3000 us/period, 8192 KB).
+following the advice: closing Pixel Racer and retrying.
+start Studio Cut: OK
+demo apps closed; their minimums are back in the pool.
+
+=== 4 旧设备：超过整机容量 / old device: request too big ===
+apps get at most CPU 8110 us/period and memory 101376 KB on this device.
+
+Neural Forge (CPU min 1000 us, memory min 81920 KB):
+  fits this device (not started; use menu 2 to install).
+
+Cluster Sim (CPU min 1000 us, memory min 524288 KB):
+REFUSED: device does not meet minimum requirements
+  minimum memory 524288 KB > 101376 KB for apps
+  (RAM 131072 KB - system reserve - tier-1)
+No app can be closed to make room: this device is too small.
+
+Render Farm (CPU min 9000 us, memory min 4096 KB):
+REFUSED: device does not meet minimum requirements
+  minimum CPU 9000 us > 8110 us/period for apps
+  (period - system reserve - tier-1 - guard)
+No app can be closed to make room: this device is too small.
+
+=== 5 Tier 1 准时 / tier-1 on time ===
+8 tier-3 busy loops run for 1000 periods. Each tier-1 job must start
+at the same tick of its slot every period and finish inside it.
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0   1000   113        246      28874   28628    28097
+  timer-server      1   1000   118        277      16695   16418    19629
+  display-vsync last release: period 1001, tick 626312500, epoch+k*P+offset 626312500
+  timer-server last release: period 1001, tick 626468750, epoch+k*P+offset 626468750
+T1MISS task=display-vsync period=12 reason=not_started start_t=-1 lat_t=104465 lat_us=1671 deadline_us=500 J_us=3426 class=a
+T1MISS task=timer-server period=90 reason=not_started start_t=-1 lat_t=316292 lat_us=5060 deadline_us=300 J_us=5345 class=a
+T1MISS task=timer-server period=92 reason=not_started start_t=-1 lat_t=314400 lat_us=5030 deadline_us=300 J_us=6319 class=a
+T1MISS task=display-vsync period=93 reason=not_started start_t=-1 lat_t=95415 lat_us=1526 deadline_us=500 J_us=7563 class=a
+T1MISS task=timer-server period=125 reason=not_started start_t=-1 lat_t=364396 lat_us=5830 deadline_us=300 J_us=6503 class=a
+T1MISS task=display-vsync period=147 reason=not_started start_t=-1 lat_t=95315 lat_us=1525 deadline_us=500 J_us=5940 class=a
+T1MISS task=display-vsync period=152 reason=not_started start_t=-1 lat_t=159126 lat_us=2546 deadline_us=500 J_us=4087 class=a
+T1MISS task=display-vsync period=154 reason=not_started start_t=-1 lat_t=220241 lat_us=3523 deadline_us=500 J_us=4679 class=a
+T1MISS task=timer-server period=154 reason=not_started start_t=-1 lat_t=63991 lat_us=1023 deadline_us=300 J_us=4679 class=a
+T1MISS task=display-vsync period=162 reason=unfinished start_t=572 lat_t=219524 lat_us=3512 deadline_us=500 J_us=5277 class=a
+T1MISS task=timer-server period=162 reason=not_started start_t=-1 lat_t=63274 lat_us=1012 deadline_us=300 J_us=5277 class=a
+T1MISS task=display-vsync period=163 reason=not_started start_t=-1 lat_t=94231 lat_us=1507 deadline_us=500 J_us=6134 class=a
+T1MISS task=display-vsync period=168 reason=not_started start_t=-1 lat_t=466010 lat_us=7456 deadline_us=500 J_us=10243 class=a
+T1MISS task=timer-server period=168 reason=not_started start_t=-1 lat_t=309760 lat_us=4956 deadline_us=300 J_us=10243 class=a
+T1MISS task=timer-server period=169 reason=not_started start_t=-1 lat_t=43487 lat_us=695 deadline_us=300 J_us=9185 class=a
+T1MISS task=timer-server period=171 reason=not_started start_t=-1 lat_t=195013 lat_us=3120 deadline_us=300 J_us=4393 class=a
+T1MISS task=display-vsync period=172 reason=not_started start_t=-1 lat_t=31300 lat_us=500 deadline_us=500 J_us=4909 class=a
+T1MISS task=timer-server period=172 reason=unfinished start_t=0 lat_t=59938 lat_us=959 deadline_us=300 J_us=6245 class=a
+T1MISS task=timer-server period=176 reason=not_started start_t=-1 lat_t=488 lat_us=7 deadline_us=300 J_us=1507 class=a
+T1MISS task=display-vsync period=177 reason=not_started start_t=-1 lat_t=0 lat_us=0 deadline_us=500 J_us=665 class=a
+T1MISS task=display-vsync period=187 reason=not_started start_t=-1 lat_t=267252 lat_us=4276 deadline_us=500 J_us=5345 class=a
+T1MISS task=timer-server period=187 reason=not_started start_t=-1 lat_t=111002 lat_us=1776 deadline_us=300 J_us=5345 class=a
+T1MISS task=timer-server period=188 reason=not_started start_t=-1 lat_t=313721 lat_us=5019 deadline_us=300 J_us=13346 class=a
+T1MISS task=display-vsync period=194 reason=unfinished start_t=538 lat_t=66118 lat_us=1057 deadline_us=500 J_us=4629 class=a
+T1MISS task=timer-server period=209 reason=not_started start_t=-1 lat_t=58506 lat_us=936 deadline_us=300 J_us=4718 class=a
+T1MISS task=display-vsync period=212 reason=not_started start_t=-1 lat_t=220513 lat_us=3528 deadline_us=500 J_us=9301 class=a
+T1MISS task=timer-server period=212 reason=not_started start_t=-1 lat_t=64263 lat_us=1028 deadline_us=300 J_us=9301 class=a
+T1MISS task=display-vsync period=213 reason=not_started start_t=-1 lat_t=95282 lat_us=1524 deadline_us=500 J_us=10618 class=a
+T1MISS task=timer-server period=213 reason=not_started start_t=-1 lat_t=39981 lat_us=639 deadline_us=300 J_us=11268 class=a
+T1MISS task=display-vsync period=214 reason=not_started start_t=-1 lat_t=219487 lat_us=3511 deadline_us=500 J_us=12541 class=a
+T1MISS task=timer-server period=214 reason=not_started start_t=-1 lat_t=63237 lat_us=1011 deadline_us=300 J_us=12541 class=a
+T1MISS task=display-vsync period=215 reason=not_started start_t=-1 lat_t=345281 lat_us=5524 deadline_us=500 J_us=13720 class=a
+T1MISS task=timer-server period=215 reason=not_started start_t=-1 lat_t=189031 lat_us=3024 deadline_us=300 J_us=13720 class=a
+T1MISS task=display-vsync period=216 reason=unfinished start_t=28874 lat_t=31844 lat_us=509 deadline_us=500 J_us=8556 class=a
+T1MISS task=display-vsync period=217 reason=not_started start_t=-1 lat_t=94763 lat_us=1516 deadline_us=500 J_us=6930 class=a
+T1MISS task=display-vsync period=218 reason=not_started start_t=-1 lat_t=219695 lat_us=3515 deadline_us=500 J_us=11737 class=a
+T1MISS task=timer-server period=218 reason=not_started start_t=-1 lat_t=63445 lat_us=1015 deadline_us=300 J_us=11737 class=a
+T1MISS task=display-vsync period=223 reason=not_started start_t=-1 lat_t=33351 lat_us=533 deadline_us=500 J_us=4003 class=a
+T1MISS task=timer-server period=232 reason=not_started start_t=-1 lat_t=178344 lat_us=2853 deadline_us=300 J_us=4684 class=a
+T1MISS task=timer-server period=250 reason=not_started start_t=-1 lat_t=65871 lat_us=1053 deadline_us=300 J_us=1504 class=a
+T1MISS task=timer-server period=297 reason=not_started start_t=-1 lat_t=101122 lat_us=1617 deadline_us=300 J_us=2824 class=a
+T1MISS task=timer-server period=300 reason=not_started start_t=-1 lat_t=29555 lat_us=472 deadline_us=300 J_us=1741 class=a
+T1MISS task=display-vsync period=322 reason=not_started start_t=-1 lat_t=221588 lat_us=3545 deadline_us=500 J_us=5281 class=a
+T1MISS task=timer-server period=322 reason=not_started start_t=-1 lat_t=65338 lat_us=1045 deadline_us=300 J_us=5281 class=a
+T1MISS task=timer-server period=333 reason=not_started start_t=-1 lat_t=189328 lat_us=3029 deadline_us=300 J_us=5482 class=a
+T1MISS task=display-vsync period=334 reason=not_started start_t=-1 lat_t=189564 lat_us=3033 deadline_us=500 J_us=8679 class=a
+T1MISS task=timer-server period=334 reason=not_started start_t=-1 lat_t=33314 lat_us=533 deadline_us=300 J_us=8679 class=a
+T1MISS task=timer-server period=336 reason=not_started start_t=-1 lat_t=63326 lat_us=1013 deadline_us=300 J_us=2031 class=a
+T1MISS task=display-vsync period=338 reason=not_started start_t=-1 lat_t=163573 lat_us=2617 deadline_us=500 J_us=2796 class=a
+T1MISS task=display-vsync period=355 reason=not_started start_t=-1 lat_t=81694 lat_us=1307 deadline_us=500 J_us=6339 class=a
+T1MISS task=display-vsync period=357 reason=not_started start_t=-1 lat_t=95133 lat_us=1522 deadline_us=500 J_us=2113 class=a
+T1MISS task=display-vsync period=358 reason=not_started start_t=-1 lat_t=404082 lat_us=6465 deadline_us=500 J_us=10693 class=a
+T1MISS task=timer-server period=358 reason=not_started start_t=-1 lat_t=247832 lat_us=3965 deadline_us=300 J_us=10693 class=a
+T1MISS task=display-vsync period=359 reason=not_started start_t=-1 lat_t=45003 lat_us=720 deadline_us=500 J_us=8238 class=a
+T1MISS task=timer-server period=359 reason=not_started start_t=-1 lat_t=66920 lat_us=1070 deadline_us=300 J_us=10076 class=a
+T1MISS task=display-vsync period=373 reason=not_started start_t=-1 lat_t=346137 lat_us=5538 deadline_us=500 J_us=10775 class=a
+T1MISS task=timer-server period=373 reason=not_started start_t=-1 lat_t=189887 lat_us=3038 deadline_us=300 J_us=10775 class=a
+T1MISS task=display-vsync period=385 reason=not_started start_t=-1 lat_t=95288 lat_us=1524 deadline_us=500 J_us=3293 class=a
+T1MISS task=timer-server period=386 reason=not_started start_t=-1 lat_t=44204 lat_us=707 deadline_us=300 J_us=7883 class=a
+T1MISS task=timer-server period=389 reason=not_started start_t=-1 lat_t=441094 lat_us=7057 deadline_us=300 J_us=13123 class=a
+T1MISS task=timer-server period=390 reason=not_started start_t=-1 lat_t=313813 lat_us=5021 deadline_us=300 J_us=14946 class=a
+T1MISS task=display-vsync period=391 reason=not_started start_t=-1 lat_t=344639 lat_us=5514 deadline_us=500 J_us=13537 class=a
+T1MISS task=timer-server period=391 reason=not_started start_t=-1 lat_t=188389 lat_us=3014 deadline_us=300 J_us=13537 class=a
+T1MISS task=display-vsync period=392 reason=not_started start_t=-1 lat_t=400759 lat_us=6412 deadline_us=500 J_us=14509 class=a
+T1MISS (167 more not shown; class b among them: 0, listed below)
+misses: class a (clock jump) 231, class b (kernel) 0, skipped periods 0
+kernel per period: max 505515 avg 8283 ticks, reserve 21875, over 39
+timer IRQ entry - CVAL: min 471 max 628510 ticks (n=12374)
+kernel entry -> eret (no slot wait): min 55 max 502450 ticks
+slot guard: path max 3576 ticks, slack min 0 ticks of 625 (n=1)
+wait loop exit late by 0/1/2/>2 ticks: 0/0/0/1
+clock jumps: 5244, total 1251651 us
+结果: Tier 1 错过 231 次，起点抖动 28628 tick，槽内 Tier 2/3 共 13025849 tick。
+
+=== 6 Tier 1 超时在槽尾被掐断 / tier-1 overrun cut at slot end ===
+bad-driver loops forever in the blk-driver slot (25000 ticks).
+bad-driver per period: min 0 max 407349 ticks, slot 25000 ticks
+cut by the slot-end timer: IRQ entry at most 856505 ticks after slot end
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0   1000   151        212      24635   24423    29694
+  timer-server      1   1000   171        198      16796   16598    17831
+  display-vsync last release: period 2003, tick 1252562500, epoch+k*P+offset 1252562500
+  timer-server last release: period 2003, tick 1252718750, epoch+k*P+offset 1252718750
+T1MISS task=timer-server period=1005 reason=not_started start_t=-1 lat_t=192175 lat_us=3074 deadline_us=300 J_us=3620 class=a
+T1MISS task=timer-server period=1011 reason=not_started start_t=-1 lat_t=438818 lat_us=7021 deadline_us=300 J_us=13433 class=a
+T1MISS task=timer-server period=1012 reason=not_started start_t=-1 lat_t=313688 lat_us=5019 deadline_us=300 J_us=15259 class=a
+T1MISS task=display-vsync period=1013 reason=not_started start_t=-1 lat_t=171386 lat_us=2742 deadline_us=500 J_us=10736 class=a
+T1MISS task=timer-server period=1013 reason=unfinished start_t=16486 lat_t=19345 lat_us=309 deadline_us=300 J_us=10736 class=a
+T1MISS task=display-vsync period=1014 reason=not_started start_t=-1 lat_t=224365 lat_us=3589 deadline_us=500 J_us=13050 class=a
+T1MISS task=timer-server period=1014 reason=not_started start_t=-1 lat_t=68115 lat_us=1089 deadline_us=300 J_us=13050 class=a
+T1MISS task=timer-server period=1015 reason=not_started start_t=-1 lat_t=188943 lat_us=3023 deadline_us=300 J_us=12076 class=a
+T1MISS task=timer-server period=1016 reason=not_started start_t=-1 lat_t=66522 lat_us=1064 deadline_us=300 J_us=9928 class=a
+T1MISS task=timer-server period=1019 reason=not_started start_t=-1 lat_t=396332 lat_us=6341 deadline_us=300 J_us=8535 class=a
+T1MISS task=display-vsync period=1023 reason=not_started start_t=-1 lat_t=95539 lat_us=1528 deadline_us=500 J_us=6187 class=a
+T1MISS task=timer-server period=1027 reason=not_started start_t=-1 lat_t=88835 lat_us=1421 deadline_us=300 J_us=1701 class=a
+T1MISS task=display-vsync period=1029 reason=not_started start_t=-1 lat_t=94890 lat_us=1518 deadline_us=500 J_us=2578 class=a
+T1MISS task=display-vsync period=1053 reason=not_started start_t=-1 lat_t=194137 lat_us=3106 deadline_us=500 J_us=5516 class=a
+T1MISS task=timer-server period=1053 reason=not_started start_t=-1 lat_t=37887 lat_us=606 deadline_us=300 J_us=5516 class=a
+T1MISS task=display-vsync period=1055 reason=not_started start_t=-1 lat_t=360910 lat_us=5774 deadline_us=500 J_us=10075 class=a
+T1MISS task=timer-server period=1055 reason=not_started start_t=-1 lat_t=204660 lat_us=3274 deadline_us=300 J_us=10075 class=a
+T1MISS task=display-vsync period=1056 reason=not_started start_t=-1 lat_t=219968 lat_us=3519 deadline_us=500 J_us=10354 class=a
+T1MISS task=timer-server period=1056 reason=not_started start_t=-1 lat_t=63718 lat_us=1019 deadline_us=300 J_us=10354 class=a
+T1MISS task=display-vsync period=1057 reason=not_started start_t=-1 lat_t=94501 lat_us=1512 deadline_us=500 J_us=7662 class=a
+T1MISS task=timer-server period=1059 reason=not_started start_t=-1 lat_t=188448 lat_us=3015 deadline_us=300 J_us=8272 class=a
+T1MISS task=display-vsync period=1060 reason=not_started start_t=-1 lat_t=219288 lat_us=3508 deadline_us=500 J_us=8506 class=a
+T1MISS task=timer-server period=1060 reason=not_started start_t=-1 lat_t=63038 lat_us=1008 deadline_us=300 J_us=8506 class=a
+T1MISS task=display-vsync period=1061 reason=not_started start_t=-1 lat_t=94256 lat_us=1508 deadline_us=500 J_us=7603 class=a
+T1MISS task=timer-server period=1062 reason=not_started start_t=-1 lat_t=102539 lat_us=1640 deadline_us=300 J_us=8003 class=a
+T1MISS task=display-vsync period=1063 reason=not_started start_t=-1 lat_t=94629 lat_us=1514 deadline_us=500 J_us=7820 class=a
+T1MISS task=timer-server period=1064 reason=not_started start_t=-1 lat_t=41811 lat_us=668 deadline_us=300 J_us=5742 class=a
+T1MISS task=timer-server period=1065 reason=not_started start_t=-1 lat_t=188392 lat_us=3014 deadline_us=300 J_us=7582 class=a
+T1MISS task=display-vsync period=1066 reason=not_started start_t=-1 lat_t=220164 lat_us=3522 deadline_us=500 J_us=8158 class=a
+T1MISS task=timer-server period=1066 reason=not_started start_t=-1 lat_t=63914 lat_us=1022 deadline_us=300 J_us=8158 class=a
+T1MISS task=timer-server period=1067 reason=not_started start_t=-1 lat_t=188374 lat_us=3013 deadline_us=300 J_us=9378 class=a
+T1MISS task=display-vsync period=1068 reason=not_started start_t=-1 lat_t=219328 lat_us=3509 deadline_us=500 J_us=9365 class=a
+T1MISS task=timer-server period=1068 reason=not_started start_t=-1 lat_t=63078 lat_us=1009 deadline_us=300 J_us=9365 class=a
+T1MISS task=display-vsync period=1069 reason=not_started start_t=-1 lat_t=94724 lat_us=1515 deadline_us=500 J_us=7611 class=a
+T1MISS task=display-vsync period=1071 reason=not_started start_t=-1 lat_t=297427 lat_us=4758 deadline_us=500 J_us=7444 class=a
+T1MISS task=timer-server period=1071 reason=not_started start_t=-1 lat_t=141177 lat_us=2258 deadline_us=300 J_us=7444 class=a
+T1MISS task=display-vsync period=1072 reason=not_started start_t=-1 lat_t=219318 lat_us=3509 deadline_us=500 J_us=8287 class=a
+T1MISS task=timer-server period=1072 reason=not_started start_t=-1 lat_t=63068 lat_us=1009 deadline_us=300 J_us=8287 class=a
+T1MISS task=display-vsync period=1073 reason=not_started start_t=-1 lat_t=94426 lat_us=1510 deadline_us=500 J_us=8039 class=a
+T1MISS task=display-vsync period=1079 reason=not_started start_t=-1 lat_t=97769 lat_us=1564 deadline_us=500 J_us=4043 class=a
+T1MISS task=timer-server period=1079 reason=not_started start_t=-1 lat_t=102744 lat_us=1643 deadline_us=300 J_us=5697 class=a
+T1MISS task=display-vsync period=1081 reason=not_started start_t=-1 lat_t=70822 lat_us=1133 deadline_us=500 J_us=1682 class=a
+T1MISS task=timer-server period=1082 reason=unfinished start_t=329 lat_t=260021 lat_us=4160 deadline_us=300 J_us=5494 class=a
+T1MISS task=timer-server period=1087 reason=not_started start_t=-1 lat_t=190319 lat_us=3045 deadline_us=300 J_us=3902 class=a
+T1MISS task=display-vsync period=1099 reason=not_started start_t=-1 lat_t=261961 lat_us=4191 deadline_us=500 J_us=6447 class=a
+T1MISS task=timer-server period=1099 reason=not_started start_t=-1 lat_t=105711 lat_us=1691 deadline_us=300 J_us=6447 class=a
+T1MISS task=display-vsync period=1100 reason=not_started start_t=-1 lat_t=57053 lat_us=912 deadline_us=500 J_us=8780 class=a
+T1MISS task=timer-server period=1105 reason=not_started start_t=-1 lat_t=189964 lat_us=3039 deadline_us=300 J_us=5036 class=a
+T1MISS task=display-vsync period=1106 reason=not_started start_t=-1 lat_t=221171 lat_us=3538 deadline_us=500 J_us=8425 class=a
+T1MISS task=timer-server period=1106 reason=not_started start_t=-1 lat_t=64921 lat_us=1038 deadline_us=300 J_us=8425 class=a
+T1MISS task=timer-server period=1107 reason=not_started start_t=-1 lat_t=188354 lat_us=3013 deadline_us=300 J_us=8987 class=a
+T1MISS task=timer-server period=1111 reason=not_started start_t=-1 lat_t=188149 lat_us=3010 deadline_us=300 J_us=4016 class=a
+T1MISS task=display-vsync period=1112 reason=not_started start_t=-1 lat_t=220333 lat_us=3525 deadline_us=500 J_us=11004 class=a
+T1MISS task=timer-server period=1112 reason=not_started start_t=-1 lat_t=64083 lat_us=1025 deadline_us=300 J_us=11004 class=a
+T1MISS task=display-vsync period=1113 reason=not_started start_t=-1 lat_t=95450 lat_us=1527 deadline_us=500 J_us=11511 class=a
+T1MISS task=timer-server period=1113 reason=not_started start_t=-1 lat_t=438903 lat_us=7022 deadline_us=300 J_us=18544 class=a
+T1MISS task=timer-server period=1114 reason=not_started start_t=-1 lat_t=63247 lat_us=1011 deadline_us=300 J_us=11557 class=a
+T1MISS task=display-vsync period=1115 reason=not_started start_t=-1 lat_t=345463 lat_us=5527 deadline_us=500 J_us=11731 class=a
+T1MISS task=timer-server period=1115 reason=not_started start_t=-1 lat_t=189213 lat_us=3027 deadline_us=300 J_us=11731 class=a
+T1MISS task=display-vsync period=1116 reason=not_started start_t=-1 lat_t=219491 lat_us=3511 deadline_us=500 J_us=10049 class=a
+T1MISS task=timer-server period=1116 reason=not_started start_t=-1 lat_t=63241 lat_us=1011 deadline_us=300 J_us=10049 class=a
+T1MISS task=display-vsync period=1117 reason=not_started start_t=-1 lat_t=94546 lat_us=1512 deadline_us=500 J_us=8719 class=a
+T1MISS task=timer-server period=1117 reason=not_started start_t=-1 lat_t=188121 lat_us=3009 deadline_us=300 J_us=11739 class=a
+T1MISS task=display-vsync period=1118 reason=not_started start_t=-1 lat_t=219270 lat_us=3508 deadline_us=500 J_us=10629 class=a
+T1MISS (258 more not shown; class b among them: 0, listed below)
+misses: class a (clock jump) 322, class b (kernel) 0, skipped periods 0
+Tier 1 slots over 1000 periods (ticks per period, average)
+  slot owner          start    len  owner_used  idle  foreign(total)
+     0 display-vsync   62500  31250        4654 20889  5326948
+     1 timer-server   218750  18750        2394 12541  3457880
+     2 (empty)        375000  18750           0 14336  4141980
+     3 bad-driver     500000  25000       19341   131  5169657
+Tier 2/3 ticks inside any Tier 1 slot: 18096465 (in 3482 runs)
+  of which not covered by clock jumps: 719792
+结果: bad-driver 每周期最多 407349 tick（槽长 25000）；其他 Tier 1 错过 322 次。
+
+=== 7 Tier 1 槽从不外借 / tier-1 slots never lent ===
+display-vsync uses ~80 of 500 us, timer-server ~40 of 300 us,
+gic-server and blk-driver slots have no task. A greedy tier-2 app
+and 8 tier-3 loops want every tick they can get.
+Tier 1 slots over 1000 periods (ticks per period, average)
+  slot owner          start    len  owner_used  idle  foreign(total)
+     0 display-vsync   62500  31250        4349 19992  6488503
+     1 timer-server   218750  18750        2328 11372  4649040
+     2 (empty)        375000  18750           0 12821  5563990
+     3 (empty)        500000  25000           0 18817  5852628
+Tier 2/3 ticks inside any Tier 1 slot: 22554161 (in 3494 runs)
+  of which not covered by clock jumps: 582847
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  greedy-app      1000    6000      1445     7335    17692      0
+结果: 空出来的槽时间全部空转，Tier 2/3 在槽内 22554161 tick。
+
+=== 8 Tier 2 最低值有保证，建议值在压力下收回 ===
+app-A min 2000 + sugg 1000 us, app-B min 2000 + sugg 2000 us,
+8 tier-3 loops. Phase 1: no pressure.
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  app-A           2000    1000         0     3248    16200     20
+  app-B           2000    2000         0     4059    13002     29
+Phase 2: memory/CPU pressure ON, suggested is reclaimed.
+pressure ON: reclaimed 0 KB of suggested memory; minimums untouched.
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  app-A           2000    1000         0     2875    15594     90
+  app-B           2000    2000         0     2830    11586     87
+结果: 无压力时最少拿到 0/0 us，有压力时 0/0 us；低于最低值的周期 177 个。
+
+=== 9 Tier 3 过载不影响上层 / tier-3 overload ===
+32 tier-3 busy loops for 1000 periods, with a tier-2 game and audio-mix.
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0   1000   287        254      30243   29989   219314
+  timer-server      1   1000   336        228     438098  437870   440786
+  display-vsync last release: period 6023, tick 3765062500, epoch+k*P+offset 3765062500
+  timer-server last release: period 6023, tick 3765218750, epoch+k*P+offset 3765218750
+T1MISS task=timer-server period=5029 reason=not_started start_t=-1 lat_t=0 lat_us=0 deadline_us=300 J_us=392 class=a
+T1MISS task=display-vsync period=5030 reason=not_started start_t=-1 lat_t=78014 lat_us=1248 deadline_us=500 J_us=2353 class=a
+T1MISS task=display-vsync period=5034 reason=late start_t=9506 lat_t=219314 lat_us=3509 deadline_us=500 J_us=3558 class=a
+T1MISS task=timer-server period=5034 reason=not_started start_t=-1 lat_t=63064 lat_us=1009 deadline_us=300 J_us=3558 class=a
+T1MISS task=display-vsync period=5035 reason=not_started start_t=-1 lat_t=0 lat_us=0 deadline_us=500 J_us=3099 class=a
+T1MISS task=timer-server period=5036 reason=not_started start_t=-1 lat_t=0 lat_us=0 deadline_us=300 J_us=3866 class=a
+T1MISS task=timer-server period=5037 reason=not_started start_t=-1 lat_t=41442 lat_us=663 deadline_us=300 J_us=4587 class=a
+T1MISS task=display-vsync period=5039 reason=not_started start_t=-1 lat_t=76900 lat_us=1230 deadline_us=500 J_us=2979 class=a
+T1MISS task=timer-server period=5039 reason=not_started start_t=-1 lat_t=76748 lat_us=1227 deadline_us=300 J_us=4272 class=a
+T1MISS task=timer-server period=5041 reason=not_started start_t=-1 lat_t=193657 lat_us=3098 deadline_us=300 J_us=8500 class=a
+T1MISS task=timer-server period=5042 reason=not_started start_t=-1 lat_t=65554 lat_us=1048 deadline_us=300 J_us=6945 class=a
+T1MISS task=timer-server period=5043 reason=late start_t=438098 lat_t=440786 lat_us=7052 deadline_us=300 J_us=8418 class=a
+T1MISS task=display-vsync period=5044 reason=not_started start_t=-1 lat_t=219937 lat_us=3518 deadline_us=500 J_us=10342 class=a
+T1MISS task=timer-server period=5044 reason=not_started start_t=-1 lat_t=63687 lat_us=1018 deadline_us=300 J_us=10342 class=a
+T1MISS task=display-vsync period=5045 reason=not_started start_t=-1 lat_t=94583 lat_us=1513 deadline_us=500 J_us=9279 class=a
+T1MISS task=timer-server period=5046 reason=not_started start_t=-1 lat_t=70253 lat_us=1124 deadline_us=300 J_us=6734 class=a
+T1MISS task=timer-server period=5049 reason=unfinished start_t=0 lat_t=32304 lat_us=516 deadline_us=300 J_us=3348 class=a
+T1MISS task=display-vsync period=5050 reason=not_started start_t=-1 lat_t=219986 lat_us=3519 deadline_us=500 J_us=7890 class=a
+T1MISS task=timer-server period=5050 reason=not_started start_t=-1 lat_t=63736 lat_us=1019 deadline_us=300 J_us=7890 class=a
+T1MISS task=display-vsync period=5051 reason=not_started start_t=-1 lat_t=95231 lat_us=1523 deadline_us=500 J_us=10898 class=a
+T1MISS task=timer-server period=5058 reason=not_started start_t=-1 lat_t=43258 lat_us=692 deadline_us=300 J_us=944 class=a
+T1MISS task=display-vsync period=5085 reason=skipped lat_us=- deadline_us=500 J_us=10695 covered=yes uncovered_us=0 class=a
+T1MISS task=timer-server period=5085 reason=skipped lat_us=- deadline_us=300 J_us=10695 covered=yes uncovered_us=0 class=a
+T1MISS task=timer-server period=5086 reason=not_started start_t=-1 lat_t=63308 lat_us=1012 deadline_us=300 J_us=11599 class=a
+T1MISS task=timer-server period=5087 reason=not_started start_t=-1 lat_t=201878 lat_us=3230 deadline_us=300 J_us=5486 class=a
+T1MISS task=display-vsync period=5088 reason=unfinished start_t=478 lat_t=219670 lat_us=3514 deadline_us=500 J_us=6857 class=a
+T1MISS task=timer-server period=5088 reason=not_started start_t=-1 lat_t=63420 lat_us=1014 deadline_us=300 J_us=6857 class=a
+T1MISS task=display-vsync period=5089 reason=not_started start_t=-1 lat_t=94865 lat_us=1517 deadline_us=500 J_us=5653 class=a
+T1MISS task=display-vsync period=5091 reason=not_started start_t=-1 lat_t=94294 lat_us=1508 deadline_us=500 J_us=5733 class=a
+T1MISS task=timer-server period=5093 reason=not_started start_t=-1 lat_t=188309 lat_us=3012 deadline_us=300 J_us=7905 class=a
+T1MISS task=display-vsync period=5094 reason=not_started start_t=-1 lat_t=220256 lat_us=3524 deadline_us=500 J_us=8119 class=a
+T1MISS task=timer-server period=5094 reason=not_started start_t=-1 lat_t=64006 lat_us=1024 deadline_us=300 J_us=8119 class=a
+T1MISS task=display-vsync period=5095 reason=not_started start_t=-1 lat_t=94355 lat_us=1509 deadline_us=500 J_us=7341 class=a
+T1MISS task=display-vsync period=5097 reason=skipped lat_us=- deadline_us=500 J_us=13717 covered=yes uncovered_us=0 class=a
+T1MISS task=timer-server period=5097 reason=skipped lat_us=- deadline_us=300 J_us=13717 covered=yes uncovered_us=0 class=a
+T1MISS task=timer-server period=5098 reason=not_started start_t=-1 lat_t=63238 lat_us=1011 deadline_us=300 J_us=11547 class=a
+T1MISS task=display-vsync period=5099 reason=not_started start_t=-1 lat_t=344761 lat_us=5516 deadline_us=500 J_us=10760 class=a
+T1MISS task=timer-server period=5099 reason=not_started start_t=-1 lat_t=188511 lat_us=3016 deadline_us=300 J_us=10760 class=a
+T1MISS task=display-vsync period=5100 reason=not_started start_t=-1 lat_t=469418 lat_us=7510 deadline_us=500 J_us=15670 class=a
+T1MISS task=timer-server period=5100 reason=not_started start_t=-1 lat_t=313168 lat_us=5010 deadline_us=300 J_us=15670 class=a
+T1MISS task=timer-server period=5101 reason=not_started start_t=-1 lat_t=188393 lat_us=3014 deadline_us=300 J_us=12084 class=a
+T1MISS task=timer-server period=5102 reason=not_started start_t=-1 lat_t=63368 lat_us=1013 deadline_us=300 J_us=7152 class=a
+T1MISS task=display-vsync period=5103 reason=not_started start_t=-1 lat_t=94628 lat_us=1514 deadline_us=500 J_us=6768 class=a
+T1MISS task=display-vsync period=5104 reason=not_started start_t=-1 lat_t=219474 lat_us=3511 deadline_us=500 J_us=11778 class=a
+T1MISS task=timer-server period=5104 reason=not_started start_t=-1 lat_t=63224 lat_us=1011 deadline_us=300 J_us=11778 class=a
+T1MISS task=display-vsync period=5105 reason=not_started start_t=-1 lat_t=94470 lat_us=1511 deadline_us=500 J_us=9770 class=a
+T1MISS task=timer-server period=5105 reason=not_started start_t=-1 lat_t=188228 lat_us=3011 deadline_us=300 J_us=12792 class=a
+T1MISS task=display-vsync period=5106 reason=not_started start_t=-1 lat_t=219658 lat_us=3514 deadline_us=500 J_us=10633 class=a
+T1MISS task=timer-server period=5106 reason=not_started start_t=-1 lat_t=63408 lat_us=1014 deadline_us=300 J_us=10633 class=a
+T1MISS task=timer-server period=5107 reason=not_started start_t=-1 lat_t=188319 lat_us=3013 deadline_us=300 J_us=10636 class=a
+T1MISS task=timer-server period=5108 reason=not_started start_t=-1 lat_t=79748 lat_us=1275 deadline_us=300 J_us=7410 class=a
+T1MISS task=timer-server period=5110 reason=not_started start_t=-1 lat_t=313823 lat_us=5021 deadline_us=300 J_us=9332 class=a
+T1MISS task=display-vsync period=5112 reason=not_started start_t=-1 lat_t=219511 lat_us=3512 deadline_us=500 J_us=7443 class=a
+T1MISS task=timer-server period=5112 reason=not_started start_t=-1 lat_t=63261 lat_us=1012 deadline_us=300 J_us=7443 class=a
+T1MISS task=display-vsync period=5113 reason=not_started start_t=-1 lat_t=94349 lat_us=1509 deadline_us=500 J_us=7021 class=a
+T1MISS task=display-vsync period=5115 reason=not_started start_t=-1 lat_t=94686 lat_us=1514 deadline_us=500 J_us=5708 class=a
+T1MISS task=timer-server period=5117 reason=not_started start_t=-1 lat_t=188480 lat_us=3015 deadline_us=300 J_us=7886 class=a
+T1MISS task=display-vsync period=5118 reason=not_started start_t=-1 lat_t=219733 lat_us=3515 deadline_us=500 J_us=8112 class=a
+T1MISS task=timer-server period=5118 reason=not_started start_t=-1 lat_t=63483 lat_us=1015 deadline_us=300 J_us=8112 class=a
+T1MISS task=display-vsync period=5119 reason=not_started start_t=-1 lat_t=94496 lat_us=1511 deadline_us=500 J_us=7358 class=a
+T1MISS task=display-vsync period=5121 reason=not_started start_t=-1 lat_t=94941 lat_us=1519 deadline_us=500 J_us=5206 class=a
+T1MISS task=timer-server period=5123 reason=not_started start_t=-1 lat_t=191419 lat_us=3062 deadline_us=300 J_us=7980 class=a
+T1MISS task=display-vsync period=5124 reason=not_started start_t=-1 lat_t=219303 lat_us=3508 deadline_us=500 J_us=8189 class=a
+T1MISS task=timer-server period=5124 reason=not_started start_t=-1 lat_t=63053 lat_us=1008 deadline_us=300 J_us=8189 class=a
+T1MISS (559 more not shown; class b among them: 0, listed below)
+misses: class a (clock jump) 623, class b (kernel) 0, skipped periods 12
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  game            2000    1000         0     3972    17230     12
+  audio-mix: jobs 1000, misses 133, worst response 8968 us (deadline 4000 us)
+tier-3 per loop: avg 116..168 us/period, all 32 together 4261 us
+Tier 1 slots over 1000 periods (ticks per period, average)
+  slot owner          start    len  owner_used  idle  foreign(total)
+     0 display-vsync   62500  31250        4039 17567  8918555
+     1 timer-server   218750  18750        1986 10044  6210455
+     2 (empty)        375000  18750           0 12126  6141939
+     3 (empty)        500000  25000           0 16375  8058035
+Tier 2/3 ticks inside any Tier 1 slot: 29328984 (in 3106 runs)
+  of which not covered by clock jumps: 571242
+kernel per period: max 415035 avg 10821 ticks, reserve 21875, over 69
+timer IRQ entry - CVAL: min 315 max 889415 ticks (n=9991)
+kernel entry -> eret (no slot wait): min 46 max 382519 ticks
+slot guard: path max 165 ticks, slack min 0 ticks of 625 (n=42)
+wait loop exit late by 0/1/2/>2 ticks: 1/1/0/40
+clock jumps: 3800, total 2731773 us
+结果: Tier 1 错过 623 次，起点抖动 437870 tick，槽内 Tier 2/3 共 29328984 tick。
+结果: Tier 2 低于最低值 12 个周期，audio-mix 错过 133 次。
+
+=== 10 任何一级的失控任务只拖慢自己 / runaway only slows itself ===
+runaways: bad-driver (tier 1, blk slot), bad-encoder (tier 2, min 1000),
+bad-t3 (tier 3). Well behaved: vsync, timer-server, audio-mix, polite-t3.
+bad-driver  avg 410 max 2170 us/period (slot 400)
+bad-encoder avg 1022 max 3924 us/period (min 1000, no suggested)
+bad-t3 avg 3480 us/period, polite-t3 avg 3484 us/period
+  audio-mix: jobs 1000, misses 4, worst response 4342 us (deadline 4000 us)
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0   1000    15        215      19861   19646    24913
+  timer-server      1   1000     2        188      16726   16538    18459
+  display-vsync last release: period 7024, tick 4390687500, epoch+k*P+offset 4390687500
+  timer-server last release: period 7024, tick 4390843750, epoch+k*P+offset 4390843750
+T1MISS task=display-vsync period=6157 reason=not_started start_t=-1 lat_t=32435 lat_us=518 deadline_us=500 J_us=2140 class=a
+T1MISS task=display-vsync period=6241 reason=not_started start_t=-1 lat_t=34171 lat_us=546 deadline_us=500 J_us=1268 class=a
+T1MISS task=timer-server period=6241 reason=unfinished start_t=16726 lat_t=21977 lat_us=351 deadline_us=300 J_us=1631 class=a
+T1MISS task=display-vsync period=6657 reason=not_started start_t=-1 lat_t=79589 lat_us=1273 deadline_us=500 J_us=3448 class=a
+T1MISS task=display-vsync period=6715 reason=not_started start_t=-1 lat_t=89278 lat_us=1428 deadline_us=500 J_us=2470 class=a
+T1MISS task=display-vsync period=6744 reason=not_started start_t=-1 lat_t=117189 lat_us=1875 deadline_us=500 J_us=3747 class=a
+T1MISS task=display-vsync period=6774 reason=not_started start_t=-1 lat_t=121463 lat_us=1943 deadline_us=500 J_us=3545 class=a
+T1MISS task=display-vsync period=6803 reason=not_started start_t=-1 lat_t=90894 lat_us=1454 deadline_us=500 J_us=2567 class=a
+T1MISS task=display-vsync period=6833 reason=not_started start_t=-1 lat_t=75501 lat_us=1208 deadline_us=500 J_us=2604 class=a
+T1MISS task=display-vsync period=6862 reason=not_started start_t=-1 lat_t=88961 lat_us=1423 deadline_us=500 J_us=2520 class=a
+T1MISS task=display-vsync period=6892 reason=not_started start_t=-1 lat_t=81435 lat_us=1302 deadline_us=500 J_us=2390 class=a
+T1MISS task=display-vsync period=6921 reason=not_started start_t=-1 lat_t=168845 lat_us=2701 deadline_us=500 J_us=3789 class=a
+T1MISS task=display-vsync period=6925 reason=not_started start_t=-1 lat_t=222639 lat_us=3562 deadline_us=500 J_us=4229 class=a
+T1MISS task=timer-server period=6925 reason=not_started start_t=-1 lat_t=66389 lat_us=1062 deadline_us=300 J_us=4229 class=a
+T1MISS task=display-vsync period=6950 reason=not_started start_t=-1 lat_t=103821 lat_us=1661 deadline_us=500 J_us=1816 class=a
+T1MISS task=display-vsync period=6980 reason=not_started start_t=-1 lat_t=106332 lat_us=1701 deadline_us=500 J_us=1849 class=a
+T1MISS task=display-vsync period=7009 reason=not_started start_t=-1 lat_t=101270 lat_us=1620 deadline_us=500 J_us=1869 class=a
+misses: class a (clock jump) 17, class b (kernel) 0, skipped periods 0
+Tier 2/3 ticks inside tier-1 slots: 2997747
+结果: 守规矩的 Tier 1 错过 17 次，audio-mix 错过 4 次；失控者都停在自己的额度。
+
+=== 1 资源总览 / resource overview ===
+RAM 131072 KB. CPU period 10000 us. 1 tick = 16 ns.
+
+[系统预留] kernel, fixed, never lent
+  CPU 350 us/period = 21875 ticks
+  measured since boot: max 518507 ticks/period (period 4568 of 7024)
+  memory 16384 KB
+
+[Tier 1] one fixed slot per task; unused time stays idle
+  task           slot offset_us len_us max_used_us waste_us mem_kb
+  display-vsync     0      1000    500        5520        0   2048
+  timer-server      1      3500    300        6863        0   1024
+  gic-server        2      6000    300           0      300   2048
+  blk-driver        3      8000    400           0      400   4096
+  net-driver        -         -      -           -        -   4096
+  total CPU 1500 us/period, memory 13312 KB
+
+[Tier 2] admitted apps (minimum is guaranteed, suggested is spare only)
+  (none)
+  minimum sum: CPU 0 / 8110 us, memory 0 / 101376 KB
+  admission: reserve 350 + tier-1 1500 + tier-2 min 0 + guard 40 = 1890 <= 10000 us
+
+[Tier 3] everyone else, round robin 1000 us, leftover only
+  CPU not promised to anyone: 8110 us/period
+pressure: off
+QA DONE

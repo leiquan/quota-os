@@ -1,0 +1,18 @@
+=== cloned SHA ===
+4c2a5599af53df6d87fe9a10ffe7fbec29768c5c
+4c2a5599af53
+commit 4c2a5599af53df6d87fe9a10ffe7fbec29768c5c
+Author:     leiquan <8409312+leiquan@users.noreply.github.com>
+AuthorDate: Sat Nov 14 07:00:18 2026 +0800
+Commit:     leiquan <8409312+leiquan@users.noreply.github.com>
+CommitDate: Sat Nov 14 07:00:18 2026 +0800
+
+    v015: correct prebuilt image (no source change)
+    
+    9dc491b shipped prebuilt/quotaos.bin c070d438... by mistake: an
+    experiment build (bisecting the e3 job counts) overwrote prebuilt/ after
+    the tested candidate was copied there. This puts back the tested image,
+    which make SRC_COMMIT=559daed builds from the v015 source:
+    bin 99ec3fa2ea6ab795a3297feeda020a175afae126b894323267b22614e7078bb6
+    elf daf0c558b3f398ec9b3cb557be1b35f1bb915fa0a144d3683c105f3811929da8
+    (docs/accept-v015/kernel-sha256.txt).

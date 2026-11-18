@@ -41,6 +41,16 @@ past_header:
     msr     CPTR_EL2, x1
     msr     HSTR_EL2, xzr
 
+    /* 有 GICv3 系统寄存器接口时，允许 EL1 使用 ICC_*（ICC_SRE_EL2.Enable|SRE）。 */
+    mrs     x1, ID_AA64PFR0_EL1
+    ubfx    x1, x1, #24, #4
+    cbz     x1, 9f
+    mrs     x1, S3_4_C12_C9_5        /* ICC_SRE_EL2 */
+    mov     x2, #0x9
+    orr     x1, x1, x2
+    msr     S3_4_C12_C9_5, x1
+    isb
+9:
     /* EL1 使用 AArch64。 */
     mov     x1, #(1 << 31)
     msr     HCR_EL2, x1
@@ -58,11 +68,16 @@ past_header:
     eret
 
 el1_entry:
+    /* Allow FP/SIMD at EL1. The CLoop image uses it. Handlers do not. */
+    mrs     x1, cpacr_el1
+    orr     x1, x1, #(3 << 20)
+    msr     cpacr_el1, x1
+    isb
     msr     DAIFSet, #0xf
     ldr     x1, =_boot_stack_top
     mov     sp, x1
 
-    ldr     x1, =vectors
+    ldr     x1, =gate_vectors
     msr     VBAR_EL1, x1
     isb
 

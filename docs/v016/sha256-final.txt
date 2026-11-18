@@ -1,0 +1,7 @@
+8dbd8a40329c16a2c7c5de704cb1ea5c5ffc9abb9867977818b69f81aa18c95a  build/quotaos.bin
+5198db4917af447668b84292c8f8f16e0cc808125f3a6c5b66bb0f9501b80642  build/quotaos.elf
+build/quotaos.bin 92024
+build/quotaos.elf 172352
+prebuilt/quotaos.bin 92024
+prebuilt/quotaos.elf 172352
+/tmp/quota-baseline/delivered-quotaos.bin 89000

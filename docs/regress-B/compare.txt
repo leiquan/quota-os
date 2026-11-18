@@ -1,0 +1,85 @@
+IDENTICAL after masking timing numbers
+--- docs/regress-A/menus-A.txt
++++ docs/regress-B/menus-B-run1.txt
+@@ -53,3 +53,3 @@
+ ==========================================
+-保证期统计（只在分级 ON 且不在测量探针里计数）:
++保证期统计（分级 ON 期间释放的作业；OFF 期间释放的记进 OFF 对照）:
+  display-vsync hits=# misses=# max_latency=# us (OFF 对照 misses=#)
+@@ -57,2 +57,8 @@
+ 定时器中断 jiffies=#
++Tier 1 截止期（延迟从理想周期起点 epoch+k*10000 us 算；跳过的周期、未完成的作业都算错过）:
++T#STAT display-vsync jobs=# hits=# misses=# skipped=# unfinished=# lat_p#=# lat_p#=# lat_max=# dispatch_lag_max=# deadline=# misses_off=#
++T1HIST display-vsync <histogram>
++T#STAT timer-server jobs=# hits=# misses=# skipped=# unfinished=# lat_p#=# lat_p#=# lat_max=# dispatch_lag_max=# deadline=# misses_off=#
++T1HIST timer-server <histogram>
++T#STAT periods=# period_skips=# clock_jumps=# clock_jump_max=# us skip_events=#
+ select> 4
+@@ -102,3 +108,5 @@
+ tier-# bg-hog: recv_avg # us（只拿到没人要的剩余时间）
+-结果: 失范任务被预算笼子掐住。tier-# 和守规矩的 tier-# 错过次数 = #。
++bad-driver max_recv=# us/period, bad-encoder max_recv=# us/period
++结果: 失范任务被预算笼子掐住（单周期不超过声明预算 + #us 记账容差）。
++截止期: tier-# 错过 # 次，守规矩的 tier-# 错过 # 次；同一窗口内时钟跳动 # 次、跳过周期 # 个。
+ select> 2
+@@ -236,3 +244,3 @@
+ ==========================================
+-保证期统计（只在分级 ON 且不在测量探针里计数）:
++保证期统计（分级 ON 期间释放的作业；OFF 期间释放的记进 OFF 对照）:
+  display-vsync hits=# misses=# max_latency=# us (OFF 对照 misses=#)
+@@ -240,2 +248,8 @@
+ 定时器中断 jiffies=#
++Tier 1 截止期（延迟从理想周期起点 epoch+k*10000 us 算；跳过的周期、未完成的作业都算错过）:
++T#STAT display-vsync jobs=# hits=# misses=# skipped=# unfinished=# lat_p#=# lat_p#=# lat_max=# dispatch_lag_max=# deadline=# misses_off=#
++T1HIST display-vsync <histogram>
++T#STAT timer-server jobs=# hits=# misses=# skipped=# unfinished=# lat_p#=# lat_p#=# lat_max=# dispatch_lag_max=# deadline=# misses_off=#
++T1HIST timer-server <histogram>
++T#STAT periods=# period_skips=# clock_jumps=# clock_jump_max=# us skip_events=#
+ select> 8
+@@ -374,3 +388,3 @@
+ sum of declared slices = 6400 us/period, tier-1 reserve stays outside this pool.
+-结果: 有切片没给够或 tier-# 被耽误了。
++结果: 切片没给够 # 次，tier-# display-vsync 错过 # 次；同一窗口内时钟跳动 # 次、跳过周期 # 个。
+ 批量应用已全部关闭，保底额度归还。
+@@ -406,3 +420,3 @@
+ ==========================================
+-保证期统计（只在分级 ON 且不在测量探针里计数）:
++保证期统计（分级 ON 期间释放的作业；OFF 期间释放的记进 OFF 对照）:
+  display-vsync hits=# misses=# max_latency=# us (OFF 对照 misses=#)
+@@ -410,2 +424,8 @@
+ 定时器中断 jiffies=#
++Tier 1 截止期（延迟从理想周期起点 epoch+k*10000 us 算；跳过的周期、未完成的作业都算错过）:
++T#STAT display-vsync jobs=# hits=# misses=# skipped=# unfinished=# lat_p#=# lat_p#=# lat_max=# dispatch_lag_max=# deadline=# misses_off=#
++T1HIST display-vsync <histogram>
++T#STAT timer-server jobs=# hits=# misses=# skipped=# unfinished=# lat_p#=# lat_p#=# lat_max=# dispatch_lag_max=# deadline=# misses_off=#
++T1HIST timer-server <histogram>
++T#STAT periods=# period_skips=# clock_jumps=# clock_jump_max=# us skip_events=#
+ select> x
+@@ -481,3 +501,3 @@
+ ==========================================
+-保证期统计（只在分级 ON 且不在测量探针里计数）:
++保证期统计（分级 ON 期间释放的作业；OFF 期间释放的记进 OFF 对照）:
+  display-vsync hits=# misses=# max_latency=# us (OFF 对照 misses=#)
+@@ -485,2 +505,8 @@
+ 定时器中断 jiffies=#
++Tier 1 截止期（延迟从理想周期起点 epoch+k*10000 us 算；跳过的周期、未完成的作业都算错过）:
++T#STAT display-vsync jobs=# hits=# misses=# skipped=# unfinished=# lat_p#=# lat_p#=# lat_max=# dispatch_lag_max=# deadline=# misses_off=#
++T1HIST display-vsync <histogram>
++T#STAT timer-server jobs=# hits=# misses=# skipped=# unfinished=# lat_p#=# lat_p#=# lat_max=# dispatch_lag_max=# deadline=# misses_off=#
++T1HIST timer-server <histogram>
++T#STAT periods=# period_skips=# clock_jumps=# clock_jump_max=# us skip_events=#
+ select> 2
+@@ -576,3 +602,3 @@
+ ==========================================
+-保证期统计（只在分级 ON 且不在测量探针里计数）:
++保证期统计（分级 ON 期间释放的作业；OFF 期间释放的记进 OFF 对照）:
+  display-vsync hits=# misses=# max_latency=# us (OFF 对照 misses=#)
+@@ -580,2 +606,8 @@
+ 定时器中断 jiffies=#
++Tier 1 截止期（延迟从理想周期起点 epoch+k*10000 us 算；跳过的周期、未完成的作业都算错过）:
++T#STAT display-vsync jobs=# hits=# misses=# skipped=# unfinished=# lat_p#=# lat_p#=# lat_max=# dispatch_lag_max=# deadline=# misses_off=#
++T1HIST display-vsync <histogram>
++T#STAT timer-server jobs=# hits=# misses=# skipped=# unfinished=# lat_p#=# lat_p#=# lat_max=# dispatch_lag_max=# deadline=# misses_off=#
++T1HIST timer-server <histogram>
++T#STAT periods=# period_skips=# clock_jumps=# clock_jump_max=# us skip_events=#
+ select> QEMU: Terminated

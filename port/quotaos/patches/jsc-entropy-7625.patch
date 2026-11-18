@@ -1,0 +1,44 @@
+diff --git a/Source/WTF/wtf/RandomDevice.cpp b/Source/WTF/wtf/RandomDevice.cpp
+index 95921fd3..e4859eb7 100644
+--- a/Source/WTF/wtf/RandomDevice.cpp
++++ b/Source/WTF/wtf/RandomDevice.cpp
+@@ -64,6 +64,13 @@ NEVER_INLINE NO_RETURN_DUE_TO_CRASH static void crashUnableToReadFromURandom()
+ #endif
+ 
+ #if !OS(DARWIN) && !OS(FUCHSIA) && !OS(WINDOWS)
++#if defined(QUOTAOS_ENTROPY)
++extern "C" void quotaos_entropy(uint8_t*, size_t);
++RandomDevice::RandomDevice()
++    : m_fd(-1)
++{
++}
++#else
+ RandomDevice::RandomDevice()
+ {
+     int ret = 0;
+@@ -75,6 +82,7 @@ RandomDevice::RandomDevice()
+         crashUnableToOpenURandom(); // We need /dev/urandom for this API to work...
+ }
+ #endif
++#endif
+ 
+ #if !OS(DARWIN) && !OS(FUCHSIA) && !OS(WINDOWS)
+ RandomDevice::~RandomDevice()
+@@ -92,6 +100,9 @@ void RandomDevice::cryptographicallyRandomValues(std::span<uint8_t> buffer)
+ #elif OS(FUCHSIA)
+     zx_cprng_draw(buffer.data(), buffer.size());
+ #elif OS(UNIX)
++#if defined(QUOTAOS_ENTROPY)
++    quotaos_entropy(buffer.data(), buffer.size());
++#else
+     ssize_t amountRead = 0;
+     while (static_cast<size_t>(amountRead) < buffer.size()) {
+         WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
+@@ -105,6 +116,7 @@ void RandomDevice::cryptographicallyRandomValues(std::span<uint8_t> buffer)
+         } else
+             amountRead += currentRead;
+     }
++#endif
+ #elif OS(WINDOWS)
+     // FIXME: We cannot ensure that Cryptographic Service Provider context and CryptGenRandom are safe across threads.
+     // If it is safe, we can acquire context per RandomDevice.

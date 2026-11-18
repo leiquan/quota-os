@@ -1,0 +1,95 @@
+
+Quota OS microkernel
+Version: 014 (7065679)
+基于三级资源声明的微内核，
+保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB memory 134217728 bytes
+[boot] system reserve 350 us/period, 16384 KB;
+       tier-1 1500 us/period, 13312 KB; guard 80 us/period
+[boot] cache colors: 32 (model: 2 MB 16-way cache, 4 KB pages);
+       tier-1 pages in 7 own colors, padding 11776 KB
+[boot] kernel image+bss 553 KB of the 16384 KB system reserve
+[boot] GICv3 from DTB: distributor 0x8000000, redistributor 0x80a0000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] clock: icount (counter driven by instruction count)
+[boot] simulated device IRQ line: EL1 physical timer, PPI 30
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 625000, period 625000 ticks, guard 1250 ticks
+[boot] shell task running
+[dev] 3 new simulated devices start in Tier 3; verifying
+      (8 jobs, 8 aborts each, IRQs masked, before the next guard)
+[dev] sim-dma: job 396/400 us, stop 7/20 us (measured/declared)
+[dev] sim-blk: job 1991/2000 us, stop 1770/2000 us (measured/declared)
+[dev] sim-cam: job 291/300 us, stop 8/30 us (measured/declared)
+
+=== 11 设备申请 Tier 1：不能打断的设备被拒 ===
+Three simulated devices (software models, not real hardware).
+The system measures each one (8 full jobs, 8 aborts) with IRQs
+masked, only where the job ends before the next tier-1 guard.
+Admission uses only the declared (factory) values; the measured
+ones are for verification.
+  device   preempt divisible max_job switch stop_bound | measured:
+                                                       job_max  stop_max
+  sim-dma      yes       yes     400      5         20 |     396         7 us
+  sim-blk       no        no    2000     10       2000 |    1991      1770 us
+  sim-cam      yes       yes     300      5         30 |     291         8 us
+display-vsync already declares sim-dma 2000 us (Tier 1).
+
+cam-app asks Tier 1 (per 10000 us):
+  sim-dma 1000 us
+OK: admitted (not started; released again)
+rec-app asks Tier 1 (per 10000 us):
+  sim-blk 1000 us
+REFUSED: (device not allowed in Tier 1)
+  missing: 不能强制叫停 (sim-blk is non-preemptible)
+  missing: 停止上限超过 Tier 1 限值 (declared stop 2000 us > 20 us)
+  missing: 不可切分 (not divisible); exclusive use would waive this one
+rec-app asks Tier 2 (per 10000 us):
+  sim-blk 1000 us
+OK: admitted (not started; released again)
+scan-app asks Tier 1 (per 10000 us):
+  sim-cam 500 us
+REFUSED: (device not allowed in Tier 1)
+  missing: 停止上限超过 Tier 1 限值 (declared stop 30 us > 20 us)
+
+=== 12 超额申请在启动时被拒，并说明是哪种资源 ===
+cpu-hog asks Tier 2 (per 10000 us):
+  CPU 8200 us, memory 1024 KB
+REFUSED: CPU
+  CPU overcommitted: reserve 350 + tier-1 1500 + tier-2 min 0
+    + guard 80 + this 8200 = 10130 > capacity 10000 us
+mem-hog asks Tier 2 (per 10000 us):
+  CPU 1000 us, memory 110000 KB
+REFUSED: memory
+  memory overcommitted: reserve 16384 + tier-1 13312 + tier-2 min 0
+    + guard 11776 + this 110000 = 151472 > capacity 131072 KB
+dma-hog asks Tier 2 (per 10000 us):
+  CPU 1000 us, memory 1024 KB, sim-dma 8500 us
+REFUSED: sim-dma
+  sim-dma overcommitted: reserve 0 + tier-1 2000 + tier-2 min 0
+    + guard 20 + this 8500 = 10520 > capacity 10000 us
+all-hog asks Tier 2 (per 10000 us):
+  CPU 8200 us, memory 110000 KB, sim-dma 8500 us
+REFUSED: CPU memory sim-dma
+  CPU overcommitted: reserve 350 + tier-1 1500 + tier-2 min 0
+    + guard 80 + this 8200 = 10130 > capacity 10000 us
+  memory overcommitted: reserve 16384 + tier-1 13312 + tier-2 min 0
+    + guard 11776 + this 110000 = 151472 > capacity 131072 KB
+  sim-dma overcommitted: reserve 0 + tier-1 2000 + tier-2 min 0
+    + guard 20 + this 8500 = 10520 > capacity 10000 us
+fits asks Tier 2 (per 10000 us):
+  CPU 8000 us, memory 85000 KB, sim-dma 7000 us
+OK: admitted (not started; released again)
+E1 item2 non-preemptible Tier 1: asked 100, refused 100,
+  both missing conditions named 100; controls admitted: yes
+E1 item2 PASS
+E1 declared-bound sim-cam (declared stop 30 us > 20 us) Tier 1:
+  asked 30, refused naming the bound 30; Tier 2 control admitted: yes
+E1 declared-bound PASS
+E1 item4 overcommit: cases 7, verdict right 7,
+  resource named exactly 7
+E1 item4 PASS
+Tier 1 misses since boot (device measurements included): 0
+QA DONE

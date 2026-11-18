@@ -1,0 +1,43 @@
+mode: normal (no icount)
+kernel: build/quotaos.bin
+rounds: 30
+
+round 01 ok=True | display-vsync jobs=162 misses=0 skipped=0 unfinished=0 p50=62 p99=355 max=509 | timer-server jobs=162 misses=0 skipped=0 unfinished=0 p50=158 p99=449 max=818 | periods=162 skips=0 clock_jumps=643
+round 02 ok=True | display-vsync jobs=162 misses=1 skipped=0 unfinished=0 p50=59 p99=493 max=804 | timer-server jobs=162 misses=0 skipped=0 unfinished=0 p50=158 p99=604 max=1163 | periods=162 skips=0 clock_jumps=648
+round 03 ok=True | display-vsync jobs=163 misses=2 skipped=1 unfinished=0 p50=66 p99=594 max=6449 | timer-server jobs=163 misses=2 skipped=1 unfinished=0 p50=167 p99=778 max=6579 | periods=163 skips=1 clock_jumps=569
+round 04 ok=True | display-vsync jobs=162 misses=3 skipped=0 unfinished=0 p50=65 p99=5195 max=6579 | timer-server jobs=162 misses=2 skipped=0 unfinished=0 p50=161 p99=5283 max=6683 | periods=162 skips=0 clock_jumps=588
+round 05 ok=True | display-vsync jobs=162 misses=4 skipped=0 unfinished=0 p50=53 p99=4163 max=6197 | timer-server jobs=162 misses=4 skipped=0 unfinished=0 p50=145 p99=4256 max=6366 | periods=162 skips=0 clock_jumps=505
+round 06 ok=True | display-vsync jobs=162 misses=2 skipped=0 unfinished=0 p50=53 p99=2313 max=4687 | timer-server jobs=162 misses=2 skipped=0 unfinished=0 p50=148 p99=2428 max=4868 | periods=162 skips=0 clock_jumps=590
+round 07 ok=True | display-vsync jobs=162 misses=0 skipped=0 unfinished=0 p50=58 p99=471 max=648 | timer-server jobs=162 misses=0 skipped=0 unfinished=0 p50=150 p99=696 max=749 | periods=162 skips=0 clock_jumps=548
+round 08 ok=True | display-vsync jobs=162 misses=3 skipped=0 unfinished=0 p50=56 p99=2905 max=2919 | timer-server jobs=162 misses=2 skipped=0 unfinished=0 p50=154 p99=3037 max=3087 | periods=162 skips=0 clock_jumps=583
+round 09 ok=True | display-vsync jobs=162 misses=1 skipped=0 unfinished=0 p50=50 p99=615 max=990 | timer-server jobs=162 misses=0 skipped=0 unfinished=0 p50=141 p99=1000 max=1203 | periods=162 skips=0 clock_jumps=465
+round 10 ok=True | display-vsync jobs=162 misses=1 skipped=0 unfinished=0 p50=48 p99=540 max=2408 | timer-server jobs=162 misses=1 skipped=0 unfinished=0 p50=142 p99=914 max=2563 | periods=162 skips=0 clock_jumps=504
+round 11 ok=True | display-vsync jobs=162 misses=2 skipped=0 unfinished=0 p50=57 p99=1233 max=3243 | timer-server jobs=162 misses=1 skipped=0 unfinished=0 p50=155 p99=1405 max=3404 | periods=162 skips=0 clock_jumps=579
+round 12 ok=True | display-vsync jobs=163 misses=8 skipped=0 unfinished=0 p50=56 p99=5159 max=6327 | timer-server jobs=163 misses=7 skipped=0 unfinished=1 p50=152 p99=5270 max=6486 | periods=163 skips=0 clock_jumps=536
+round 13 ok=True | display-vsync jobs=162 misses=7 skipped=1 unfinished=0 p50=56 p99=3815 max=7486 | timer-server jobs=162 misses=7 skipped=1 unfinished=0 p50=150 p99=3909 max=7585 | periods=162 skips=1 clock_jumps=515
+round 14 ok=True | display-vsync jobs=162 misses=0 skipped=0 unfinished=0 p50=59 p99=438 max=534 | timer-server jobs=162 misses=0 skipped=0 unfinished=0 p50=152 p99=532 max=1047 | periods=162 skips=0 clock_jumps=581
+round 15 ok=True | display-vsync jobs=162 misses=1 skipped=0 unfinished=0 p50=58 p99=590 max=4868 | timer-server jobs=162 misses=1 skipped=0 unfinished=0 p50=151 p99=921 max=5058 | periods=162 skips=0 clock_jumps=533
+round 16 ok=True | display-vsync jobs=162 misses=1 skipped=0 unfinished=0 p50=48 p99=666 max=4887 | timer-server jobs=162 misses=1 skipped=0 unfinished=0 p50=142 p99=897 max=5075 | periods=162 skips=0 clock_jumps=507
+round 17 ok=True | display-vsync jobs=162 misses=3 skipped=2 unfinished=0 p50=51 p99=788 max=4951 | timer-server jobs=162 misses=3 skipped=2 unfinished=0 p50=144 p99=887 max=5057 | periods=162 skips=2 clock_jumps=501
+round 18 ok=True | display-vsync jobs=162 misses=2 skipped=0 unfinished=0 p50=47 p99=1461 max=2681 | timer-server jobs=162 misses=2 skipped=0 unfinished=0 p50=144 p99=1554 max=2784 | periods=162 skips=0 clock_jumps=572
+round 19 ok=True | display-vsync jobs=162 misses=3 skipped=0 unfinished=0 p50=57 p99=1120 max=4692 | timer-server jobs=162 misses=1 skipped=0 unfinished=0 p50=153 p99=1251 max=4790 | periods=162 skips=0 clock_jumps=532
+round 20 ok=True | display-vsync jobs=162 misses=5 skipped=0 unfinished=0 p50=53 p99=1361 max=7073 | timer-server jobs=162 misses=2 skipped=0 unfinished=0 p50=148 p99=1583 max=7245 | periods=162 skips=0 clock_jumps=450
+round 21 ok=True | display-vsync jobs=162 misses=2 skipped=0 unfinished=0 p50=52 p99=1617 max=4058 | timer-server jobs=162 misses=2 skipped=0 unfinished=0 p50=144 p99=1711 max=4202 | periods=162 skips=0 clock_jumps=485
+round 22 ok=True | display-vsync jobs=162 misses=4 skipped=0 unfinished=0 p50=47 p99=1398 max=3781 | timer-server jobs=162 misses=2 skipped=0 unfinished=0 p50=139 p99=1558 max=3925 | periods=162 skips=0 clock_jumps=479
+round 23 ok=True | display-vsync jobs=162 misses=3 skipped=0 unfinished=0 p50=50 p99=2995 max=5208 | timer-server jobs=162 misses=2 skipped=0 unfinished=0 p50=143 p99=3133 max=5349 | periods=162 skips=0 clock_jumps=486
+round 24 ok=True | display-vsync jobs=162 misses=2 skipped=0 unfinished=0 p50=48 p99=2198 max=2254 | timer-server jobs=162 misses=2 skipped=0 unfinished=0 p50=141 p99=2323 max=2344 | periods=162 skips=0 clock_jumps=489
+round 25 ok=True | display-vsync jobs=162 misses=0 skipped=0 unfinished=0 p50=45 p99=409 max=518 | timer-server jobs=162 misses=0 skipped=0 unfinished=0 p50=138 p99=497 max=981 | periods=162 skips=0 clock_jumps=580
+round 26 ok=True | display-vsync jobs=162 misses=0 skipped=0 unfinished=0 p50=52 p99=336 max=603 | timer-server jobs=162 misses=0 skipped=0 unfinished=0 p50=145 p99=426 max=900 | periods=162 skips=0 clock_jumps=596
+round 27 ok=True | display-vsync jobs=162 misses=2 skipped=0 unfinished=0 p50=69 p99=2295 max=3780 | timer-server jobs=162 misses=3 skipped=0 unfinished=1 p50=164 p99=2464 max=3903 | periods=162 skips=0 clock_jumps=600
+round 28 ok=True | display-vsync jobs=162 misses=0 skipped=0 unfinished=0 p50=49 p99=462 max=596 | timer-server jobs=162 misses=0 skipped=0 unfinished=0 p50=144 p99=559 max=915 | periods=162 skips=0 clock_jumps=499
+round 29 ok=True | display-vsync jobs=162 misses=0 skipped=0 unfinished=0 p50=58 p99=421 max=583 | timer-server jobs=162 misses=0 skipped=0 unfinished=0 p50=152 p99=531 max=909 | periods=162 skips=0 clock_jumps=527
+round 30 ok=True | display-vsync jobs=162 misses=3 skipped=1 unfinished=0 p50=69 p99=3466 max=7346 | timer-server jobs=162 misses=3 skipped=1 unfinished=0 p50=163 p99=3614 max=7436 | periods=162 skips=1 clock_jumps=546
+
+TOTAL
+display-vsync jobs=4862 misses=65 (skipped=5 unfinished=0) lat_from_ideal p50=54 p99=1202 max=7486 us deadline=800 us dispatch_lag_max=7483 us
+timer-server jobs=4862 misses=52 (skipped=5 unfinished=2) lat_from_ideal p50=149 p99=1401 max=7585 us deadline=1500 us dispatch_lag_max=7483 us
+periods=4862 period_skips=5 clock_jumps=16236
+failed_rounds=0
+host load:  00:45:21 up 11:45,  0 users,  load average: 3.28, 11.43, 18.44
+host load:  00:46:18 up 11:46,  0 users,  load average: 3.04, 9.87, 17.46
+kernel sha256: 08bdaf40837b058dd2184fe30ab7597755840a938e74290f7771eb5690ce3cae (commit B source)

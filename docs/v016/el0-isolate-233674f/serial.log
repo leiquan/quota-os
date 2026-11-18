@@ -1,0 +1,818 @@
+[mmu] tables ready
+[mmu] identity map on, EL1. RAM 0x40000000-0x48000000, devices 0x08000000-0x0c000000
+[mmu] kernel map is EL1-only. EL0 apps get a separate TTBR0. This is not a certification.
+[mmu] protect none-fault=1 read=1 write-fault=1 rw=1
+[proc] EL0 slots 2 pool 16 draw 4096 queue 3/8 freq 2/period. target 20000 us is a goal, not a measured bound.
+[proc] kernel ttbr 0x40166000. Handles carry a generation. Realtime tier-1 is not accepted here.
+
+Quota OS microkernel
+Version: 016 (233674f)
+基于三级资源声明的微内核，
+保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] EL1 SPSel=1 SCTLR_EL1.M=1
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB snapshot 7540 bytes (header said 1048576)
+[boot] DTB memory 134217728 bytes
+[boot] system reserve 350 us/period, 16384 KB;
+       tier-1 1500 us/period, 13312 KB; guard 80 us/period
+[boot] EL1 map is the kernel map. EL0 apps use a separate TTBR0. Tier-1 realtime is not claimed here.
+[boot] cache colors: 32 (model: 2 MB 16-way cache, 4 KB pages);
+       tier-1 pages in 7 own colors, padding 11776 KB
+[boot] kernel image+bss 1927 KB of the 16384 KB system reserve
+[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] clock: host time (not icount; timings are reference only)
+[boot] simulated device IRQ line: EL1 physical timer, PPI 30
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 3125000, period 625000 ticks, guard 1250 ticks
+[boot] shell task running
+[dev] 3 new simulated devices start in Tier 3; verifying
+      (8 jobs, 8 aborts each, IRQs masked, before the next guard)
+[dev] sim-dma: job 396/400 us, stop 15/20 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-blk: job 1991/2000 us, stop 1770/2000 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-cam: job 291/300 us, stop 8/30 us (measured/declared)
+      [非 icount，仅供参考]
+[boot] el0 isolation
+[isolate] rounds kill=100 fault=100 target_us=20000 (2 periods). Target is not a prior result.
+[isolate] queue rejects when full. Drain runs on this shell, not in display-vsync. Tier-1 is not accepted here.
+[fb] reserved 1228800 bytes at 0x40ed4000 inside the system reserve
+[fb] ramfb published 640x480 stride 2560 at 0x40ed4000 from fw_cfg 0x9020000
+[ledger] baseline procs=0 pages_free=16 pages_used=0 queue=0 holds=0 mem_kb=0 running=0 refusals=0 stale_drain=0
+[map] pid=4 handle=0x10001 gen=1 asid=1 ttbr=0x1000040201000 draw_pa=0x401ed000
+[map] pte code=0x401ebfc3 stack=0x600000401ecf43 draw=0x600000401edf43 ap_el0=1/1/1
+[map] walk kern=0x400813a0 pte=0x40000040000701 ap_el0=0 dev pte=0x60000009000405 ap_el0=0 fb pte=0x40000040ed4703 ap_el0=0
+[map] pid=5 handle=0x10002 gen=1 asid=2 ttbr=0x2000040202000 draw_pa=0x401f0000
+[map] pte code=0x401eefc3 stack=0x600000401eff43 draw=0x600000401f0f43 ap_el0=1/1/1
+[map] walk kern=0x400813a0 pte=0x40000040000701 ap_el0=0 dev pte=0x60000009000405 ap_el0=0 fb pte=0x40000040ed4703 ap_el0=0
+[isolate] spawn b=0x10001 a=0x10002 third=-1
+[isolate] oversize admit 1
+REFUSED: device does not meet minimum requirements
+  minimum memory 4294967295 KB > 89600 KB for apps
+  (RAM 131072 KB - system reserve - tier-1 - color padding)
+No app can be closed to make room: this device is too small.
+[ledger] both-live procs=2 pages_free=10 pages_used=6 queue=2 holds=2 mem_kb=32 running=2 refusals=0 stale_drain=0
+[ledger] proc pid=4 gen=1 asid=1 handle=0x10001 ttbr=0x1000040201000 draw=0x401ed000 submits=1 range=0 freq=0 depth=0 hold=1 q=1
+[ledger] proc pid=5 gen=1 asid=2 handle=0x10002 ttbr=0x2000040202000 draw=0x401f0000 submits=1 range=0 freq=0 depth=0 hold=1 q=1
+[isolate] shot both
+[isolate] pixels A 0x3f00 -> 0xbf00 B 0x3f -> 0xbf b_sub 0 -> 402
+[reap] pid=5 why=kill step=1 revoke submit gen 1 -> 2
+[reap] pid=5 step=2 cancel inflight hold_before=1 cancelled=1
+[reap] pid=5 step=3 unmap refused=0 hold_after=0 free 10 -> 13 draw0=0xcf00
+[reap] pid=5 measured us=308 ticks=19257 periods=0 target_us=20000 late=0
+[isolate] shot after
+[isolate] after kill pixels B 0xcf -> 0x11f b_sub=804
+[map] pid=5 handle=0x20002 gen=2 asid=2 draw_pa=0x401f0000
+[isolate] kill 0 pid=5 gen 1->2 us=308 ticks=19257 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0xcf00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x30002 gen=3 asid=2 draw_pa=0x401f0000
+[isolate] kill 1 pid=5 gen 2->3 us=17 ticks=1100 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x40002 gen=4 asid=2 draw_pa=0x401f0000
+[isolate] kill 2 pid=5 gen 3->4 us=9 ticks=585 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x50002 gen=5 asid=2 draw_pa=0x401f0000
+[isolate] kill 3 pid=5 gen 4->5 us=31 ticks=1971 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x60002 gen=6 asid=2 draw_pa=0x401f0000
+[isolate] kill 4 pid=5 gen 5->6 us=9 ticks=564 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x70002 gen=7 asid=2 draw_pa=0x401f0000
+[isolate] kill 5 pid=5 gen 6->7 us=8 ticks=543 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x80002 gen=8 asid=2 draw_pa=0x401f0000
+[isolate] kill 6 pid=5 gen 7->8 us=26 ticks=1684 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x90002 gen=9 asid=2 draw_pa=0x401f0000
+[isolate] kill 7 pid=5 gen 8->9 us=9 ticks=599 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0xa0002 gen=10 asid=2 draw_pa=0x401f0000
+[isolate] kill 8 pid=5 gen 9->10 us=21 ticks=1366 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0xb0002 gen=11 asid=2 draw_pa=0x401f0000
+[isolate] kill 9 pid=5 gen 10->11 us=51 ticks=3193 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0xc0002 gen=12 asid=2 draw_pa=0x401f0000
+[isolate] kill 10 pid=5 gen 11->12 us=21 ticks=1357 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0xd0002 gen=13 asid=2 draw_pa=0x401f0000
+[isolate] kill 11 pid=5 gen 12->13 us=34 ticks=2130 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0xe0002 gen=14 asid=2 draw_pa=0x401f0000
+[isolate] kill 12 pid=5 gen 13->14 us=9 ticks=586 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0xf0002 gen=15 asid=2 draw_pa=0x401f0000
+[isolate] kill 13 pid=5 gen 14->15 us=8 ticks=544 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x100002 gen=16 asid=2 draw_pa=0x401f0000
+[isolate] kill 14 pid=5 gen 15->16 us=8 ticks=535 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x110002 gen=17 asid=2 draw_pa=0x401f0000
+[isolate] kill 15 pid=5 gen 16->17 us=8 ticks=538 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x120002 gen=18 asid=2 draw_pa=0x401f0000
+[isolate] kill 16 pid=5 gen 17->18 us=26 ticks=1682 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x130002 gen=19 asid=2 draw_pa=0x401f0000
+[isolate] kill 17 pid=5 gen 18->19 us=26 ticks=1671 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x140002 gen=20 asid=2 draw_pa=0x401f0000
+[isolate] kill 18 pid=5 gen 19->20 us=9 ticks=567 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x150002 gen=21 asid=2 draw_pa=0x401f0000
+[isolate] kill 19 pid=5 gen 20->21 us=8 ticks=548 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x160002 gen=22 asid=2 draw_pa=0x401f0000
+[isolate] kill 20 pid=5 gen 21->22 us=8 ticks=541 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x170002 gen=23 asid=2 draw_pa=0x401f0000
+[isolate] kill 21 pid=5 gen 22->23 us=8 ticks=558 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x180002 gen=24 asid=2 draw_pa=0x401f0000
+[isolate] kill 22 pid=5 gen 23->24 us=26 ticks=1664 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x190002 gen=25 asid=2 draw_pa=0x401f0000
+[isolate] kill 23 pid=5 gen 24->25 us=26 ticks=1668 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x1a0002 gen=26 asid=2 draw_pa=0x401f0000
+[isolate] kill 24 pid=5 gen 25->26 us=8 ticks=551 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x1b0002 gen=27 asid=2 draw_pa=0x401f0000
+[isolate] kill 25 pid=5 gen 26->27 us=8 ticks=538 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x1c0002 gen=28 asid=2 draw_pa=0x401f0000
+[isolate] kill 26 pid=5 gen 27->28 us=8 ticks=535 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=804
+[map] pid=5 handle=0x1d0002 gen=29 asid=2 draw_pa=0x401f0000
+[isolate] kill 27 pid=5 gen 28->29 us=28 ticks=1769 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=805
+[map] pid=5 handle=0x1e0002 gen=30 asid=2 draw_pa=0x401f0000
+[isolate] kill 28 pid=5 gen 29->30 us=8 ticks=561 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=805
+[map] pid=5 handle=0x1f0002 gen=31 asid=2 draw_pa=0x401f0000
+[isolate] kill 29 pid=5 gen 30->31 us=8 ticks=534 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=805
+[map] pid=5 handle=0x200002 gen=32 asid=2 draw_pa=0x401f0000
+[isolate] kill 30 pid=5 gen 31->32 us=8 ticks=534 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=805
+[map] pid=5 handle=0x210002 gen=33 asid=2 draw_pa=0x401f0000
+[isolate] kill 31 pid=5 gen 32->33 us=8 ticks=536 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=805
+[map] pid=5 handle=0x220002 gen=34 asid=2 draw_pa=0x401f0000
+[isolate] kill 32 pid=5 gen 33->34 us=26 ticks=1629 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=805
+[map] pid=5 handle=0x230002 gen=35 asid=2 draw_pa=0x401f0000
+[isolate] kill 33 pid=5 gen 34->35 us=8 ticks=544 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=805
+[map] pid=5 handle=0x240002 gen=36 asid=2 draw_pa=0x401f0000
+[isolate] kill 34 pid=5 gen 35->36 us=8 ticks=530 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=805
+[map] pid=5 handle=0x250002 gen=37 asid=2 draw_pa=0x401f0000
+[isolate] kill 35 pid=5 gen 36->37 us=27 ticks=1696 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x260002 gen=38 asid=2 draw_pa=0x401f0000
+[isolate] kill 36 pid=5 gen 37->38 us=8 ticks=557 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x270002 gen=39 asid=2 draw_pa=0x401f0000
+[isolate] kill 37 pid=5 gen 38->39 us=8 ticks=541 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x280002 gen=40 asid=2 draw_pa=0x401f0000
+[isolate] kill 38 pid=5 gen 39->40 us=8 ticks=536 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x290002 gen=41 asid=2 draw_pa=0x401f0000
+[isolate] kill 39 pid=5 gen 40->41 us=8 ticks=535 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x2a0002 gen=42 asid=2 draw_pa=0x401f0000
+[isolate] kill 40 pid=5 gen 41->42 us=25 ticks=1616 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x2b0002 gen=43 asid=2 draw_pa=0x401f0000
+[isolate] kill 41 pid=5 gen 42->43 us=9 ticks=569 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x2c0002 gen=44 asid=2 draw_pa=0x401f0000
+[isolate] kill 42 pid=5 gen 43->44 us=8 ticks=536 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x2d0002 gen=45 asid=2 draw_pa=0x401f0000
+[isolate] kill 43 pid=5 gen 44->45 us=8 ticks=540 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x2e0002 gen=46 asid=2 draw_pa=0x401f0000
+[isolate] kill 44 pid=5 gen 45->46 us=32 ticks=2026 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x2f0002 gen=47 asid=2 draw_pa=0x401f0000
+[isolate] kill 45 pid=5 gen 46->47 us=8 ticks=551 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x300002 gen=48 asid=2 draw_pa=0x401f0000
+[isolate] kill 46 pid=5 gen 47->48 us=8 ticks=538 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x310002 gen=49 asid=2 draw_pa=0x401f0000
+[isolate] kill 47 pid=5 gen 48->49 us=8 ticks=538 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x320002 gen=50 asid=2 draw_pa=0x401f0000
+[isolate] kill 48 pid=5 gen 49->50 us=8 ticks=532 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x330002 gen=51 asid=2 draw_pa=0x401f0000
+[isolate] kill 49 pid=5 gen 50->51 us=9 ticks=603 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x340002 gen=52 asid=2 draw_pa=0x401f0000
+[isolate] kill 50 pid=5 gen 51->52 us=8 ticks=547 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x350002 gen=53 asid=2 draw_pa=0x401f0000
+[isolate] kill 51 pid=5 gen 52->53 us=26 ticks=1643 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x360002 gen=54 asid=2 draw_pa=0x401f0000
+[isolate] kill 52 pid=5 gen 53->54 us=8 ticks=544 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x370002 gen=55 asid=2 draw_pa=0x401f0000
+[isolate] kill 53 pid=5 gen 54->55 us=8 ticks=537 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x380002 gen=56 asid=2 draw_pa=0x401f0000
+[isolate] kill 54 pid=5 gen 55->56 us=8 ticks=537 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x390002 gen=57 asid=2 draw_pa=0x401f0000
+[isolate] kill 55 pid=5 gen 56->57 us=8 ticks=540 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x3a0002 gen=58 asid=2 draw_pa=0x401f0000
+[isolate] kill 56 pid=5 gen 57->58 us=12 ticks=771 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=806
+[map] pid=5 handle=0x3b0002 gen=59 asid=2 draw_pa=0x401f0000
+[isolate] kill 57 pid=5 gen 58->59 us=8 ticks=541 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x3c0002 gen=60 asid=2 draw_pa=0x401f0000
+[isolate] kill 58 pid=5 gen 59->60 us=11 ticks=744 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x3d0002 gen=61 asid=2 draw_pa=0x401f0000
+[isolate] kill 59 pid=5 gen 60->61 us=8 ticks=554 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x3e0002 gen=62 asid=2 draw_pa=0x401f0000
+[isolate] kill 60 pid=5 gen 61->62 us=8 ticks=535 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x3f0002 gen=63 asid=2 draw_pa=0x401f0000
+[isolate] kill 61 pid=5 gen 62->63 us=14 ticks=926 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x400002 gen=64 asid=2 draw_pa=0x401f0000
+[isolate] kill 62 pid=5 gen 63->64 us=25 ticks=1581 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x410002 gen=65 asid=2 draw_pa=0x401f0000
+[isolate] kill 63 pid=5 gen 64->65 us=18 ticks=1170 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x420002 gen=66 asid=2 draw_pa=0x401f0000
+[isolate] kill 64 pid=5 gen 65->66 us=30 ticks=1936 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x430002 gen=67 asid=2 draw_pa=0x401f0000
+[isolate] kill 65 pid=5 gen 66->67 us=9 ticks=572 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x440002 gen=68 asid=2 draw_pa=0x401f0000
+[isolate] kill 66 pid=5 gen 67->68 us=8 ticks=540 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x450002 gen=69 asid=2 draw_pa=0x401f0000
+[isolate] kill 67 pid=5 gen 68->69 us=27 ticks=1711 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x460002 gen=70 asid=2 draw_pa=0x401f0000
+[isolate] kill 68 pid=5 gen 69->70 us=9 ticks=567 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x470002 gen=71 asid=2 draw_pa=0x401f0000
+[isolate] kill 69 pid=5 gen 70->71 us=8 ticks=548 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x480002 gen=72 asid=2 draw_pa=0x401f0000
+[isolate] kill 70 pid=5 gen 71->72 us=8 ticks=536 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x490002 gen=73 asid=2 draw_pa=0x401f0000
+[isolate] kill 71 pid=5 gen 72->73 us=8 ticks=534 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x4a0002 gen=74 asid=2 draw_pa=0x401f0000
+[isolate] kill 72 pid=5 gen 73->74 us=26 ticks=1643 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x4b0002 gen=75 asid=2 draw_pa=0x401f0000
+[isolate] kill 73 pid=5 gen 74->75 us=11 ticks=739 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x4c0002 gen=76 asid=2 draw_pa=0x401f0000
+[isolate] kill 74 pid=5 gen 75->76 us=9 ticks=572 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x4d0002 gen=77 asid=2 draw_pa=0x401f0000
+[isolate] kill 75 pid=5 gen 76->77 us=9 ticks=566 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x4e0002 gen=78 asid=2 draw_pa=0x401f0000
+[isolate] kill 76 pid=5 gen 77->78 us=42 ticks=2673 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x4f0002 gen=79 asid=2 draw_pa=0x401f0000
+[isolate] kill 77 pid=5 gen 78->79 us=14 ticks=909 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x500002 gen=80 asid=2 draw_pa=0x401f0000
+[isolate] kill 78 pid=5 gen 79->80 us=13 ticks=871 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x510002 gen=81 asid=2 draw_pa=0x401f0000
+[isolate] kill 79 pid=5 gen 80->81 us=13 ticks=855 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x520002 gen=82 asid=2 draw_pa=0x401f0000
+[isolate] kill 80 pid=5 gen 81->82 us=31 ticks=1991 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x530002 gen=83 asid=2 draw_pa=0x401f0000
+[isolate] kill 81 pid=5 gen 82->83 us=9 ticks=568 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x540002 gen=84 asid=2 draw_pa=0x401f0000
+[isolate] kill 82 pid=5 gen 83->84 us=8 ticks=546 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x550002 gen=85 asid=2 draw_pa=0x401f0000
+[isolate] kill 83 pid=5 gen 84->85 us=10 ticks=658 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x560002 gen=86 asid=2 draw_pa=0x401f0000
+[isolate] kill 84 pid=5 gen 85->86 us=27 ticks=1725 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x570002 gen=87 asid=2 draw_pa=0x401f0000
+[isolate] kill 85 pid=5 gen 86->87 us=9 ticks=581 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x580002 gen=88 asid=2 draw_pa=0x401f0000
+[isolate] kill 86 pid=5 gen 87->88 us=38 ticks=2400 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x590002 gen=89 asid=2 draw_pa=0x401f0000
+[isolate] kill 87 pid=5 gen 88->89 us=9 ticks=588 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x5a0002 gen=90 asid=2 draw_pa=0x401f0000
+[isolate] kill 88 pid=5 gen 89->90 us=8 ticks=541 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x5b0002 gen=91 asid=2 draw_pa=0x401f0000
+[isolate] kill 89 pid=5 gen 90->91 us=31 ticks=1941 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x5c0002 gen=92 asid=2 draw_pa=0x401f0000
+[isolate] kill 90 pid=5 gen 91->92 us=8 ticks=554 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x5d0002 gen=93 asid=2 draw_pa=0x401f0000
+[isolate] kill 91 pid=5 gen 92->93 us=8 ticks=538 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x5e0002 gen=94 asid=2 draw_pa=0x401f0000
+[isolate] kill 92 pid=5 gen 93->94 us=8 ticks=538 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x5f0002 gen=95 asid=2 draw_pa=0x401f0000
+[isolate] kill 93 pid=5 gen 94->95 us=8 ticks=535 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x600002 gen=96 asid=2 draw_pa=0x401f0000
+[isolate] kill 94 pid=5 gen 95->96 us=26 ticks=1668 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x610002 gen=97 asid=2 draw_pa=0x401f0000
+[isolate] kill 95 pid=5 gen 96->97 us=8 ticks=548 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x620002 gen=98 asid=2 draw_pa=0x401f0000
+[isolate] kill 96 pid=5 gen 97->98 us=8 ticks=535 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x630002 gen=99 asid=2 draw_pa=0x401f0000
+[isolate] kill 97 pid=5 gen 98->99 us=27 ticks=1706 periods=0 late=0 hold 2->0 cancel=2 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x640002 gen=100 asid=2 draw_pa=0x401f0000
+[isolate] kill 98 pid=5 gen 99->100 us=8 ticks=542 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x650002 gen=101 asid=2 draw_pa=0x401f0000
+[isolate] kill 99 pid=5 gen 100->101 us=8 ticks=543 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x0 refused=0 stale=-1 fresh=0 ledger=1 b_sub=807
+[map] pid=5 handle=0x660002 gen=102 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=177 ticks=11121 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x670002 gen=103 asid=2 draw_pa=0x401f0000
+[isolate] fault 0 pid=5 gen 102->103 us=177 ticks=11121 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=808
+[map] pid=5 handle=0x680002 gen=104 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=39 ticks=2483 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x690002 gen=105 asid=2 draw_pa=0x401f0000
+[isolate] fault 1 pid=5 gen 104->105 us=39 ticks=2483 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=809
+[map] pid=5 handle=0x6a0002 gen=106 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=48 ticks=3044 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x6b0002 gen=107 asid=2 draw_pa=0x401f0000
+[isolate] fault 2 pid=5 gen 106->107 us=48 ticks=3044 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=809
+[map] pid=5 handle=0x6c0002 gen=108 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=68 ticks=4291 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x6d0002 gen=109 asid=2 draw_pa=0x401f0000
+[isolate] fault 3 pid=5 gen 108->109 us=68 ticks=4291 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=809
+[map] pid=5 handle=0x6e0002 gen=110 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=40 ticks=2503 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x6f0002 gen=111 asid=2 draw_pa=0x401f0000
+[isolate] fault 4 pid=5 gen 110->111 us=40 ticks=2503 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x700002 gen=112 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=41 ticks=2614 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x710002 gen=113 asid=2 draw_pa=0x401f0000
+[isolate] fault 5 pid=5 gen 112->113 us=41 ticks=2614 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x720002 gen=114 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=39 ticks=2444 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x730002 gen=115 asid=2 draw_pa=0x401f0000
+[isolate] fault 6 pid=5 gen 114->115 us=39 ticks=2444 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x740002 gen=116 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2267 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x750002 gen=117 asid=2 draw_pa=0x401f0000
+[isolate] fault 7 pid=5 gen 116->117 us=36 ticks=2267 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x760002 gen=118 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2318 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x770002 gen=119 asid=2 draw_pa=0x401f0000
+[isolate] fault 8 pid=5 gen 118->119 us=37 ticks=2318 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x780002 gen=120 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2346 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x790002 gen=121 asid=2 draw_pa=0x401f0000
+[isolate] fault 9 pid=5 gen 120->121 us=37 ticks=2346 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x7a0002 gen=122 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2272 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x7b0002 gen=123 asid=2 draw_pa=0x401f0000
+[isolate] fault 10 pid=5 gen 122->123 us=36 ticks=2272 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x7c0002 gen=124 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2293 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x7d0002 gen=125 asid=2 draw_pa=0x401f0000
+[isolate] fault 11 pid=5 gen 124->125 us=36 ticks=2293 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x7e0002 gen=126 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=38 ticks=2405 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x7f0002 gen=127 asid=2 draw_pa=0x401f0000
+[isolate] fault 12 pid=5 gen 126->127 us=38 ticks=2405 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x800002 gen=128 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2291 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x810002 gen=129 asid=2 draw_pa=0x401f0000
+[isolate] fault 13 pid=5 gen 128->129 us=36 ticks=2291 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x820002 gen=130 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2300 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x830002 gen=131 asid=2 draw_pa=0x401f0000
+[isolate] fault 14 pid=5 gen 130->131 us=36 ticks=2300 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x840002 gen=132 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2342 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x850002 gen=133 asid=2 draw_pa=0x401f0000
+[isolate] fault 15 pid=5 gen 132->133 us=37 ticks=2342 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x860002 gen=134 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2363 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x870002 gen=135 asid=2 draw_pa=0x401f0000
+[isolate] fault 16 pid=5 gen 134->135 us=37 ticks=2363 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x880002 gen=136 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2333 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x890002 gen=137 asid=2 draw_pa=0x401f0000
+[isolate] fault 17 pid=5 gen 136->137 us=37 ticks=2333 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x8a0002 gen=138 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2265 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x8b0002 gen=139 asid=2 draw_pa=0x401f0000
+[isolate] fault 18 pid=5 gen 138->139 us=36 ticks=2265 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x8c0002 gen=140 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2299 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x8d0002 gen=141 asid=2 draw_pa=0x401f0000
+[isolate] fault 19 pid=5 gen 140->141 us=36 ticks=2299 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x8e0002 gen=142 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2275 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x8f0002 gen=143 asid=2 draw_pa=0x401f0000
+[isolate] fault 20 pid=5 gen 142->143 us=36 ticks=2275 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x900002 gen=144 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2314 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x910002 gen=145 asid=2 draw_pa=0x401f0000
+[isolate] fault 21 pid=5 gen 144->145 us=37 ticks=2314 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x920002 gen=146 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=58 ticks=3679 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x930002 gen=147 asid=2 draw_pa=0x401f0000
+[isolate] fault 22 pid=5 gen 146->147 us=58 ticks=3679 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x940002 gen=148 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=65 ticks=4085 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x950002 gen=149 asid=2 draw_pa=0x401f0000
+[isolate] fault 23 pid=5 gen 148->149 us=65 ticks=4085 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x960002 gen=150 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=38 ticks=2376 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x970002 gen=151 asid=2 draw_pa=0x401f0000
+[isolate] fault 24 pid=5 gen 150->151 us=38 ticks=2376 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x980002 gen=152 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2313 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x990002 gen=153 asid=2 draw_pa=0x401f0000
+[isolate] fault 25 pid=5 gen 152->153 us=37 ticks=2313 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x9a0002 gen=154 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2260 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x9b0002 gen=155 asid=2 draw_pa=0x401f0000
+[isolate] fault 26 pid=5 gen 154->155 us=36 ticks=2260 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x9c0002 gen=156 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2293 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x9d0002 gen=157 asid=2 draw_pa=0x401f0000
+[isolate] fault 27 pid=5 gen 156->157 us=36 ticks=2293 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x9e0002 gen=158 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2306 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x9f0002 gen=159 asid=2 draw_pa=0x401f0000
+[isolate] fault 28 pid=5 gen 158->159 us=36 ticks=2306 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xa00002 gen=160 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2258 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xa10002 gen=161 asid=2 draw_pa=0x401f0000
+[isolate] fault 29 pid=5 gen 160->161 us=36 ticks=2258 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xa20002 gen=162 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2332 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xa30002 gen=163 asid=2 draw_pa=0x401f0000
+[isolate] fault 30 pid=5 gen 162->163 us=37 ticks=2332 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xa40002 gen=164 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=35 ticks=2235 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xa50002 gen=165 asid=2 draw_pa=0x401f0000
+[isolate] fault 31 pid=5 gen 164->165 us=35 ticks=2235 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xa60002 gen=166 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=35 ticks=2219 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xa70002 gen=167 asid=2 draw_pa=0x401f0000
+[isolate] fault 32 pid=5 gen 166->167 us=35 ticks=2219 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xa80002 gen=168 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2314 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xa90002 gen=169 asid=2 draw_pa=0x401f0000
+[isolate] fault 33 pid=5 gen 168->169 us=37 ticks=2314 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xaa0002 gen=170 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2296 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xab0002 gen=171 asid=2 draw_pa=0x401f0000
+[isolate] fault 34 pid=5 gen 170->171 us=36 ticks=2296 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xac0002 gen=172 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2336 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xad0002 gen=173 asid=2 draw_pa=0x401f0000
+[isolate] fault 35 pid=5 gen 172->173 us=37 ticks=2336 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xae0002 gen=174 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=38 ticks=2399 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xaf0002 gen=175 asid=2 draw_pa=0x401f0000
+[isolate] fault 36 pid=5 gen 174->175 us=38 ticks=2399 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xb00002 gen=176 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2314 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xb10002 gen=177 asid=2 draw_pa=0x401f0000
+[isolate] fault 37 pid=5 gen 176->177 us=37 ticks=2314 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xb20002 gen=178 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2335 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xb30002 gen=179 asid=2 draw_pa=0x401f0000
+[isolate] fault 38 pid=5 gen 178->179 us=37 ticks=2335 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xb40002 gen=180 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2299 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xb50002 gen=181 asid=2 draw_pa=0x401f0000
+[isolate] fault 39 pid=5 gen 180->181 us=36 ticks=2299 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xb60002 gen=182 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2282 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xb70002 gen=183 asid=2 draw_pa=0x401f0000
+[isolate] fault 40 pid=5 gen 182->183 us=36 ticks=2282 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xb80002 gen=184 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2360 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xb90002 gen=185 asid=2 draw_pa=0x401f0000
+[isolate] fault 41 pid=5 gen 184->185 us=37 ticks=2360 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xba0002 gen=186 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=65 ticks=4079 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xbb0002 gen=187 asid=2 draw_pa=0x401f0000
+[isolate] fault 42 pid=5 gen 186->187 us=65 ticks=4079 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xbc0002 gen=188 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=39 ticks=2440 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xbd0002 gen=189 asid=2 draw_pa=0x401f0000
+[isolate] fault 43 pid=5 gen 188->189 us=39 ticks=2440 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xbe0002 gen=190 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=38 ticks=2420 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xbf0002 gen=191 asid=2 draw_pa=0x401f0000
+[isolate] fault 44 pid=5 gen 190->191 us=38 ticks=2420 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xc00002 gen=192 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2330 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xc10002 gen=193 asid=2 draw_pa=0x401f0000
+[isolate] fault 45 pid=5 gen 192->193 us=37 ticks=2330 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xc20002 gen=194 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2259 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xc30002 gen=195 asid=2 draw_pa=0x401f0000
+[isolate] fault 46 pid=5 gen 194->195 us=36 ticks=2259 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xc40002 gen=196 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2302 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xc50002 gen=197 asid=2 draw_pa=0x401f0000
+[isolate] fault 47 pid=5 gen 196->197 us=36 ticks=2302 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xc60002 gen=198 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=41 ticks=2596 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xc70002 gen=199 asid=2 draw_pa=0x401f0000
+[isolate] fault 48 pid=5 gen 198->199 us=41 ticks=2596 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xc80002 gen=200 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2353 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xc90002 gen=201 asid=2 draw_pa=0x401f0000
+[isolate] fault 49 pid=5 gen 200->201 us=37 ticks=2353 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xca0002 gen=202 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2270 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xcb0002 gen=203 asid=2 draw_pa=0x401f0000
+[isolate] fault 50 pid=5 gen 202->203 us=36 ticks=2270 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xcc0002 gen=204 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2262 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xcd0002 gen=205 asid=2 draw_pa=0x401f0000
+[isolate] fault 51 pid=5 gen 204->205 us=36 ticks=2262 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xce0002 gen=206 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2277 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xcf0002 gen=207 asid=2 draw_pa=0x401f0000
+[isolate] fault 52 pid=5 gen 206->207 us=36 ticks=2277 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xd00002 gen=208 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2370 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xd10002 gen=209 asid=2 draw_pa=0x401f0000
+[isolate] fault 53 pid=5 gen 208->209 us=37 ticks=2370 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xd20002 gen=210 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2260 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xd30002 gen=211 asid=2 draw_pa=0x401f0000
+[isolate] fault 54 pid=5 gen 210->211 us=36 ticks=2260 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xd40002 gen=212 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2288 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xd50002 gen=213 asid=2 draw_pa=0x401f0000
+[isolate] fault 55 pid=5 gen 212->213 us=36 ticks=2288 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xd60002 gen=214 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=38 ticks=2422 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xd70002 gen=215 asid=2 draw_pa=0x401f0000
+[isolate] fault 56 pid=5 gen 214->215 us=38 ticks=2422 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xd80002 gen=216 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2315 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xd90002 gen=217 asid=2 draw_pa=0x401f0000
+[isolate] fault 57 pid=5 gen 216->217 us=37 ticks=2315 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xda0002 gen=218 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2278 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xdb0002 gen=219 asid=2 draw_pa=0x401f0000
+[isolate] fault 58 pid=5 gen 218->219 us=36 ticks=2278 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xdc0002 gen=220 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=64 ticks=4017 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xdd0002 gen=221 asid=2 draw_pa=0x401f0000
+[isolate] fault 59 pid=5 gen 220->221 us=64 ticks=4017 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xde0002 gen=222 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2358 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xdf0002 gen=223 asid=2 draw_pa=0x401f0000
+[isolate] fault 60 pid=5 gen 222->223 us=37 ticks=2358 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xe00002 gen=224 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=52 ticks=3312 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xe10002 gen=225 asid=2 draw_pa=0x401f0000
+[isolate] fault 61 pid=5 gen 224->225 us=52 ticks=3312 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xe20002 gen=226 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=65 ticks=4076 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xe30002 gen=227 asid=2 draw_pa=0x401f0000
+[isolate] fault 62 pid=5 gen 226->227 us=65 ticks=4076 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xe40002 gen=228 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=39 ticks=2466 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xe50002 gen=229 asid=2 draw_pa=0x401f0000
+[isolate] fault 63 pid=5 gen 228->229 us=39 ticks=2466 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xe60002 gen=230 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=38 ticks=2386 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xe70002 gen=231 asid=2 draw_pa=0x401f0000
+[isolate] fault 64 pid=5 gen 230->231 us=38 ticks=2386 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xe80002 gen=232 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2286 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xe90002 gen=233 asid=2 draw_pa=0x401f0000
+[isolate] fault 65 pid=5 gen 232->233 us=36 ticks=2286 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xea0002 gen=234 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2281 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xeb0002 gen=235 asid=2 draw_pa=0x401f0000
+[isolate] fault 66 pid=5 gen 234->235 us=36 ticks=2281 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xec0002 gen=236 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2252 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xed0002 gen=237 asid=2 draw_pa=0x401f0000
+[isolate] fault 67 pid=5 gen 236->237 us=36 ticks=2252 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xee0002 gen=238 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2320 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xef0002 gen=239 asid=2 draw_pa=0x401f0000
+[isolate] fault 68 pid=5 gen 238->239 us=37 ticks=2320 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xf00002 gen=240 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=35 ticks=2240 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xf10002 gen=241 asid=2 draw_pa=0x401f0000
+[isolate] fault 69 pid=5 gen 240->241 us=35 ticks=2240 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xf20002 gen=242 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2265 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xf30002 gen=243 asid=2 draw_pa=0x401f0000
+[isolate] fault 70 pid=5 gen 242->243 us=36 ticks=2265 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xf40002 gen=244 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=38 ticks=2426 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xf50002 gen=245 asid=2 draw_pa=0x401f0000
+[isolate] fault 71 pid=5 gen 244->245 us=38 ticks=2426 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xf60002 gen=246 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2286 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xf70002 gen=247 asid=2 draw_pa=0x401f0000
+[isolate] fault 72 pid=5 gen 246->247 us=36 ticks=2286 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xf80002 gen=248 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=38 ticks=2423 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xf90002 gen=249 asid=2 draw_pa=0x401f0000
+[isolate] fault 73 pid=5 gen 248->249 us=38 ticks=2423 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xfa0002 gen=250 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2277 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xfb0002 gen=251 asid=2 draw_pa=0x401f0000
+[isolate] fault 74 pid=5 gen 250->251 us=36 ticks=2277 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xfc0002 gen=252 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2263 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xfd0002 gen=253 asid=2 draw_pa=0x401f0000
+[isolate] fault 75 pid=5 gen 252->253 us=36 ticks=2263 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0xfe0002 gen=254 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2285 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0xff0002 gen=255 asid=2 draw_pa=0x401f0000
+[isolate] fault 76 pid=5 gen 254->255 us=36 ticks=2285 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1000002 gen=256 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=38 ticks=2435 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1010002 gen=257 asid=2 draw_pa=0x401f0000
+[isolate] fault 77 pid=5 gen 256->257 us=38 ticks=2435 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1020002 gen=258 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2276 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1030002 gen=259 asid=2 draw_pa=0x401f0000
+[isolate] fault 78 pid=5 gen 258->259 us=36 ticks=2276 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1040002 gen=260 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=40 ticks=2550 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1050002 gen=261 asid=2 draw_pa=0x401f0000
+[isolate] fault 79 pid=5 gen 260->261 us=40 ticks=2550 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1060002 gen=262 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=43 ticks=2725 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1070002 gen=263 asid=2 draw_pa=0x401f0000
+[isolate] fault 80 pid=5 gen 262->263 us=43 ticks=2725 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1080002 gen=264 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=63 ticks=3954 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1090002 gen=265 asid=2 draw_pa=0x401f0000
+[isolate] fault 81 pid=5 gen 264->265 us=63 ticks=3954 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x10a0002 gen=266 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=46 ticks=2883 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x10b0002 gen=267 asid=2 draw_pa=0x401f0000
+[isolate] fault 82 pid=5 gen 266->267 us=46 ticks=2883 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x10c0002 gen=268 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2286 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x10d0002 gen=269 asid=2 draw_pa=0x401f0000
+[isolate] fault 83 pid=5 gen 268->269 us=36 ticks=2286 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x10e0002 gen=270 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=45 ticks=2831 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x10f0002 gen=271 asid=2 draw_pa=0x401f0000
+[isolate] fault 84 pid=5 gen 270->271 us=45 ticks=2831 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1100002 gen=272 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2298 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1110002 gen=273 asid=2 draw_pa=0x401f0000
+[isolate] fault 85 pid=5 gen 272->273 us=36 ticks=2298 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1120002 gen=274 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2332 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1130002 gen=275 asid=2 draw_pa=0x401f0000
+[isolate] fault 86 pid=5 gen 274->275 us=37 ticks=2332 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1140002 gen=276 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2263 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1150002 gen=277 asid=2 draw_pa=0x401f0000
+[isolate] fault 87 pid=5 gen 276->277 us=36 ticks=2263 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1160002 gen=278 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=45 ticks=2829 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1170002 gen=279 asid=2 draw_pa=0x401f0000
+[isolate] fault 88 pid=5 gen 278->279 us=45 ticks=2829 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1180002 gen=280 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2282 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1190002 gen=281 asid=2 draw_pa=0x401f0000
+[isolate] fault 89 pid=5 gen 280->281 us=36 ticks=2282 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x11a0002 gen=282 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2319 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x11b0002 gen=283 asid=2 draw_pa=0x401f0000
+[isolate] fault 90 pid=5 gen 282->283 us=37 ticks=2319 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x11c0002 gen=284 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2258 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x11d0002 gen=285 asid=2 draw_pa=0x401f0000
+[isolate] fault 91 pid=5 gen 284->285 us=36 ticks=2258 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x11e0002 gen=286 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2303 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x11f0002 gen=287 asid=2 draw_pa=0x401f0000
+[isolate] fault 92 pid=5 gen 286->287 us=36 ticks=2303 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1200002 gen=288 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2250 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1210002 gen=289 asid=2 draw_pa=0x401f0000
+[isolate] fault 93 pid=5 gen 288->289 us=36 ticks=2250 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1220002 gen=290 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2259 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1230002 gen=291 asid=2 draw_pa=0x401f0000
+[isolate] fault 94 pid=5 gen 290->291 us=36 ticks=2259 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1240002 gen=292 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2335 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1250002 gen=293 asid=2 draw_pa=0x401f0000
+[isolate] fault 95 pid=5 gen 292->293 us=37 ticks=2335 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1260002 gen=294 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=35 ticks=2243 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1270002 gen=295 asid=2 draw_pa=0x401f0000
+[isolate] fault 96 pid=5 gen 294->295 us=35 ticks=2243 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x1280002 gen=296 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=37 ticks=2343 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1290002 gen=297 asid=2 draw_pa=0x401f0000
+[isolate] fault 97 pid=5 gen 296->297 us=37 ticks=2343 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x12a0002 gen=298 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=36 ticks=2254 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x12b0002 gen=299 asid=2 draw_pa=0x401f0000
+[isolate] fault 98 pid=5 gen 298->299 us=36 ticks=2254 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x12c0002 gen=300 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1b4 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=35 ticks=2247 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x12d0002 gen=301 asid=2 draw_pa=0x401f0000
+[isolate] fault 99 pid=5 gen 300->301 us=35 ticks=2247 periods=0 late=0 hold 1->0 cancel=1 free 10->13 draw0=0x3f00 refused=0 stale=-1 fresh=0 ledger=1 b_sub=810
+[map] pid=5 handle=0x12e0002 gen=302 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1c0 far=0x9000000 spsr=0x60000340 pte=0x60000009000405 level=2 ap_el0=0 class=device
+[fault] reap us=44 ticks=2783 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x12f0002 gen=303 asid=2 draw_pa=0x401f0000
+[isolate] class device yields=2 ec=0x24 far=0x9000000 class=device ap_el0=0 spsr=0x60000340 us=44 stale=-1 alive=0
+[isolate] class device match_ec=1 match_far=1 match_name=1 ledger=1
+[map] pid=5 handle=0x1300002 gen=304 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000e elr=0x1c8 far=0x401ed000 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=other-app
+[fault] reap us=61 ticks=3862 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1310002 gen=305 asid=2 draw_pa=0x401f0000
+[isolate] class other-app yields=2 ec=0x24 far=0x401ed000 class=other-app ap_el0=0 spsr=0x60000340 us=61 stale=-1 alive=0
+[isolate] class other-app match_ec=1 match_far=1 match_name=1 ledger=1
+[map] pid=5 handle=0x1320002 gen=306 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x9200000f elr=0x1d0 far=0x40ed4000 spsr=0x60000340 pte=0x40000040ed4703 level=3 ap_el0=0 class=framebuffer
+[fault] reap us=55 ticks=3440 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1330002 gen=307 asid=2 draw_pa=0x401f0000
+[isolate] class framebuffer yields=2 ec=0x24 far=0x40ed4000 class=framebuffer ap_el0=0 spsr=0x60000340 us=55 stale=-1 alive=0
+[isolate] class framebuffer match_ec=1 match_far=1 match_name=1 ledger=1
+[map] pid=5 handle=0x1340002 gen=308 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x24 esr=0x92000007 elr=0x1dc far=0x3000 spsr=0x60000340 pte=0x0 level=3 ap_el0=0 class=unmapped
+[fault] reap us=52 ticks=3303 periods=0 hold_before=1 cancelled=1 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1350002 gen=309 asid=2 draw_pa=0x401f0000
+[isolate] class unmapped yields=2 ec=0x24 far=0x3000 class=unmapped ap_el0=0 spsr=0x60000340 us=52 stale=-1 alive=0
+[isolate] class unmapped match_ec=1 match_far=1 match_name=1 ledger=1
+[map] pid=5 handle=0x1360002 gen=310 asid=2 draw_pa=0x401f0000
+[fault] pid=5 ec=0x20 esr=0x8200000e elr=0x400813a0 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=21 ticks=1337 periods=0 hold_before=0 cancelled=0 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1370002 gen=311 asid=2 draw_pa=0x401f0000
+[isolate] class exec-kernel yields=1 ec=0x20 far=0x400813a0 class=kernel ap_el0=0 spsr=0x60000340 us=21 stale=-1 alive=0
+[isolate] class exec-kernel match_ec=1 match_far=1 match_name=1 ledger=1
+[map] pid=5 handle=0x1380002 gen=312 asid=2 draw_pa=0x401f0000
+[isolate] range yields=6 submits=1 rej_range=4 rej_freq=0 cancel=1 us=72 why=exit
+[map] pid=5 handle=0x1390002 gen=313 asid=2 draw_pa=0x401f0000
+[isolate] freq burst yields=3 submits 0->2 freq=1 depth=0
+[isolate] depth after period yields=1 period_yields=64 submits=3 freq=1 depth=0 q=3
+[isolate] depth overflow yields=2 submits=3 freq=1 depth 0->1 q=3
+[isolate] scripted exit yields=2 us=44 hold_before=3 cancel=3
+[reap] pid=4 why=kill step=1 revoke submit gen 1 -> 2
+[reap] pid=4 step=2 cancel inflight hold_before=1 cancelled=1
+[reap] pid=4 step=3 unmap refused=0 hold_after=0 free 13 -> 16 draw0=0x8f
+[reap] pid=4 measured us=45 ticks=2861 periods=0 target_us=20000 late=0
+[isolate] survivor exit yields=278 b_sub=815 us=45 ticks=2861 periods=0
+[ledger] final procs=0 pages_free=16 pages_used=0 queue=0 holds=0 mem_kb=0 running=0 refusals=0 stale_drain=0
+[isolate] empty=1
+[isolate] kill_rounds 100 ok 100 late 0 stale_reject 100 us_min 8 us_max 308 period_max 0
+[isolate] fault_rounds 100 ok 100 late 0 stale_reject 100 us_min 35 us_max 177 period_max 0
+[isolate] survivor submits at_kill=402 after_kill=807 after_fault=810
+[isolate] display-vsync jobs 213 -> 427 (not a deadline result)
+[isolate] timer-server jobs 213 -> 427 (not a deadline result)
+[isolate] target_us 20000 late_kill 0 late_fault 0. Misses stay failures. Realtime is separate.
+[isolate] periods is the scheduler period counter. Reap masks IRQs, so it often stays 0. us and ticks are CNTVCT.
+[isolate] DONE

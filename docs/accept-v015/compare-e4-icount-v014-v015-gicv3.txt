@@ -1,0 +1,30 @@
+=== 1 verbatim diff: 7 lines removed, 7 lines added ===
+--- docs/accept-v014/e4-icount-gicv3.txt
++++ docs/accept-v015/e4-icount-gicv3.txt
+@@ -3 +3 @@
+-Version: 014 (7065679)
++Version: 015 (559daed)
+@@ -13 +13 @@
+-[boot] kernel image+bss 553 KB of the 16384 KB system reserve
++[boot] kernel image+bss 562 KB of the 16384 KB system reserve
+@@ -57 +57 @@
+-kernel per period: max 15849 avg 12465 ticks, reserve 21875, over 0
++kernel per period: max 14115 avg 12974 ticks, reserve 21875, over 0
+@@ -59,3 +59,3 @@
+-kernel entry -> eret (no slot wait): min 629 max 5310 ticks
+-slot guard: path max 679 ticks, slack min 568 ticks of 1250 (n=2000)
+-wait loop exit late by 0/1/2/>2 ticks: 0/1/1999/0
++kernel entry -> eret (no slot wait): min 666 max 3133 ticks
++slot guard: path max 705 ticks, slack min 542 ticks of 1250 (n=2000)
++wait loop exit late by 0/1/2/>2 ticks: 1999/0/1/0
+@@ -64 +64 @@
+-  pick time -> eret max 445 ticks (margin 500); tier-2 budget
++  pick time -> eret max 484 ticks (margin 700); tier-2 budget
+
+=== 2 numbers-masked diff (every digit run -> #): 1 lines removed, 1 lines added ===
+--- docs/accept-v014/e4-icount-gicv3.txt
++++ docs/accept-v015/e4-icount-gicv3.txt
+@@ -3 +3 @@
+-Version: # (#)
++Version: # (#daed)
+

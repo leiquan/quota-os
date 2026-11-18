@@ -1,0 +1,22 @@
+--- docs/regress-B/menus-B-run1.txt
++++ docs/gic-C/menus-gicv2.txt
+@@ -8,2 +8,3 @@
+ [boot] tier-1 reserved 13312 KB and 1500 us/period
++[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+ [boot] CNTFRQ # Hz, cntpct # -> # us
+@@ -456,2 +457,3 @@
+ [boot] tier-1 reserved 13312 KB and 1500 us/period
++[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+ [boot] CNTFRQ # Hz, cntpct # -> # us
+--- docs/gic-C/menus-gicv2.txt
++++ docs/gic-C/menus-gicv3.txt
+@@ -8,3 +8,3 @@
+ [boot] tier-1 reserved 13312 KB and 1500 us/period
+-[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
++[boot] GICv3 from DTB: distributor 0x8000000, redistributor 0x80a0000
+ [boot] CNTFRQ # Hz, cntpct # -> # us
+@@ -457,3 +457,3 @@
+ [boot] tier-1 reserved 13312 KB and 1500 us/period
+-[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
++[boot] GICv3 from DTB: distributor 0x8000000, redistributor 0x80a0000
+ [boot] CNTFRQ # Hz, cntpct # -> # us

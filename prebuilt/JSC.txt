@@ -1,0 +1,46 @@
+JSC-only kernel. Not a GUI. Not the serial drop-in.
+
+Do not point the UTM kernel picker at this file. The default kernel is
+prebuilt/quotaos.bin and is the LVGL image. The previous serial drop-in
+is prebuilt/quotaos-serial.bin (93744 bytes, sha256
+afed7949f5b3adc6dcb3d6c86e05356ed69fd315eca55fbeafae656f62880e05).
+
+This image is quotaos-jsc.bin. Banner Version: 016 (641dc8c). 641dc8c is
+git rev-parse --short=7 of the parent of the commit that introduced these
+bytes. It evaluates two JavaScriptCore CLoop scripts. It also runs
+upstream CSSParserFastPaths::parseHexColor and writes that one color
+through the kernel framebuffer service. It does not lay out HTML, it does
+not call GraphicsContext::fillRect, and it does not take keyboard or
+mouse input into WebKit.
+
+The previous JSC image remains at
+/opt/cursor/artifacts/quotaos-jsc-dde2a8e/ (banner dde2a8e, 13061280
+bytes, sha256 c10dff5acdf433d266ff8a0417465298f02fedd346564ba247eb04ea7a7328d1).
+
+Boot (developer self-test, not independent QA):
+
+  qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M \
+    -nographic -nic none -kernel prebuilt/quotaos-jsc.bin -append webkit
+
+Expect:
+  [jsc] 1+2 -> number 3000/1000 icu 0
+  [jsc] 'ab'+'c' -> string [abc] icu 0
+  [jsc] guest PASS
+  [jsc] ownership PASS
+  [webcore] CSSParserFastPaths hex c80000 rgba 0xffc80000 painted 307200/307200 ok 1 reject_zz 0
+  [boot] reservation bad 0
+  [boot] EL1 identity map, when on, is not separate-process isolation.
+
+Stock virt has no ramfb, so the log also says etc/ramfb is not in fw_cfg.
+That is not a WebKit paint. No display device is added here.
+
+sha256 quotaos-jsc.bin e12747256945585006d43211fb59ed95ec05da14b9ca57f3b7390a05b62769ed
+sha256 quotaos-jsc.elf 5e9e016a1764b557ce7f5ad2888f1ecdfd039d51ac587f7ce65795dc205d7e56
+size quotaos-jsc.bin 13063200
+
+The 64 MB block at 0x44000000 is one parent reservation. Its children are
+the structure heap 0x44000000-0x46000000 and the malloc arena
+0x46000000-0x48000000. The parent contains the arena. The children do not
+overlap each other. A guest test fills the arena, checks the structure-heap
+canary, and stops at the last page. Log: docs/v016/jsc/webkit-color.raw.
+The earlier image's log remains docs/v016/jsc/webkit-ownership.raw.

@@ -1,0 +1,1314 @@
+##### 128M ok=True
+
+Quota OS microkernel
+Version: 015 (559daed)
+基于三级资源声明的微内核，
+保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB memory 134217728 bytes
+[boot] system reserve 350 us/period, 16384 KB;
+       tier-1 1500 us/period, 13312 KB; guard 80 us/period
+[boot] cache colors: 32 (model: 2 MB 16-way cache, 4 KB pages);
+       tier-1 pages in 7 own colors, padding 11776 KB
+[boot] kernel image+bss 562 KB of the 16384 KB system reserve
+[boot] GICv3 from DTB: distributor 0x8000000, redistributor 0x80a0000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] clock: host time (not icount; timings are reference only)
+[boot] simulated device IRQ line: EL1 physical timer, PPI 30
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 1875000, period 625000 ticks, guard 1250 ticks
+[boot] shell task running
+[dev] 3 new simulated devices start in Tier 3; verifying
+      (8 jobs, 8 aborts each, IRQs masked, before the next guard)
+[dev] sim-dma: job 396/400 us, stop 19/20 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-blk: job 1991/2000 us, stop 1770/2000 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-cam: job 291/300 us, stop 8/30 us (measured/declared)
+      [非 icount，仅供参考]
+
+命令（输入数字后回车）:
+  1  资源总览：系统预留、Tier 1 槽和浪费、Tier 2、Tier 3
+  2  安装应用：允许/拒绝（也可以停止应用）
+  3  资源不够：拒绝并说明先关哪个应用
+  4  旧设备：超过整机容量的请求被拒绝
+  5  Tier 1 准时：抖动和错过都是 0
+  6  Tier 1 超时在槽尾被掐断
+  7  Tier 1 槽从不外借
+  8  Tier 2 最低值有保证，建议值在压力下收回
+  9  Tier 3 过载不影响上层
+  10 任何一级的失控任务只拖慢自己
+  11 设备申请 Tier 1：不能打断的设备被拒（说明缺哪一条）
+  12 超额申请被拒（说明是哪种资源）
+  13 预算令牌：驱动替谁干活就扣谁的预算
+  14 设备超时：强制中止，设备降到 Tier 3（少报耗时的设备）
+  15 中断风暴：多出来的中断被限流并计数
+  16 带宽限流：超额就停到下个周期，不欠账
+  17 缓存着色：每个 Tier 1 任务独占自己的缓存颜色
+  18 IPC 余量：用过余量的调用者本周期新调用扣到下个周期
+  h  帮助    q  提示如何退出 QEMU
+select> 1
+
+=== 1 资源总览 / resource overview ===
+RAM 131072 KB. CPU period 10000 us. 1 tick = 16 ns.
+
+[Devices] simulated (software models)
+  sim-dma: verified
+  sim-blk: verified
+  sim-cam: verified
+
+[系统预留] kernel, fixed, never lent
+  CPU 350 us/period = 21875 ticks
+  measured since boot: max 107155 ticks/period (period 0 of 18)
+  that period ran menu 0; kernel ticks by entry (count):
+    timer IRQ 97807 (8), slot guard wait 0 (0),
+    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 9348 (2);
+    of which period-boundary work 0, waits for a deadline 0
+    reserve 21875, margin -85280
+  memory 16384 KB
+
+[Tier 1] one fixed slot per task; unused time stays idle
+  task           slot offset_us len_us max_used_us waste_us mem_kb
+  display-vsync     0      1000    500          91      409   2048
+  timer-server      1      3500    300          63      237   1024
+  gic-server        2      6000    300           0      300   2048
+  blk-driver        3      8000    400           0      400   4096
+  net-driver        -         -      -           -        -   4096
+  total CPU 1500 us/period, memory 13312 KB
+
+[Tier 2] admitted apps (minimum is guaranteed, suggested is spare only)
+  (none)
+  minimum sum: CPU 0 / 8070 us, memory 0 / 89600 KB
+  admission: reserve 350 + tier-1 1500 + tier-2 min 0
+    + guard 80 = 1930 <= 10000 us
+
+[Tier 3] everyone else, round robin 1000 us, leftover only
+  CPU not promised to anyone: 8070 us/period
+pressure: off
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+number to install, s<number> to stop, empty to go back. app> 1
+
+Pixel Racer: 游戏
+  CPU minimum 3000 us, suggested +1000 us per 10000 us
+  memory minimum 8192 KB, suggested 20480 KB
+allow this app to reserve its minimum? (y/n) allow> n
+CANCELLED: user denied permission. Nothing was reserved.
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+number to install, s<number> to stop, empty to go back. app> 1
+
+Pixel Racer: 游戏
+  CPU minimum 3000 us, suggested +1000 us per 10000 us
+  memory minimum 8192 KB, suggested 20480 KB
+allow this app to reserve its minimum? (y/n) allow> y
+started Pixel Racer: CPU 3000 us/period guaranteed,
+  memory 8192 KB (+12288 KB suggested now)
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+  s1) stop Pixel Racer
+number to install, s<number> to stop, empty to go back. app> 2
+
+Cinema Play: 视频播放
+  CPU minimum 3000 us, suggested +500 us per 10000 us
+  memory minimum 8192 KB, suggested 16384 KB
+allow this app to reserve its minimum? (y/n) allow> y
+started Cinema Play: CPU 3000 us/period guaranteed,
+  memory 8192 KB (+8192 KB suggested now)
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+  s1) stop Pixel Racer
+  s2) stop Cinema Play
+number to install, s<number> to stop, empty to go back. app> 3
+
+Studio Cut: 剪辑
+  CPU minimum 3000 us, suggested +1000 us per 10000 us
+  memory minimum 8192 KB, suggested 24576 KB
+REFUSED: not enough resources for Studio Cut
+  CPU left 2070 us/period, minimum needs 3000
+  memory left 73216 KB, minimum needs 8192
+Please close Pixel Racer first (frees 3000 us/period, 8192 KB).
+not started.
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+  s1) stop Pixel Racer
+  s2) stop Cinema Play
+number to install, s<number> to stop, empty to go back. app> s1
+stopped Pixel Racer: released CPU 3000 us/period and 20480 KB.
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+  s1) stop Cinema Play
+number to install, s<number> to stop, empty to go back. app> 3
+
+Studio Cut: 剪辑
+  CPU minimum 3000 us, suggested +1000 us per 10000 us
+  memory minimum 8192 KB, suggested 24576 KB
+allow this app to reserve its minimum? (y/n) allow> y
+started Studio Cut: CPU 3000 us/period guaranteed,
+  memory 8192 KB (+16384 KB suggested now)
+select> 1
+
+=== 1 资源总览 / resource overview ===
+RAM 131072 KB. CPU period 10000 us. 1 tick = 16 ns.
+
+[Devices] simulated (software models)
+  sim-dma: verified
+  sim-blk: verified
+  sim-cam: verified
+
+[系统预留] kernel, fixed, never lent
+  CPU 350 us/period = 21875 ticks
+  measured since boot: max 107155 ticks/period (period 0 of 367)
+  that period ran menu 0; kernel ticks by entry (count):
+    timer IRQ 97807 (8), slot guard wait 0 (0),
+    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 9348 (2);
+    of which period-boundary work 0, waits for a deadline 0
+    reserve 21875, margin -85280
+  memory 16384 KB
+
+[Tier 1] one fixed slot per task; unused time stays idle
+  task           slot offset_us len_us max_used_us waste_us mem_kb
+  display-vsync     0      1000    500          94      406   2048
+  timer-server      1      3500    300          74      226   1024
+  gic-server        2      6000    300           0      300   2048
+  blk-driver        3      8000    400           0      400   4096
+  net-driver        -         -      -           -        -   4096
+  total CPU 1500 us/period, memory 13312 KB
+
+[Tier 2] admitted apps (minimum is guaranteed, suggested is spare only)
+  Studio Cut     CPU min 3000 + sugg 1000 us, mem min 8192 KB, granted 24576 KB
+  Cinema Play    CPU min 3000 + sugg 500 us, mem min 8192 KB, granted 16384 KB
+  minimum sum: CPU 6000 / 8070 us, memory 16384 / 89600 KB
+  admission: reserve 350 + tier-1 1500 + tier-2 min 6000
+    + guard 80 = 7930 <= 10000 us
+
+[Tier 3] everyone else, round robin 1000 us, leftover only
+  CPU not promised to anyone: 2070 us/period
+pressure: off
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+  s1) stop Studio Cut
+  s2) stop Cinema Play
+number to install, s<number> to stop, empty to go back. app> s1
+stopped Studio Cut: released CPU 3000 us/period and 24576 KB.
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+  s1) stop Cinema Play
+number to install, s<number> to stop, empty to go back. app> s1
+stopped Cinema Play: released CPU 3000 us/period and 16384 KB.
+select> 3
+
+=== 3 资源不够：拒绝并说关谁 / not enough: which app to close ===
+The demo starts Pixel Racer, Cinema Play and Studio Cut in turn
+(3000 us minimum each) until admission says no.
+allow the demo to start them? (y/n) allow> y
+start Pixel Racer: OK, 3000 us/period minimum.
+start Cinema Play: OK, 3000 us/period minimum.
+start Studio Cut:
+REFUSED: not enough resources for Studio Cut
+  CPU left 2070 us/period, minimum needs 3000
+  memory left 73216 KB, minimum needs 8192
+Please close Pixel Racer first (frees 3000 us/period, 8192 KB).
+following the advice: closing Pixel Racer and retrying.
+start Studio Cut: OK
+demo apps closed; their minimums are back in the pool.
+select> 4
+
+=== 4 旧设备：超过整机容量 / old device: request too big ===
+apps get at most CPU 8070 us/period and memory 89600 KB on this device.
+
+Neural Forge (CPU min 1000 us, memory min 81920 KB):
+  fits this device (not started; use menu 2 to install).
+
+Cluster Sim (CPU min 1000 us, memory min 524288 KB):
+REFUSED: device does not meet minimum requirements
+  minimum memory 524288 KB > 89600 KB for apps
+  (RAM 131072 KB - system reserve - tier-1 - color padding)
+No app can be closed to make room: this device is too small.
+
+Render Farm (CPU min 9000 us, memory min 4096 KB):
+REFUSED: device does not meet minimum requirements
+  minimum CPU 9000 us > 8070 us/period for apps
+  (period - system reserve - tier-1 - guard)
+No app can be closed to make room: this device is too small.
+select> 5
+
+=== 5 Tier 1 准时 / tier-1 on time ===
+8 tier-3 busy loops run for 200 periods. Each tier-1 job must start
+at the same tick of its slot every period and finish inside it.
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     0        172      15663   15491    20797
+  timer-server      1    200     5        184      12185   12001    14749
+  display-vsync last release: period 734, tick 460687500,
+    epoch+k*P+offset 460687500
+  timer-server last release: period 734, tick 460843750,
+    epoch+k*P+offset 460843750
+T1MISS task=timer-server period=577 reason=not_started start_t=-1
+  lat_t=17980 lat_us=287 deadline_us=300 J_us=962 class=a
+T1MISS task=timer-server period=586 reason=not_started start_t=-1
+  lat_t=119209 lat_us=1907 deadline_us=300 J_us=2034 class=a
+T1MISS task=timer-server period=593 reason=not_started start_t=-1
+  lat_t=28363 lat_us=453 deadline_us=300 J_us=617 class=a
+T1MISS task=timer-server period=691 reason=not_started start_t=-1
+  lat_t=100182 lat_us=1602 deadline_us=300 J_us=2246 class=a
+T1MISS task=timer-server period=719 reason=not_started start_t=-1
+  lat_t=28845 lat_us=461 deadline_us=300 J_us=1164 class=a
+misses: class a (clock jump) 5, class b (kernel) 0, skipped periods 0
+kernel per period: max 23415 avg 4667 ticks, reserve 21875, over 1
+timer IRQ entry - CVAL: min 569 max 120459 ticks (n=2778)
+kernel entry -> eret (no slot wait): min 95 max 11071 ticks
+slot guard: path max 638 ticks, slack min 0 ticks of 1250 (n=139)
+wait loop exit late by 0/1/2/>2 ticks: 14/14/14/97
+clock jumps: 1132, total 61012 us
+deadline already past at eret: 0 times, max 0 ticks;
+  pick time -> eret max 1565 ticks (margin 700); tier-2 budget
+  overrun max 0 ticks (0 times)
+  budget left < exit tail, deadline moved to 12 ticks: 0 times
+结果: Tier 1 错过 5 次，起点抖动 15491 tick，
+  槽内 Tier 2/3 共 449789 tick。
+select> 6
+
+=== 6 Tier 1 超时在槽尾被掐断 / tier-1 overrun cut at slot end ===
+bad-driver loops forever in the blk-driver slot (25000 ticks).
+bad-driver per period: min 14883 max 36018 ticks, slot 25000 ticks
+cut by the slot-end timer: IRQ entry at most 26638 ticks after slot end
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     0        148      20498   20350    25542
+  timer-server      1    200     0        191       6475    6284     9032
+  display-vsync last release: period 955, tick 598812500,
+    epoch+k*P+offset 598812500
+  timer-server last release: period 955, tick 598968750,
+    epoch+k*P+offset 598968750
+misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
+Tier 1 slots over 200 periods (ticks per period, average)
+  slot owner          start    len  owner_used  idle  foreign(total)
+     0 display-vsync   62500  31250        5229 22541   637391
+     1 timer-server   218750  18750        2771 15566    14908
+     2 (empty)        375000  18750           0 18545    37649
+     3 bad-driver     500000  25000       24842     0    15586
+Tier 2/3 ticks inside any Tier 1 slot: 705534 (in 202 runs)
+  of which not covered by clock jumps: 0
+结果: bad-driver 每周期最多 36018 tick（槽长 25000）；
+  其他 Tier 1 错过 0 次。
+select> 7
+
+=== 7 Tier 1 槽从不外借 / tier-1 slots never lent ===
+display-vsync uses ~80 of 500 us, timer-server ~40 of 300 us,
+gic-server and blk-driver slots have no task. A greedy tier-2 app
+and 8 tier-3 loops want every tick they can get.
+Tier 1 slots over 200 periods (ticks per period, average)
+  slot owner          start    len  owner_used  idle  foreign(total)
+     0 display-vsync   62500  31250        5208 24252   311117
+     1 timer-server   218750  18750        2703 13905   357566
+     2 (empty)        375000  18750           0 15165   679040
+     3 (empty)        500000  25000           0 22866   399396
+Tier 2/3 ticks inside any Tier 1 slot: 1747119 (in 509 runs)
+  of which not covered by clock jumps: 0
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  greedy-app      1000    6000      7001     7044     7327      0
+结果: 空出来的槽时间全部空转，Tier 2/3 在槽内 1747119 tick。
+select> 8
+
+=== 8 Tier 2 最低值有保证，建议值在压力下收回 ===
+app-A min 2000 + sugg 1000 us, app-B min 2000 + sugg 2000 us,
+8 tier-3 loops. Phase 1: no pressure.
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  app-A           2000    1000      3011     3020     3157      0
+  app-B           2000    2000      4003     4022     4258      0
+Phase 2: memory/CPU pressure ON, suggested is reclaimed.
+pressure ON: reclaimed 0 KB of suggested memory; minimums untouched.
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  app-A           2000    1000      2007     2057     8928      0
+  app-B           2000    2000       963     2023     3308      1
+结果: 无压力时最少拿到 3011/4003 us，有压力时 2007/963 us；
+  低于最低值的周期 1 个。
+select> 9
+
+=== 9 Tier 3 过载不影响上层 / tier-3 overload ===
+32 tier-3 busy loops for 200 periods, with a tier-2 game and audio-mix.
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     0        143      11884   11741    16938
+  timer-server      1    200     1        180      17061   16881    12660
+  display-vsync last release: period 1819, tick 1138812500,
+    epoch+k*P+offset 1138812500
+  timer-server last release: period 1819, tick 1138968750,
+    epoch+k*P+offset 1138968750
+T1MISS task=timer-server period=1628 reason=unfinished start_t=17061
+  lat_t=19673 lat_us=314 deadline_us=300 J_us=519 class=a
+misses: class a (clock jump) 1, class b (kernel) 0, skipped periods 0
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  game            2000    1000      3009     3018     3385      0
+  audio-mix: jobs 200, misses 0, worst response 656 us (deadline 4000 us)
+tier-3 per loop: avg 109..202 us/period, all 32 together 4918 us
+Tier 1 slots over 200 periods (ticks per period, average)
+  slot owner          start    len  owner_used  idle  foreign(total)
+     0 display-vsync   62500  31250        5242 25574    35878
+     1 timer-server   218750  18750        2818 15497    25141
+     2 (empty)        375000  18750           0 18498    35209
+     3 (empty)        500000  25000           0 24678    45680
+Tier 2/3 ticks inside any Tier 1 slot: 141908 (in 160 runs)
+  of which not covered by clock jumps: 0
+kernel per period: max 12063 avg 4270 ticks, reserve 21875, over 0
+timer IRQ entry - CVAL: min 574 max 24092 ticks (n=2800)
+kernel entry -> eret (no slot wait): min 99 max 3226 ticks
+slot guard: path max 370 ticks, slack min 0 ticks of 1250 (n=236)
+wait loop exit late by 0/1/2/>2 ticks: 34/29/26/147
+clock jumps: 1128, total 47943 us
+deadline already past at eret: 0 times, max 0 ticks;
+  pick time -> eret max 1228 ticks (margin 700); tier-2 budget
+  overrun max 24092 ticks (400 times)
+  budget left < exit tail, deadline moved to 12 ticks: 0 times
+结果: Tier 1 错过 1 次，起点抖动 16881 tick，
+  槽内 Tier 2/3 共 141908 tick。
+结果: Tier 2 低于最低值 0 个周期，audio-mix 错过 0 次。
+select> 10
+
+=== 10 任何一级的失控任务只拖慢自己 / runaway only slows itself ===
+runaways: bad-driver (tier 1, blk slot), bad-encoder (tier 2, min 1000),
+bad-t3 (tier 3). Well behaved: vsync, timer-server, audio-mix, polite-t3.
+bad-driver  avg 412 max 434 us/period (slot 400)
+bad-encoder avg 1017 max 1217 us/period (min 1000, no suggested)
+bad-t3 avg 3474 us/period, polite-t3 avg 3457 us/period
+  audio-mix: jobs 200, misses 0, worst response 460 us (deadline 4000 us)
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     0        174       1665    1491     6909
+  timer-server      1    200     3        163       3787    3624    17204
+  display-vsync last release: period 2040, tick 1276937500,
+    epoch+k*P+offset 1276937500
+  timer-server last release: period 2040, tick 1277093750,
+    epoch+k*P+offset 1277093750
+T1MISS task=timer-server period=1894 reason=not_started start_t=-1
+  lat_t=103711 lat_us=1659 deadline_us=300 J_us=1975 class=a
+T1MISS task=timer-server period=1913 reason=not_started start_t=-1
+  lat_t=108453 lat_us=1735 deadline_us=300 J_us=2001 class=a
+T1MISS task=timer-server period=1932 reason=not_started start_t=-1
+  lat_t=159870 lat_us=2557 deadline_us=300 J_us=3127 class=a
+misses: class a (clock jump) 3, class b (kernel) 0, skipped periods 0
+Tier 2/3 ticks inside tier-1 slots: 165907
+结果: 守规矩的 Tier 1 错过 3 次，audio-mix 错过 0 次；
+  失控者都停在自己的额度。
+select> 11
+
+=== 11 设备申请 Tier 1：不能打断的设备被拒 ===
+Three simulated devices (software models, not real hardware).
+The system measures each one (8 full jobs, 8 aborts) with IRQs
+masked, only where the job ends before the next tier-1 guard.
+Admission uses only the declared (factory) values; the measured
+ones are for verification.
+  device   preempt divisible max_job switch stop_bound | measured:
+                                                       job_max  stop_max
+  sim-dma      yes       yes     400      5         20 |     396        19 us
+  sim-blk       no        no    2000     10       2000 |    1991      1770 us
+  sim-cam      yes       yes     300      5         30 |     291         8 us
+display-vsync already declares sim-dma 2000 us (Tier 1).
+
+cam-app asks Tier 1 (per 10000 us):
+  sim-dma 1000 us
+OK: admitted (not started; released again)
+rec-app asks Tier 1 (per 10000 us):
+  sim-blk 1000 us
+REFUSED: (device not allowed in Tier 1)
+  missing: 不能强制叫停 (sim-blk is non-preemptible)
+  missing: 停止上限超过 Tier 1 限值 (declared stop 2000 us > 20 us)
+  missing: 不可切分 (not divisible); exclusive use would waive this one
+rec-app asks Tier 2 (per 10000 us):
+  sim-blk 1000 us
+OK: admitted (not started; released again)
+scan-app asks Tier 1 (per 10000 us):
+  sim-cam 500 us
+REFUSED: (device not allowed in Tier 1)
+  missing: 停止上限超过 Tier 1 限值 (declared stop 30 us > 20 us)
+select> 12
+
+=== 12 超额申请在启动时被拒，并说明是哪种资源 ===
+cpu-hog asks Tier 2 (per 10000 us):
+  CPU 8200 us, memory 1024 KB
+REFUSED: CPU
+  CPU overcommitted: reserve 350 + tier-1 1500 + tier-2 min 0
+    + guard 80 + this 8200 = 10130 > capacity 10000 us
+mem-hog asks Tier 2 (per 10000 us):
+  CPU 1000 us, memory 110000 KB
+REFUSED: memory
+  memory overcommitted: reserve 16384 + tier-1 13312 + tier-2 min 0
+    + guard 11776 + this 110000 = 151472 > capacity 131072 KB
+dma-hog asks Tier 2 (per 10000 us):
+  CPU 1000 us, memory 1024 KB, sim-dma 8500 us
+REFUSED: sim-dma
+  sim-dma overcommitted: reserve 0 + tier-1 2000 + tier-2 min 0
+    + guard 20 + this 8500 = 10520 > capacity 10000 us
+all-hog asks Tier 2 (per 10000 us):
+  CPU 8200 us, memory 110000 KB, sim-dma 8500 us
+REFUSED: CPU memory sim-dma
+  CPU overcommitted: reserve 350 + tier-1 1500 + tier-2 min 0
+    + guard 80 + this 8200 = 10130 > capacity 10000 us
+  memory overcommitted: reserve 16384 + tier-1 13312 + tier-2 min 0
+    + guard 11776 + this 110000 = 151472 > capacity 131072 KB
+  sim-dma overcommitted: reserve 0 + tier-1 2000 + tier-2 min 0
+    + guard 20 + this 8500 = 10520 > capacity 10000 us
+fits asks Tier 2 (per 10000 us):
+  CPU 8000 us, memory 85000 KB, sim-dma 7000 us
+OK: admitted (not started; released again)
+select> 13
+
+=== 13 预算令牌：驱动替谁干活就扣谁的预算 ===
+cam-app asks Tier 2 CPU 3000 us + IPC headroom 120 us
+  CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0
+    + this 3120 = 5050 <= 10000
+OK: admitted
+cam-app (tier 2, min 3000 us) and bg-caller (tier 3) call
+sim-dma-drv (passive server) for 50..400 us of device work each.
+calls 3195; measured by the kernel during the calls:
+  driver running 41145952 ticks + IPC kernel path 407699 ticks
+  = 41553651 ticks; caller budgets dropped by 41553651 ticks
+  longest call 249140 ticks; max |drop - measured| per call: 0 ticks
+  IPC kernel path charged to callers in total (none to the system
+  reserve): 1172860 ticks
+    = in-call window 407239 + entry and queueing 155638
+    + reply return 609983 (sum 1172860)
+  whole window (per-period budgets): caller budget drops 42312943
+    = driver run 41143085 + in-call 407239
+    + entry 152636 + reply 609983
+    = 42312943; error 0 ticks
+  counting windows (ticks):
+    cumulative: from stats reset 1315274449 to read 1440642360
+    per-period: periods 2102..2301, ticks 1315625000..1440625000
+  part         before     window      after  cumulative  err
+  driver run        0   41143085          0    41143085    0
+  in-call           0     407239          0      407239    0
+  entry          3002     152636          0      155638    0
+  reply             0     609983          0      609983    0
+  driver run per replied call 41145952 = charged 41143085
+    + ran before reset in calls open then 4006 - ran in 1 calls
+    still open at the end 1139; error 0 ticks
+  IPC kernel path past the end of a tier-2 caller's budget, taken
+  from its admitted IPC headroom (120 us = 7500 ticks per period):
+    12 times, total 5436, max 1118 ticks; most in one period 1118;
+    charged to the system reserve: 0
+  caller-periods with a draw 12, with draws in both the guaranteed
+  and the suggested pass 0; new calls held to the next period 0,
+  released at the next period start 0
+  caller-periods with 2 or more draws 0; forwarded calls 0,
+  replied 0
+  driver's own budget used during the window: 0 ticks
+  driver's own wall-clock timing incl. preemption (reference only):
+  total 118883770 ticks
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     0        176      13042   12866    18217
+  timer-server      1    200     2        171       2937    2766     5503
+  display-vsync last release: period 2302, tick 1440687500,
+    epoch+k*P+offset 1440687500
+  timer-server last release: period 2302, tick 1440843750,
+    epoch+k*P+offset 1440843750
+T1MISS task=timer-server period=2209 reason=not_started start_t=-1
+  lat_t=225428 lat_us=3606 deadline_us=300 J_us=4242 class=a
+T1MISS task=timer-server period=2277 reason=not_started start_t=-1
+  lat_t=135934 lat_us=2174 deadline_us=300 J_us=3487 class=a
+misses: class a (clock jump) 2, class b (kernel) 0, skipped periods 0
+kernel per period: max 11231 avg 5798 ticks, reserve 21875, over 0
+timer IRQ entry - CVAL: min 163 max 40617 ticks (n=1929)
+kernel entry -> eret (no slot wait): min 130 max 4994 ticks
+slot guard: path max 1519 ticks, slack min 0 ticks of 1250 (n=208)
+wait loop exit late by 0/1/2/>2 ticks: 28/30/15/135
+clock jumps: 1415, total 158047 us
+deadline already past at eret: 0 times, max 0 ticks;
+  pick time -> eret max 4862 ticks (margin 700); tier-2 budget
+  overrun max 199053 ticks (197 times)
+  budget left < exit tail, deadline moved to 12 ticks: 4 times
+select> 14
+
+=== 14 设备超时：强制中止，设备降到 Tier 3 ===
+sim-dma reset to its factory state and re-verified: verified.
+display-vsync holds sim-dma Tier 1 (policy degrade).
+hud-overlay asks Tier 1 (per 10000 us):
+  sim-dma 500 us
+OK: admitted, policy if the device is demoted: alarm
+sim-dma now under-reports: declares 400 us per job, really
+takes 1.5x the request. cam-app (tier 2, device budget 3000 us)
+and bg-caller (tier 3) send 50..400 us jobs through the gate.
+[health] sim-dma timeout: measured 516 us > declared 400 us, period 2323
+  job aborted; stop took 64 us (declared bound 20 us) [非 icount，仅供参考]
+[health] sim-dma 实测超出声明 (timeout): measured 516 us > declared 400 us,
+  period 2323; sim-dma demoted to Tier 3 [非 icount，仅供参考]
+[health] display-vsync: sim-dma Tier 1 revoked (实测超出声明);
+  policy degrade -> Tier 3
+[health] hud-overlay: sim-dma Tier 1 revoked (实测超出声明);
+  policy alarm -> Tier 3, ALARM
+[health] sim-dma timeout: measured 426 us > declared 400 us, period 2323
+  job aborted; stop took 6 us (declared bound 20 us) [非 icount，仅供参考]
+device jobs: submitted 956, completed 552, timed out 404
+  (timed-out jobs are aborted and discarded); first timeout in
+  period 2323
+gate refused: device budget 0, would reach the next tier-1
+  guard 1144, device in Tier 3 and caller not Tier 3 28773
+abort -> stopped: 404 aborts, max 64 us (declared bound 20 us,
+  CPU guard 20 us); over the bound 1, over the guard 1
+device jobs or aborts ending after the next tier-1 guard: 5
+device busy when a tier-1 guard began: 0
+device time charged to callers: 20450416 ticks
+cam-app calls ok 0 / refused 28774; bg-caller ok 552 / refused 1546
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     0         85      14379   14294    19530
+  timer-server      1    200     0        204        559     355     3123
+  display-vsync last release: period 2524, tick 1579437500,
+    epoch+k*P+offset 1579437500
+  timer-server last release: period 2524, tick 1579593750,
+    epoch+k*P+offset 1579593750
+misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
+kernel per period: max 12852 avg 6991 ticks, reserve 21875, over 0
+timer IRQ entry - CVAL: min 218 max 26691 ticks (n=1691)
+kernel entry -> eret (no slot wait): min 128 max 7030 ticks
+slot guard: path max 2957 ticks, slack min 0 ticks of 1250 (n=392)
+wait loop exit late by 0/1/2/>2 ticks: 68/53/47/224
+clock jumps: 1392, total 91935 us
+deadline already past at eret: 1 times, max 468 ticks;
+  pick time -> eret max 5099 ticks (margin 700); tier-2 budget
+  overrun max 889 ticks (105 times)
+  budget left < exit tail, deadline moved to 12 ticks: 9 times
+Tier 1 declarations left on sim-dma: 0
+cam-app asks Tier 1 (per 10000 us):
+  sim-dma 1000 us
+REFUSED: (device not allowed in Tier 1)
+  missing: 实测超出声明 (timeout measured 516 us > declared 400 us,
+    period 2323; device demoted to Tier 3)
+select> 15
+
+=== 15 中断风暴：多出来的中断被限流并计数 ===
+sim-dma raises its IRQ line every 16 us (62500 per second).
+Declared limit 40 IRQs per period; the line is masked inside
+tier-1 guards and slots, and past the limit or the driver's own
+300 us budget until the next period.
+IRQs raised by the device (its own counter) 125820, handled 8024,
+  not delivered (limited) 117796; most handled in one period 40
+  (limit 40); line masked for the rest of a period 201 times
+device IRQs taken inside a tier-1 guard or slot: 0
+cam-app (tier 2, min 3000 us): lowest per period 0 us
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     1        174      13388   13214    18473
+  timer-server      1    200     4        190      17624   17434    17664
+  display-vsync last release: period 2746, tick 1718187500,
+    epoch+k*P+offset 1718187500
+  timer-server last release: period 2746, tick 1718343750,
+    epoch+k*P+offset 1718343750
+T1MISS task=display-vsync period=2653 reason=skipped lat_us=-
+  deadline_us=500 J_us=15892 covered=yes uncovered_us=0 class=a
+T1MISS task=timer-server period=2653 reason=skipped lat_us=-
+  deadline_us=300 J_us=15892 covered=yes uncovered_us=0 class=a
+T1MISS task=timer-server period=2673 reason=not_started start_t=-1
+  lat_t=40935 lat_us=654 deadline_us=300 J_us=843 class=a
+T1MISS task=timer-server period=2692 reason=not_started start_t=-1
+  lat_t=28757 lat_us=460 deadline_us=300 J_us=854 class=a
+T1MISS task=timer-server period=2702 reason=unfinished start_t=17624
+  lat_t=19700 lat_us=315 deadline_us=300 J_us=1129 class=a
+misses: class a (clock jump) 5, class b (kernel) 0, skipped periods 2
+kernel per period: max 17634 avg 4034 ticks, reserve 21875, over 0
+timer IRQ entry - CVAL: min 455 max 810708 ticks (n=2573)
+kernel entry -> eret (no slot wait): min 117 max 12906 ticks
+slot guard: path max 1463 ticks, slack min 0 ticks of 1250 (n=189)
+wait loop exit late by 0/1/2/>2 ticks: 28/18/21/122
+clock jumps: 1252, total 82185 us
+deadline already past at eret: 0 times, max 0 ticks;
+  pick time -> eret max 1044 ticks (margin 700); tier-2 budget
+  overrun max 25905 ticks (199 times)
+  budget left < exit tail, deadline moved to 12 ticks: 0 times
+select> 1
+
+=== 1 资源总览 / resource overview ===
+RAM 131072 KB. CPU period 10000 us. 1 tick = 16 ns.
+
+[Devices] simulated (software models)
+  sim-dma: DEMOTED to Tier 3
+  sim-blk: verified
+  sim-cam: verified
+  NOTICE: sim-dma 实测超出声明 (timeout): measured 516 us >
+    declared 400 us, period 2323; Tier 1 on it refused. [非 icount，仅供参考]
+    display-vsync: now Tier 3 on sim-dma
+    hud-overlay: now Tier 3 on sim-dma (ALARM)
+
+[系统预留] kernel, fixed, never lent
+  CPU 350 us/period = 21875 ticks
+  measured since boot: max 107155 ticks/period (period 0 of 2766)
+  that period ran menu 0; kernel ticks by entry (count):
+    timer IRQ 97807 (8), slot guard wait 0 (0),
+    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 9348 (2);
+    of which period-boundary work 0, waits for a deadline 0
+    reserve 21875, margin -85280
+  memory 16384 KB
+
+[Tier 1] one fixed slot per task; unused time stays idle
+  task           slot offset_us len_us max_used_us waste_us mem_kb
+  display-vsync     0      1000    500          94      406   2048
+  timer-server      1      3500    300         274       26   1024
+  gic-server        2      6000    300           0      300   2048
+  blk-driver        3      8000    400           0      400   4096
+  net-driver        -         -      -           -        -   4096
+  total CPU 1500 us/period, memory 13312 KB
+
+[Tier 2] admitted apps (minimum is guaranteed, suggested is spare only)
+  (none)
+  minimum sum: CPU 0 / 8070 us, memory 0 / 89600 KB
+  admission: reserve 350 + tier-1 1500 + tier-2 min 0
+    + guard 80 = 1930 <= 10000 us
+
+[Tier 3] everyone else, round robin 1000 us, leftover only
+  CPU not promised to anyone: 8070 us/period
+pressure: off
+select> 16
+
+=== 16 带宽限流：超额就停到下个周期，不欠账 ===
+Simulated access counter (QEMU has no memory-access event):
+accesses = ticks run * the task's access density.
+cam-app asks Tier 2 (per 10000 us):
+  mem-bw 400000 accesses
+  mem-bw: reserve 100000 + tier-1 50000 + tier-2 min 0
+    + this 400000 = 550000 <= 2000000
+OK: admitted
+bw-greedy asks Tier 2 (per 10000 us):
+  mem-bw 1700000 accesses
+  mem-bw: reserve 100000 + tier-1 50000 + tier-2 min 0
+    + this 1700000 = 1850000 <= 2000000
+OK: admitted
+cam-app: tier 2, min 3000 us, 2 accesses/tick, budget 400000
+mem-hog: tier 3, 4 accesses/tick, budget 150000 per period
+mem-hog over 200 periods: stalled 200, accesses per period
+  min 152628 max 164172 (budget 150000); most over the budget 14172
+  (bound 81 = 20 ticks of accesses); ran again after a stall in
+  the same period 0; lowest in a period after a stall 152628
+cam-app: accesses per period max 1066190 (budget 400000), stalled 5;
+  CPU per period min 3010 us (min 3000)
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     1        249      12179   11930    17259
+  timer-server      1    200     4        203      14131   13928    16765
+  display-vsync last release: period 2987, tick 1868812500,
+    epoch+k*P+offset 1868812500
+  timer-server last release: period 2987, tick 1868968750,
+    epoch+k*P+offset 1868968750
+T1MISS task=timer-server period=2822 reason=not_started start_t=-1
+  lat_t=43560 lat_us=696 deadline_us=300 J_us=1886 class=a
+T1MISS task=timer-server period=2842 reason=not_started start_t=-1
+  lat_t=38257 lat_us=612 deadline_us=300 J_us=1848 class=a
+T1MISS task=timer-server period=2868 reason=not_started start_t=-1
+  lat_t=360686 lat_us=5770 deadline_us=300 J_us=6958 class=a
+T1MISS task=timer-server period=2948 reason=unfinished start_t=754
+  lat_t=26361 lat_us=421 deadline_us=300 J_us=1150 class=a
+T1MISS task=display-vsync period=2966 reason=not_started start_t=-1
+  lat_t=117703 lat_us=1883 deadline_us=500 J_us=3225 class=a
+misses: class a (clock jump) 5, class b (kernel) 0, skipped periods 0
+kernel per period: max 11207 avg 6214 ticks, reserve 21875, over 0
+timer IRQ entry - CVAL: min 633 max 361936 ticks (n=2177)
+kernel entry -> eret (no slot wait): min 135 max 6011 ticks
+slot guard: path max 387 ticks, slack min 0 ticks of 1250 (n=25)
+wait loop exit late by 0/1/2/>2 ticks: 1/0/1/23
+clock jumps: 1751, total 208972 us
+deadline already past at eret: 0 times, max 0 ticks;
+  pick time -> eret max 3329 ticks (margin 700); tier-2 budget
+  overrun max 345595 ticks (200 times)
+  budget left < exit tail, deadline moved to 12 ticks: 0 times
+isolation effect on a real memory bus (MPAM): 缺真实板子
+select> 17
+
+=== 17 缓存着色：每个 Tier 1 任务独占自己的缓存颜色 ===
+a tier-3 app asks for 512 pages: got 512, all from shared colors
+page pool 0x41000000, 28672 pages, 896 per color
+  tier-1 task      mem_kb colors  pages
+  display-vsync      2048   0-  0    512
+  timer-server       1024   1-  1    256
+  gic-server         2048   2-  2    512
+  blk-driver         4096   3-  4   1024
+  net-driver         4096   5-  6   1024
+tier-1 pages 3328: color right 3328, owner mark intact 3328
+shared pages handed out 512: in a tier-1 color 0
+colors: 7 tier-1 (one owner each), 25 shared
+isolation effect on a real cache: 缺真实板子 (QEMU has no cache model)
+select> 18
+
+=== 18 对照：不扣住新调用（v013 的做法）===
+cam-app asks Tier 2 CPU 3000 us + IPC headroom 120 us
+  CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0
+    + this 3120 = 5050 <= 10000
+OK: admitted
+hud-app asks Tier 2 CPU 1500 us + IPC headroom 120 us
+  CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0
+    + admitted before 3120 + this 1620 = 6670 <= 10000
+OK: admitted
+cam-app (tier 2, min 3000 us, suggested 1000 us), hud-app
+(tier 2, min 1500 us, suggested 500 us) and bg-caller (tier 3)
+call sim-dma-drv for 5..60 us of device work each.
+calls 25896; measured by the kernel during the calls:
+  driver running 58091082 ticks + IPC kernel path 1882647 ticks
+  = 59973729 ticks; caller budgets dropped by 59973729 ticks
+  longest call 11537 ticks; max |drop - measured| per call: 0 ticks
+  IPC kernel path charged to callers in total (none to the system
+  reserve): 8840442 ticks
+    = in-call window 1882647 + entry and queueing 3470515
+    + reply return 3487280 (sum 8840442)
+  whole window (per-period budgets): caller budget drops 66885651
+    = driver run 58050372 + in-call 1881690
+    + entry 3468170 + reply 3485419
+    = 66885651; error 0 ticks
+  counting windows (ticks):
+    cumulative: from stats reset 1894323628 to read 2019377947
+    per-period: periods 3028..3227, ticks 1894375000..2019375000
+  part         before     window      after  cumulative  err
+  driver run    42159   58050372          0    58092531    0
+  in-call         957    1881690          0     1882647    0
+  entry          2345    3468170          0     3470515    0
+  reply          1861    3485419          0     3487280    0
+  driver run per replied call 58091082 = charged 58092531
+    + ran before reset in calls open then 0 - ran in 1 calls
+    still open at the end 1449; error 0 ticks
+  IPC kernel path past the end of a tier-2 caller's budget, taken
+  from its admitted IPC headroom (120 us = 7500 ticks per period):
+    186 times, total 48441, max 799 ticks; most in one period 896;
+    charged to the system reserve: 0
+  caller-periods with a draw 168, with draws in both the guaranteed
+  and the suggested pass 18; new calls held to the next period 0,
+  released at the next period start 0
+  caller-periods with 2 or more draws 18; forwarded calls 0,
+  replied 0
+  driver's own budget used during the window: 0 ticks
+  driver's own wall-clock timing incl. preemption (reference only):
+  total 92411568 ticks
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     0        176       5546    5370    10690
+  timer-server      1    200     0        178        984     806     3574
+  display-vsync last release: period 3228, tick 2019437500,
+    epoch+k*P+offset 2019437500
+  timer-server last release: period 3228, tick 2019593750,
+    epoch+k*P+offset 2019593750
+misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
+kernel per period: max 10864 avg 5795 ticks, reserve 21875, over 0
+timer IRQ entry - CVAL: min 171 max 20700 ticks (n=1986)
+kernel entry -> eret (no slot wait): min 121 max 5915 ticks
+slot guard: path max 1704 ticks, slack min 0 ticks of 1250 (n=394)
+wait loop exit late by 0/1/2/>2 ticks: 51/60/54/229
+clock jumps: 1046, total 60773 us
+deadline already past at eret: 0 times, max 0 ticks;
+  pick time -> eret max 4187 ticks (margin 700); tier-2 budget
+  overrun max 4293 ticks (557 times)
+  budget left < exit tail, deadline moved to 12 ticks: 28 times
+
+=== 18 IPC 余量：用过余量的调用者本周期新调用扣到下个周期 ===
+cam-app asks Tier 2 CPU 3000 us + IPC headroom 120 us
+  CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0
+    + this 3120 = 5050 <= 10000
+OK: admitted
+hud-app asks Tier 2 CPU 1500 us + IPC headroom 120 us
+  CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0
+    + admitted before 3120 + this 1620 = 6670 <= 10000
+OK: admitted
+cam-app (tier 2, min 3000 us, suggested 1000 us), hud-app
+(tier 2, min 1500 us, suggested 500 us) and bg-caller (tier 3)
+call sim-dma-drv for 5..60 us of device work each.
+calls 26975; measured by the kernel during the calls:
+  driver running 60701345 ticks + IPC kernel path 2324070 ticks
+  = 63025415 ticks; caller budgets dropped by 63025415 ticks
+  longest call 14912 ticks; max |drop - measured| per call: 0 ticks
+  IPC kernel path charged to callers in total (none to the system
+  reserve): 9154981 ticks
+    = in-call window 2324176 + entry and queueing 3080269
+    + reply return 3750536 (sum 9154981)
+  whole window (per-period budgets): caller budget drops 69545492
+    = driver run 60423736 + in-call 2316646
+    + entry 3068816 + reply 3736294
+    = 69545492; error 0 ticks
+  counting windows (ticks):
+    cumulative: from stats reset 2019593002 to read 2145002870
+    per-period: periods 3229..3428, ticks 2020000000..2145000000
+  part         before     window      after  cumulative  err
+  driver run   278381   60423736          0    60702117    0
+  in-call        7530    2316646          0     2324176    0
+  entry         11453    3068816          0     3080269    0
+  reply         14242    3736294          0     3750536    0
+  driver run per replied call 60701345 = charged 60702117
+    + ran before reset in calls open then 0 - ran in 1 calls
+    still open at the end 772; error 0 ticks
+  IPC kernel path past the end of a tier-2 caller's budget, taken
+  from its admitted IPC headroom (120 us = 7500 ticks per period):
+    167 times, total 47243, max 1416 ticks; most in one period 1416;
+    charged to the system reserve: 0
+  caller-periods with a draw 167, with draws in both the guaranteed
+  and the suggested pass 0; new calls held to the next period 115,
+  released at the next period start 115
+  caller-periods with 2 or more draws 0; forwarded calls 0,
+  replied 0
+  driver's own budget used during the window: 0 ticks
+  driver's own wall-clock timing incl. preemption (reference only):
+  total 94650623 ticks
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     0        177       3156    2979     8247
+  timer-server      1    200     0        191        730     539     3394
+  display-vsync last release: period 3429, tick 2145062500,
+    epoch+k*P+offset 2145062500
+  timer-server last release: period 3429, tick 2145218750,
+    epoch+k*P+offset 2145218750
+misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
+kernel per period: max 10280 avg 5749 ticks, reserve 21875, over 0
+timer IRQ entry - CVAL: min 179 max 22892 ticks (n=1977)
+kernel entry -> eret (no slot wait): min 120 max 5638 ticks
+slot guard: path max 1668 ticks, slack min 0 ticks of 1250 (n=378)
+wait loop exit late by 0/1/2/>2 ticks: 45/39/56/238
+clock jumps: 1026, total 57661 us
+deadline already past at eret: 0 times, max 0 ticks;
+  pick time -> eret max 2601 ticks (margin 700); tier-2 budget
+  overrun max 2017 ticks (524 times)
+  budget left < exit tail, deadline moved to 12 ticks: 27 times
+
+=== 18 对照（经转发服务端）：不扣住新调用 ===
+cam-app asks Tier 2 CPU 3000 us + IPC headroom 120 us
+  CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0
+    + this 3120 = 5050 <= 10000
+OK: admitted
+hud-app asks Tier 2 CPU 1500 us + IPC headroom 120 us
+  CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0
+    + admitted before 3120 + this 1620 = 6670 <= 10000
+OK: admitted
+cam-app (tier 2, min 3000 us, suggested 1000 us), hud-app
+(tier 2, min 1500 us, suggested 500 us) and bg-caller (tier 3)
+call sim-dma-drv for 5..60 us of device work each.
+cam-app and hud-app call via fwd-srv (server A), which forwards
+each call to sim-dma-drv (server B); both run on the caller's budget.
+calls 21050; measured by the kernel during the calls:
+  driver running 57464681 ticks + IPC kernel path 10401353 ticks
+  = 67866034 ticks; caller budgets dropped by 67866034 ticks
+  longest call 25009 ticks; max |drop - measured| per call: 0 ticks
+  IPC kernel path charged to callers in total (none to the system
+  reserve): 15702578 ticks
+    = in-call window 10402046 + entry and queueing 2356257
+    + reply return 2944275 (sum 15702578)
+  whole window (per-period budgets): caller budget drops 73165330
+    = driver run 57463081 + in-call 10402046
+    + entry 2355928 + reply 2944275
+    = 73165330; error 0 ticks
+  counting windows (ticks):
+    cumulative: from stats reset 2145573734 to read 2270629024
+    per-period: periods 3430..3629, ticks 2145625000..2270625000
+  part         before     window      after  cumulative  err
+  driver run        0   57463081          0    57463081    0
+  in-call           0   10402046          0    10402046    0
+  entry           329    2355928          0     2356257    0
+  reply             0    2944275          0     2944275    0
+  driver run per replied call 57464681 = charged 57463081
+    + ran before reset in calls open then 3594 - ran in 2 calls
+    still open at the end 1994; error 0 ticks
+  IPC kernel path past the end of a tier-2 caller's budget, taken
+  from its admitted IPC headroom (120 us = 7500 ticks per period):
+    216 times, total 66842, max 1750 ticks; most in one period 1750;
+    charged to the system reserve: 0
+  caller-periods with a draw 191, with draws in both the guaranteed
+  and the suggested pass 25; new calls held to the next period 0,
+  released at the next period start 0
+  caller-periods with 2 or more draws 25; forwarded calls 18381,
+  replied 18382
+  driver's own budget used during the window: 0 ticks
+  driver's own wall-clock timing incl. preemption (reference only):
+  total 76474271 ticks
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     0        178        883     705     5959
+  timer-server      1    200     0        161        984     823     3567
+  display-vsync last release: period 3630, tick 2270687500,
+    epoch+k*P+offset 2270687500
+  timer-server last release: period 3630, tick 2270843750,
+    epoch+k*P+offset 2270843750
+misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
+kernel per period: max 10597 avg 5752 ticks, reserve 21875, over 0
+timer IRQ entry - CVAL: min 175 max 43408 ticks (n=1786)
+kernel entry -> eret (no slot wait): min 122 max 1492 ticks
+slot guard: path max 2791 ticks, slack min 0 ticks of 1250 (n=382)
+wait loop exit late by 0/1/2/>2 ticks: 50/52/47/233
+clock jumps: 1017, total 57126 us
+deadline already past at eret: 0 times, max 0 ticks;
+  pick time -> eret max 14873 ticks (margin 700); tier-2 budget
+  overrun max 1629 ticks (468 times)
+  budget left < exit tail, deadline moved to 12 ticks: 17 times
+
+=== 18 经转发服务端：用过余量的预算本周期新调用扣到下个周期 ===
+cam-app asks Tier 2 CPU 3000 us + IPC headroom 120 us
+  CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0
+    + this 3120 = 5050 <= 10000
+OK: admitted
+hud-app asks Tier 2 CPU 1500 us + IPC headroom 120 us
+  CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0
+    + admitted before 3120 + this 1620 = 6670 <= 10000
+OK: admitted
+cam-app (tier 2, min 3000 us, suggested 1000 us), hud-app
+(tier 2, min 1500 us, suggested 500 us) and bg-caller (tier 3)
+call sim-dma-drv for 5..60 us of device work each.
+cam-app and hud-app call via fwd-srv (server A), which forwards
+each call to sim-dma-drv (server B); both run on the caller's budget.
+calls 24104; measured by the kernel during the calls:
+  driver running 64215462 ticks + IPC kernel path 9875220 ticks
+  = 74090682 ticks; caller budgets dropped by 74090682 ticks
+  longest call 21060 ticks; max |drop - measured| per call: 0 ticks
+  IPC kernel path charged to callers in total (none to the system
+  reserve): 14549114 ticks
+    = in-call window 9876182 + entry and queueing 1770558
+    + reply return 2902374 (sum 14549114)
+  whole window (per-period budgets): caller budget drops 78765484
+    = driver run 64216530 + in-call 9876182
+    + entry 1770398 + reply 2902374
+    = 78765484; error 0 ticks
+  counting windows (ticks):
+    cumulative: from stats reset 2271181097 to read 2396251435
+    per-period: periods 3631..3830, ticks 2271250000..2396250000
+  part         before     window      after  cumulative  err
+  driver run        0   64216530          0    64216530    0
+  in-call           0    9876182          0     9876182    0
+  entry           160    1770398          0     1770558    0
+  reply             0    2902374          0     2902374    0
+  driver run per replied call 64215462 = charged 64216530
+    + ran before reset in calls open then 1307 - ran in 1 calls
+    still open at the end 2375; error 0 ticks
+  IPC kernel path past the end of a tier-2 caller's budget, taken
+  from its admitted IPC headroom (120 us = 7500 ticks per period):
+    182 times, total 56815, max 2179 ticks; most in one period 2179;
+    charged to the system reserve: 0
+  caller-periods with a draw 182, with draws in both the guaranteed
+  and the suggested pass 0; new calls held to the next period 104,
+  released at the next period start 104
+  caller-periods with 2 or more draws 0; forwarded calls 17428,
+  replied 17429
+  driver's own budget used during the window: 0 ticks
+  driver's own wall-clock timing incl. preemption (reference only):
+  total 78191306 ticks
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200     0        179       1154     975     6254
+  timer-server      1    200     0        181       3157    2976     5794
+  display-vsync last release: period 3831, tick 2396312500,
+    epoch+k*P+offset 2396312500
+  timer-server last release: period 3831, tick 2396468750,
+    epoch+k*P+offset 2396468750
+misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
+kernel per period: max 11106 avg 5428 ticks, reserve 21875, over 0
+timer IRQ entry - CVAL: min 157 max 27532 ticks (n=1725)
+kernel entry -> eret (no slot wait): min 123 max 2446 ticks
+slot guard: path max 1400 ticks, slack min 0 ticks of 1250 (n=388)
+wait loop exit late by 0/1/2/>2 ticks: 53/53/53/229
+clock jumps: 975, total 47364 us
+deadline already past at eret: 0 times, max 0 ticks;
+  pick time -> eret max 2556 ticks (margin 700); tier-2 budget
+  overrun max 8723 ticks (440 times)
+  budget left < exit tail, deadline moved to 12 ticks: 25 times
+select> 1
+
+=== 1 资源总览 / resource overview ===
+RAM 131072 KB. CPU period 10000 us. 1 tick = 16 ns.
+
+[Devices] simulated (software models)
+  sim-dma: DEMOTED to Tier 3
+  sim-blk: verified
+  sim-cam: verified
+  NOTICE: sim-dma 实测超出声明 (timeout): measured 516 us >
+    declared 400 us, period 2323; Tier 1 on it refused. [非 icount，仅供参考]
+    display-vsync: now Tier 3 on sim-dma
+    hud-overlay: now Tier 3 on sim-dma (ALARM)
+
+[系统预留] kernel, fixed, never lent
+  CPU 350 us/period = 21875 ticks
+  measured since boot: max 107155 ticks/period (period 0 of 3851)
+  that period ran menu 0; kernel ticks by entry (count):
+    timer IRQ 97807 (8), slot guard wait 0 (0),
+    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 9348 (2);
+    of which period-boundary work 0, waits for a deadline 0
+    reserve 21875, margin -85280
+  memory 16384 KB
+
+[Tier 1] one fixed slot per task; unused time stays idle
+  task           slot offset_us len_us max_used_us waste_us mem_kb
+  display-vsync     0      1000    500          99      401   2048
+  timer-server      1      3500    300         412        0   1024
+  gic-server        2      6000    300           0      300   2048
+  blk-driver        3      8000    400           0      400   4096
+  net-driver        -         -      -           -        -   4096
+  total CPU 1500 us/period, memory 13312 KB
+
+[Tier 2] admitted apps (minimum is guaranteed, suggested is spare only)
+  (none)
+  minimum sum: CPU 0 / 8070 us, memory 0 / 89600 KB
+  admission: reserve 350 + tier-1 1500 + tier-2 min 0
+    + guard 80 = 1930 <= 10000 us
+
+[Tier 3] everyone else, round robin 1000 us, leftover only
+  CPU not promised to anyone: 8070 us/period
+pressure: off
+select> x
+未知选项。按 h 看命令。
+select> h
+
+命令（输入数字后回车）:
+  1  资源总览：系统预留、Tier 1 槽和浪费、Tier 2、Tier 3
+  2  安装应用：允许/拒绝（也可以停止应用）
+  3  资源不够：拒绝并说明先关哪个应用
+  4  旧设备：超过整机容量的请求被拒绝
+  5  Tier 1 准时：抖动和错过都是 0
+  6  Tier 1 超时在槽尾被掐断
+  7  Tier 1 槽从不外借
+  8  Tier 2 最低值有保证，建议值在压力下收回
+  9  Tier 3 过载不影响上层
+  10 任何一级的失控任务只拖慢自己
+  11 设备申请 Tier 1：不能打断的设备被拒（说明缺哪一条）
+  12 超额申请被拒（说明是哪种资源）
+  13 预算令牌：驱动替谁干活就扣谁的预算
+  14 设备超时：强制中止，设备降到 Tier 3（少报耗时的设备）
+  15 中断风暴：多出来的中断被限流并计数
+  16 带宽限流：超额就停到下个周期，不欠账
+  17 缓存着色：每个 Tier 1 任务独占自己的缓存颜色
+  18 IPC 余量：用过余量的调用者本周期新调用扣到下个周期
+  h  帮助    q  提示如何退出 QEMU
+select> QEMU: Terminated
+
+
+##### 64M ok=True
+
+Quota OS microkernel
+Version: 015 (559daed)
+基于三级资源声明的微内核，
+保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] x0=0x42000000 physical RAM span 64 MB (probed)
+[boot] DTB at 0x42000000
+[boot] DTB memory 67108864 bytes
+[boot] system reserve 350 us/period, 16384 KB;
+       tier-1 1500 us/period, 13312 KB; guard 80 us/period
+[boot] cache colors: 32 (model: 2 MB 16-way cache, 4 KB pages);
+       tier-1 pages in 11 own colors, padding 3584 KB
+[boot] kernel image+bss 562 KB of the 16384 KB system reserve
+[boot] GICv3 from DTB: distributor 0x8000000, redistributor 0x80a0000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] clock: host time (not icount; timings are reference only)
+[boot] simulated device IRQ line: EL1 physical timer, PPI 30
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 1250000, period 625000 ticks, guard 1250 ticks
+[boot] shell task running
+[dev] 3 new simulated devices start in Tier 3; verifying
+      (8 jobs, 8 aborts each, IRQs masked, before the next guard)
+[dev] sim-dma: job 396/400 us, stop 18/20 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-blk: job 1991/2000 us, stop 1770/2000 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-cam: job 291/300 us, stop 8/30 us (measured/declared)
+      [非 icount，仅供参考]
+
+命令（输入数字后回车）:
+  1  资源总览：系统预留、Tier 1 槽和浪费、Tier 2、Tier 3
+  2  安装应用：允许/拒绝（也可以停止应用）
+  3  资源不够：拒绝并说明先关哪个应用
+  4  旧设备：超过整机容量的请求被拒绝
+  5  Tier 1 准时：抖动和错过都是 0
+  6  Tier 1 超时在槽尾被掐断
+  7  Tier 1 槽从不外借
+  8  Tier 2 最低值有保证，建议值在压力下收回
+  9  Tier 3 过载不影响上层
+  10 任何一级的失控任务只拖慢自己
+  11 设备申请 Tier 1：不能打断的设备被拒（说明缺哪一条）
+  12 超额申请被拒（说明是哪种资源）
+  13 预算令牌：驱动替谁干活就扣谁的预算
+  14 设备超时：强制中止，设备降到 Tier 3（少报耗时的设备）
+  15 中断风暴：多出来的中断被限流并计数
+  16 带宽限流：超额就停到下个周期，不欠账
+  17 缓存着色：每个 Tier 1 任务独占自己的缓存颜色
+  18 IPC 余量：用过余量的调用者本周期新调用扣到下个周期
+  h  帮助    q  提示如何退出 QEMU
+select> 1
+
+=== 1 资源总览 / resource overview ===
+RAM 65536 KB. CPU period 10000 us. 1 tick = 16 ns.
+
+[Devices] simulated (software models)
+  sim-dma: verified
+  sim-blk: verified
+  sim-cam: verified
+
+[系统预留] kernel, fixed, never lent
+  CPU 350 us/period = 21875 ticks
+  measured since boot: max 116342 ticks/period (period 0 of 18)
+  that period ran menu 0; kernel ticks by entry (count):
+    timer IRQ 115263 (9), slot guard wait 0 (0),
+    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 1079 (1);
+    of which period-boundary work 0, waits for a deadline 0
+    reserve 21875, margin -94467
+  memory 16384 KB
+
+[Tier 1] one fixed slot per task; unused time stays idle
+  task           slot offset_us len_us max_used_us waste_us mem_kb
+  display-vsync     0      1000    500         101      399   2048
+  timer-server      1      3500    300          51      249   1024
+  gic-server        2      6000    300           0      300   2048
+  blk-driver        3      8000    400           0      400   4096
+  net-driver        -         -      -           -        -   4096
+  total CPU 1500 us/period, memory 13312 KB
+
+[Tier 2] admitted apps (minimum is guaranteed, suggested is spare only)
+  (none)
+  minimum sum: CPU 0 / 8070 us, memory 0 / 32256 KB
+  admission: reserve 350 + tier-1 1500 + tier-2 min 0
+    + guard 80 = 1930 <= 10000 us
+
+[Tier 3] everyone else, round robin 1000 us, leftover only
+  CPU not promised to anyone: 8070 us/period
+pressure: off
+select> 4
+
+=== 4 旧设备：超过整机容量 / old device: request too big ===
+apps get at most CPU 8070 us/period and memory 32256 KB on this device.
+
+Neural Forge (CPU min 1000 us, memory min 81920 KB):
+REFUSED: device does not meet minimum requirements
+  minimum memory 81920 KB > 32256 KB for apps
+  (RAM 65536 KB - system reserve - tier-1 - color padding)
+No app can be closed to make room: this device is too small.
+
+Cluster Sim (CPU min 1000 us, memory min 524288 KB):
+REFUSED: device does not meet minimum requirements
+  minimum memory 524288 KB > 32256 KB for apps
+  (RAM 65536 KB - system reserve - tier-1 - color padding)
+No app can be closed to make room: this device is too small.
+
+Render Farm (CPU min 9000 us, memory min 4096 KB):
+REFUSED: device does not meet minimum requirements
+  minimum CPU 9000 us > 8070 us/period for apps
+  (period - system reserve - tier-1 - guard)
+No app can be closed to make room: this device is too small.
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+number to install, s<number> to stop, empty to go back. app> 4
+
+Neural Forge: 最低 80MB，小内存机器装不下
+  CPU minimum 1000 us, suggested +0 us per 10000 us
+  memory minimum 81920 KB, suggested 98304 KB
+REFUSED: device does not meet minimum requirements
+  minimum memory 81920 KB > 32256 KB for apps
+  (RAM 65536 KB - system reserve - tier-1 - color padding)
+No app can be closed to make room: this device is too small.
+not started.
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+number to install, s<number> to stop, empty to go back. app> 1
+
+Pixel Racer: 游戏
+  CPU minimum 3000 us, suggested +1000 us per 10000 us
+  memory minimum 8192 KB, suggested 20480 KB
+allow this app to reserve its minimum? (y/n) allow> y
+started Pixel Racer: CPU 3000 us/period guaranteed,
+  memory 8192 KB (+12288 KB suggested now)
+select> 1
+
+=== 1 资源总览 / resource overview ===
+RAM 65536 KB. CPU period 10000 us. 1 tick = 16 ns.
+
+[Devices] simulated (software models)
+  sim-dma: verified
+  sim-blk: verified
+  sim-cam: verified
+
+[系统预留] kernel, fixed, never lent
+  CPU 350 us/period = 21875 ticks
+  measured since boot: max 116342 ticks/period (period 0 of 160)
+  that period ran menu 0; kernel ticks by entry (count):
+    timer IRQ 115263 (9), slot guard wait 0 (0),
+    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 1079 (1);
+    of which period-boundary work 0, waits for a deadline 0
+    reserve 21875, margin -94467
+  memory 16384 KB
+
+[Tier 1] one fixed slot per task; unused time stays idle
+  task           slot offset_us len_us max_used_us waste_us mem_kb
+  display-vsync     0      1000    500         172      328   2048
+  timer-server      1      3500    300          56      244   1024
+  gic-server        2      6000    300           0      300   2048
+  blk-driver        3      8000    400           0      400   4096
+  net-driver        -         -      -           -        -   4096
+  total CPU 1500 us/period, memory 13312 KB
+
+[Tier 2] admitted apps (minimum is guaranteed, suggested is spare only)
+  Pixel Racer    CPU min 3000 + sugg 1000 us, mem min 8192 KB, granted 20480 KB
+  minimum sum: CPU 3000 / 8070 us, memory 8192 / 32256 KB
+  admission: reserve 350 + tier-1 1500 + tier-2 min 3000
+    + guard 80 = 4930 <= 10000 us
+
+[Tier 3] everyone else, round robin 1000 us, leftover only
+  CPU not promised to anyone: 5070 us/period
+pressure: off
+select> QEMU: Terminated
+

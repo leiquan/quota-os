@@ -1,0 +1,9 @@
+afed7949f5b3adc6dcb3d6c86e05356ed69fd315eca55fbeafae656f62880e05  prebuilt/quotaos-serial.bin
+e12747256945585006d43211fb59ed95ec05da14b9ca57f3b7390a05b62769ed  prebuilt/quotaos-jsc.bin
+1d90d60c5ce89f14f6a70e03133a3b52f76aeaeeb996a929785d9723b065083b  prebuilt/quotaos.bin
+c00aacd25d9a3d791613969e1384a0c1499119d24c0c0abfc4c3407d13bd6b89  prebuilt/quotaos.elf
+  697256 prebuilt/quotaos.bin
+  903240 prebuilt/quotaos.elf
+   93744 prebuilt/quotaos-serial.bin
+13063200 prebuilt/quotaos-jsc.bin
+14757440 total

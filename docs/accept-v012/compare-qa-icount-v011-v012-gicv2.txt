@@ -1,0 +1,30 @@
+@@ ...Quota OS microkernel Version:
+- 011 (181e8ac)
++ 012 (fb77426)
+@@ ...us/period, 13312 KB; guard 80 us/period
+- 
++ [boot] cache colors: 32 (model: 2 MB 16-way cache, 4 KB pages); tier-1 pages in 7 own colors, padding 11776 KB
+@@ .../ 8070 us, memory 0 /
+- 101376
++ 89600
+@@ ...us/period, minimum needs 3000 memory left
+- 84992
++ 73216
+@@ ...most CPU 8070 us/period and memory
+- 101376
++ 89600
+@@ ...requirements minimum memory 524288 KB >
+- 101376
++ 89600
+@@ ...131072 KB - system reserve -
+- tier-1)
++ tier-1 - color padding)
+@@ ...overrun max # ticks (# times)
+- 
++ budget left < exit tail, deadline moved to 12 ticks: 0 times
+@@ ...overrun max # ticks (# times)
+- 
++ budget left < exit tail, deadline moved to 12 ticks: 0 times
+@@ .../ 8070 us, memory 0 /
+- 101376
++ 89600

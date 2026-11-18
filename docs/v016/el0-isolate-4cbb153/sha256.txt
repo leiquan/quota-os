@@ -1,0 +1,12 @@
+host and icount commands use prebuilt/quotaos.bin
+icount: -icount shift=4,sleep=off
+c51236a1ed9590b4f92105ef967f9f7450e3b95f17783ec75944bd6381595a98  prebuilt/quotaos.bin
+8dbd8865537a7dd84e132fc27aeab93d1dd9f2f257f4190bcbde6a397de16147  prebuilt/quotaos.elf
+afed7949f5b3adc6dcb3d6c86e05356ed69fd315eca55fbeafae656f62880e05  prebuilt/quotaos-serial.bin
+e12747256945585006d43211fb59ed95ec05da14b9ca57f3b7390a05b62769ed  prebuilt/quotaos-jsc.bin
+  705888 prebuilt/quotaos.bin
+  912576 prebuilt/quotaos.elf
+   93744 prebuilt/quotaos-serial.bin
+13063200 prebuilt/quotaos-jsc.bin
+14775408 total
+QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)

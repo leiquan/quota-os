@@ -1,0 +1,93 @@
+=== 1 verbatim diff: 28 lines removed, 33 lines added ===
+--- docs/accept-v014/e3-icount-gicv2.txt
++++ docs/accept-v015/e3-icount-gicv2.txt
+@@ -3 +3 @@
+-Version: 014 (7065679)
++Version: 015 (559daed)
+@@ -13 +13 @@
+-[boot] kernel image+bss 553 KB of the 16384 KB system reserve
++[boot] kernel image+bss 562 KB of the 16384 KB system reserve
+@@ -44,3 +44,3 @@
+-[health] sim-dma timeout: measured 406 us > declared 400 us, period 10
+-  job aborted; stop took 4 us (declared bound 20 us)
+-device jobs: submitted 1783, completed 1108, timed out 675
++[health] sim-dma timeout: measured 406 us > declared 400 us, period 9
++  job aborted; stop took 5 us (declared bound 20 us)
++device jobs: submitted 7221, completed 4501, timed out 2720
+@@ -50,2 +50,2 @@
+-  guard 671, device in Tier 3 and caller not Tier 3 76045
+-abort -> stopped: 675 aborts, max 6 us (declared bound 20 us,
++  guard 5212, device in Tier 3 and caller not Tier 3 72299
++abort -> stopped: 2720 aborts, max 7 us (declared bound 20 us,
+@@ -55,2 +55,2 @@
+-device time charged to callers: 34274801 ticks
+-cam-app calls ok 0 / refused 76046; bg-caller ok 1108 / refused 1345
++device time charged to callers: 138884051 ticks
++cam-app calls ok 0 / refused 72299; bg-caller ok 4501 / refused 7931
+@@ -66,5 +66,5 @@
+-kernel per period: max 14939 avg 11818 ticks, reserve 21875, over 0
+-timer IRQ entry - CVAL: min 3 max 3 ticks (n=7608)
+-kernel entry -> eret (no slot wait): min 629 max 5292 ticks
+-slot guard: path max 1303 ticks, slack min 745 ticks of 1250 (n=2000)
+-wait loop exit late by 0/1/2/>2 ticks: 229/489/1282/0
++kernel per period: max 13676 avg 11303 ticks, reserve 21875, over 0
++timer IRQ entry - CVAL: min 3 max 3 ticks (n=8656)
++kernel entry -> eret (no slot wait): min 665 max 3101 ticks
++slot guard: path max 1531 ticks, slack min 865 ticks of 1250 (n=2000)
++wait loop exit late by 0/1/2/>2 ticks: 186/1265/549/0
+@@ -73,3 +73,3 @@
+-  pick time -> eret max 437 ticks (margin 500); tier-2 budget
+-  overrun max 9 ticks (36 times)
+-  budget left < exit tail, deadline moved to 12 ticks: 64 times
++  pick time -> eret max 473 ticks (margin 700); tier-2 budget
++  overrun max 14 ticks (33 times)
++  budget left < exit tail, deadline moved to 12 ticks: 37 times
+@@ -83 +83 @@
+-  device busy at a guard 0, ends after a guard 0, timeouts 675
++  device busy at a guard 0, ends after a guard 0, timeouts 2720
+@@ -88 +88 @@
+-E3 item6 aborts 675 (+ verification aborts of preemptible devices):
++E3 item6 aborts 2720 (+ verification aborts of preemptible devices):
+@@ -111 +111,6 @@
+-  measured since boot: max 14939 ticks/period (period 10 of 1010)
++  measured since boot: max 14406 ticks/period (period 8 of 1010)
++  that period ran menu 14; kernel ticks by entry (count):
++    timer IRQ 10523 (12), slot guard wait 2562 (2),
++    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 1321 (2);
++    of which period-boundary work 876, waits for a deadline 0
++    reserve 21875, margin 7469
+@@ -138,2 +143,2 @@
+-IRQs raised by the device (its own counter) 625451, handled 23023,
+-  not delivered (limited) 602428; most handled in one period 23
++IRQs raised by the device (its own counter) 625444, handled 22022,
++  not delivered (limited) 603422; most handled in one period 22
+@@ -152 +157 @@
+-kernel per period: max 17442 avg 14092 ticks, reserve 21875, over 0
++kernel per period: max 15858 avg 14750 ticks, reserve 21875, over 0
+@@ -154,3 +159,3 @@
+-kernel entry -> eret (no slot wait): min 629 max 5317 ticks
+-slot guard: path max 660 ticks, slack min 587 ticks of 1250 (n=2000)
+-wait loop exit late by 0/1/2/>2 ticks: 1000/1000/0/0
++kernel entry -> eret (no slot wait): min 666 max 3142 ticks
++slot guard: path max 686 ticks, slack min 561 ticks of 1250 (n=2000)
++wait loop exit late by 0/1/2/>2 ticks: 999/1000/1/0
+@@ -159 +164 @@
+-  pick time -> eret max 415 ticks (margin 500); tier-2 budget
++  pick time -> eret max 455 ticks (margin 700); tier-2 budget
+@@ -162 +167 @@
+-E3 item5 storm: tier-1 misses 0, limited 602428, max per period 23
++E3 item5 storm: tier-1 misses 0, limited 603422, max per period 22
+
+=== 2 numbers-masked diff (every digit run -> #): 1 lines removed, 6 lines added ===
+--- docs/accept-v014/e3-icount-gicv2.txt
++++ docs/accept-v015/e3-icount-gicv2.txt
+@@ -3 +3 @@
+-Version: # (#)
++Version: # (#daed)
+@@ -111,0 +112,5 @@
++  that period ran menu #; kernel ticks by entry (count):
++    timer IRQ # (#), slot guard wait # (#),
++    device IRQ # (#), svc IPC/dev # (#), svc other # (#);
++    of which period-boundary work #, waits for a deadline #
++    reserve #, margin #
+

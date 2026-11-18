@@ -1,0 +1,63 @@
+
+Quota OS microkernel
+Version: 012 (fb77426)
+基于三级资源声明的微内核，
+保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB memory 134217728 bytes
+[boot] system reserve 350 us/period, 16384 KB;
+       tier-1 1500 us/period, 13312 KB; guard 80 us/period
+[boot] cache colors: 32 (model: 2 MB 16-way cache, 4 KB pages);
+       tier-1 pages in 7 own colors, padding 11776 KB
+[boot] kernel image+bss 548 KB of the 16384 KB system reserve
+[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] clock: icount (counter driven by instruction count)
+[boot] simulated device IRQ line: EL1 physical timer, PPI 30
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 625000, period 625000 ticks, guard 1250 ticks
+[boot] shell task running
+[dev] 3 new simulated devices start in Tier 3; verifying
+      (8 jobs, 8 aborts each, IRQs masked, before the next guard)
+[dev] sim-dma: job 396/400 us, stop 7/20 us (measured/declared)
+[dev] sim-blk: job 1991/2000 us, stop 1770/2000 us (measured/declared)
+[dev] sim-cam: job 291/300 us, stop 8/30 us (measured/declared)
+
+=== QA long run ===
+32 tier-3 busy loops for 100000 periods, with a tier-2 game and audio-mix.
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0 100000     0         41         41       0     5054
+  timer-server      1 100000     0         41         41       0     2554
+  display-vsync last release: period 100010, tick 62506937500,
+    epoch+k*P+offset 62506937500
+  timer-server last release: period 100010, tick 62507093750,
+    epoch+k*P+offset 62507093750
+misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  game            2000    1000      3000     3000     3000      0
+  audio-mix: jobs 100000, misses 0, worst response 492 us (deadline 4000 us)
+tier-3 per loop: avg 113..187 us/period, all 32 together 4821 us
+Tier 1 slots over 100000 periods (ticks per period, average)
+  slot owner          start    len  owner_used  idle  foreign(total)
+     0 display-vsync   62500  31250        5019 25568        0
+     1 timer-server   218750  18750        2519 15565        0
+     2 (empty)        375000  18750           0 18750        0
+     3 (empty)        500000  25000           0 25000        0
+Tier 2/3 ticks inside any Tier 1 slot: 0 (in 0 runs)
+  of which not covered by clock jumps: 0
+kernel per period: max 20549 avg 17558 ticks, reserve 21875, over 0
+timer IRQ entry - CVAL: min 3 max 5 ticks (n=1400000)
+kernel entry -> eret (no slot wait): min 628 max 6622 ticks
+slot guard: path max 655 ticks, slack min 592 ticks of 1250 (n=200000)
+wait loop exit late by 0/1/2/>2 ticks: 0/199999/1/0
+clock jumps: 0, total 0 us
+deadline already past at eret: 0 times, max 0 ticks;
+  pick time -> eret max 437 ticks (margin 500); tier-2 budget
+  overrun max 3 ticks (200000 times)
+  budget left < exit tail, deadline moved to 12 ticks: 0 times
+结果: Tier 1 错过 0 次，起点抖动 0 tick，
+  槽内 Tier 2/3 共 0 tick。
+结果: Tier 2 低于最低值 0 个周期，audio-mix 错过 0 次。
+QA DONE

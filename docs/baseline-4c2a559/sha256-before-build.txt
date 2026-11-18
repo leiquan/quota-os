@@ -1,0 +1,5 @@
+=== delivered image hashes BEFORE any build ===
+99ec3fa2ea6ab795a3297feeda020a175afae126b894323267b22614e7078bb6  prebuilt/quotaos.bin
+daf0c558b3f398ec9b3cb557be1b35f1bb915fa0a144d3683c105f3811929da8  prebuilt/quotaos.elf
+prebuilt/quotaos.bin 89000 bytes
+prebuilt/quotaos.elf 168288 bytes

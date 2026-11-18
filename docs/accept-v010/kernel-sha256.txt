@@ -1,0 +1,3 @@
+a6f8603f3fc244f63af44b68eb1be0493b3f48300bd2ec2f0de2c97f28a7dbb4  build/quotaos.bin
+43814c82d34abd63c414ee0081d3b974a7c9421b7fdb7ea6dfb0e126ef524884  build/quotaos.elf
+a6f8603f3fc244f63af44b68eb1be0493b3f48300bd2ec2f0de2c97f28a7dbb4  prebuilt/quotaos.bin

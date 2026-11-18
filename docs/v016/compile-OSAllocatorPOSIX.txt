@@ -1,0 +1,13 @@
+utc: 2026-11-17T06:06:44Z
+compiler: aarch64-linux-gnu-g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+source_commit: 4d967f4ca7bdd75319e732247e714c2bc634555e
+tag: WebKit-7625.2.8.18.3
+command: aarch64-linux-gnu-g++ -std=c++20 -ffreestanding -fno-exceptions -fno-rtti -fno-threadsafe-statics -c -I /tmp/WebKit/Source/WTF -o /tmp/OSAllocatorPOSIX.o /tmp/WebKit/Source/WTF/wtf/posix/OSAllocatorPOSIX.cpp
+---- compiler output ----
+In file included from /tmp/WebKit/Source/WTF/config.h:31,
+                 from /tmp/WebKit/Source/WTF/wtf/posix/OSAllocatorPOSIX.cpp:26:
+/tmp/WebKit/Source/WTF/wtf/FastMalloc.h:23:10: fatal error: bmalloc/BPlatform.h: No such file or directory
+   23 | #include <bmalloc/BPlatform.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+EXIT:1

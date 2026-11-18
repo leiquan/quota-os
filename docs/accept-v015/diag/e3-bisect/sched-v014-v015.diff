@@ -1,0 +1,271 @@
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 4595be1..3b5e60e 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -22,7 +22,7 @@
+  * 中断要等 eret 之后才进来（v012 前实测进入晚到 5–11 tick）。这种情况把期限推到
+  * 读计数器后 MIN_REL_T，换成预算最多多跑几 tick（计入 tier-2 overrun max）。 */
+ #define MIN_REL_T 12
+-#define EXIT_MARGIN_T 500   /* 挑选到 eret 最多要这么多 tick（icount 实测见 README），期限更近就先等 */
++#define EXIT_MARGIN_T 700   /* 挑选到 eret 最多要这么多 tick，期限更近就先等；v015 经转发服务端 icount 实测 545，原 500 不够 */
+ 
+ extern volatile uint64_t k_entry_ts, k_eret_ts, k_release_at, k_spin_late;
+ extern volatile uint64_t k_arm_abs, k_arm_rel, k_cval;
+@@ -125,6 +125,14 @@ static uint32_t bench_left;
+ struct task *sched_current(void) { return cur; }
+ uint64_t sched_kernel_max_all(void) { return ks[0].k_max; }
+ uint64_t sched_kernel_max_period(void) { return ks[0].k_max_period; }
++
++/* v015：内核每周期用量按进入原因拆开，记下开机以来最大那个周期的明细。 */
++static int cur_label;
++static int prev_kind = 4;
++static uint64_t kc_t[KC_N], kc_n[KC_N], kb_t, kspin_t, pend_b, pend_spin;
++static struct kattr kworst;
++void sched_set_label(int l) { cur_label = l; }
++void sched_kernel_worst(struct kattr *a) { *a = kworst; }
+ uint64_t sched_irq_lat_max(void) { return ks[1].irq_lat_max; }
+ uint64_t sched_periods(void) { return ks[0].periods; }
+ uint64_t sched_foreign_window(void) { return ks[1].foreign_ticks; }
+@@ -420,6 +428,7 @@ static void charge(struct task *t, uint64_t a, uint64_t b)
+     struct task *x = t->sc ? t->sc : t;
+     /* 服务端在替调用者干活：记在调用者的预算上，服务端自己的不动 */
+     x->used_t += b - a;
++    x->used_total += b - a;
+     if (t->sc) {
+         t->call_ran_t += b - a;
+         x->p_run += b - a;
+@@ -458,7 +467,7 @@ static uint64_t inflight_run(uint64_t *calls)
+     for (int i = 0; i < MAX_TASKS; i++)
+         if (tasks[i].kind == KIND_SERVER && tasks[i].caller && tasks[i].state != TASK_EMPTY &&
+             tasks[i].state != TASK_DEAD) {
+-            sum += tasks[i].call_ran_t;
++            sum += tasks[i].call_ran_t + tasks[i].call_sub_ran;
+             n++;
+         }
+     if (calls)
+@@ -492,6 +501,12 @@ static void kernel_stint(uint64_t a, uint64_t b, int guard)
+     if (b <= a)
+         return;
+     k_this_period += b - a;
++    int k = guard ? KC_GUARD : prev_kind;
++    kc_t[k] += b - a;
++    kc_n[k]++;
++    kb_t += pend_b;
++    kspin_t += pend_spin;
++    pend_b = pend_spin = 0;
+     if (!guard) {
+         uint64_t d = b - a;
+         for (int i = 0; i <= rec; i++) {
+@@ -578,12 +593,13 @@ static void end_period(uint64_t now, int skipped)
+             ipc.hr_periods++;
+             if (t->p_hr_pass == 3)
+                 ipc.hr_both_periods++;
++            if (t->p_hr_n >= 2)
++                ipc.hr_multi_periods++;
+         }
+         t->p_own = t->p_run = t->p_kin = t->p_kent = t->p_krep = t->p_hr = 0;
+         t->p_hr_pass = 0;
++        t->p_hr_n = 0;
+         t->ipc_hold = 0;
+-        if (t->state == TASK_IPC)
+-            t->ipc_base -= (int64_t)t->used_t;
+         t->used_t = 0;
+         t->dev_used_t = 0;
+         if (t->bw_budget) {
+@@ -614,11 +630,25 @@ static void end_period(uint64_t now, int skipped)
+         if (k_this_period > ks[i].k_max) {
+             ks[i].k_max = k_this_period;
+             ks[i].k_max_period = pk;
++            if (i == 0) {
++                kworst.period = pk;
++                kworst.label = cur_label;
++                kworst.total = k_this_period;
++                for (int j = 0; j < KC_N; j++) {
++                    kworst.t[j] = kc_t[j];
++                    kworst.n[j] = kc_n[j];
++                }
++                kworst.boundary = kb_t;
++                kworst.spin = kspin_t;
++            }
+         }
+         if (k_this_period > SR_T)
+             ks[i].k_over++;
+     }
+     k_this_period = 0;
++    for (int j = 0; j < KC_N; j++)
++        kc_t[j] = kc_n[j] = 0;
++    kb_t = kspin_t = 0;
+ }
+ 
+ static void finish_bench(void)
+@@ -646,8 +676,11 @@ static void begin_period(void)
+             str_copy(ks[1].slot_who[i], slot_owner[i] ? slot_owner[i]->name : "(empty)", NAME_LEN);
+         mn = 0;
+         bn = 0;
++        /* v015：空槽/已退出的任务不用清（task_create 会清），省掉窗口起点那一周期
++           一大段边界工作（v014 qa 开机以来最大内核周期就落在这里） */
+         for (int i = 0; i < MAX_TASKS; i++)
+-            win_reset(&tasks[i]);
++            if (tasks[i].state != TASK_EMPTY && tasks[i].state != TASK_DEAD)
++                win_reset(&tasks[i]);
+         bench_state = 2;
+         ipc_snap(ipc.snap0);
+         ipc.t_w0 = pstart;
+@@ -680,16 +713,26 @@ static void begin_period(void)
+ /* ---------- 挑选 ---------- */
+ 
+ /* 调用者在等 IPC 回复时，它的预算由服务端来用。 */
++/* 沿调用链走到真正要跑的那个任务（v015 起可以是 调用者 -> 服务端 A -> 服务端 B）。 */
++static struct task *chain_end(struct task *t)
++{
++    for (int n = 0; n < 8 && t->state == TASK_IPC; n++) {
++        struct task *s = t->server;
++        if (!s || s->caller != t)
++            return 0;
++        t = s;
++    }
++    return t->state == TASK_READY ? t : 0;
++}
++
+ static int runnable(struct task *t)
+ {
+-    return t->state == TASK_READY ||
+-           (t->state == TASK_IPC && t->server && t->server->caller == t &&
+-            t->server->state == TASK_READY);
++    return chain_end(t) != 0;
+ }
+ 
+ static struct task *runner(struct task *t)
+ {
+-    return t->state == TASK_IPC ? t->server : t;
++    return chain_end(t);
+ }
+ 
+ static int k_ipc_op;
+@@ -827,11 +870,13 @@ static struct task *dispatch(uint64_t now)
+ /* 服务端开始替调用者 c 干活：从这一刻起它用 c 的预算。 */
+ static void ipc_begin(struct task *s, struct task *c)
+ {
+-    c->ipc_base = (int64_t)c->used_t;
+     s->caller = c;
+     s->sc = c->sc ? c->sc : c;
++    s->call_base = s->sc->used_total;   /* 预算主人的累计用量：调用结束时相减就是这次调用扣掉的 */
+     s->call_ran_t = 0;
+     s->call_kern_t = 0;
++    s->call_sub_ran = 0;
++    s->call_sub_kern = 0;
+     ((struct irq_frame *)s->sp)->r[0] = ((struct irq_frame *)c->sp)->r[1];
+     s->state = TASK_READY;
+ }
+@@ -903,7 +948,12 @@ static void ipc_op(struct task *t, int op)
+         }
+         prev_stint_sc = t->sc ? t->sc : t;
+         /* v014：这个预算本周期已经用过 IPC 余量，新调用扣到下个周期（已经在路上的调用照常做完） */
+-        if (ipc_hold_rule && prev_stint_sc->ipc_hold && t->kind != KIND_SERVER) {
++        /* v015：扣不扣看预算主人（sc），服务端替调用者转发的调用也一样 */
++        if (t->kind == KIND_SERVER && t->sc) {
++            prev_stint_srv = t;     /* 这段内核路径属于 t 正在处理的那次调用 */
++            ipc.fwd_calls++;
++        }
++        if (ipc_hold_rule && prev_stint_sc->ipc_hold) {
+             t->ipc_held = 1;
+             held_count++;
+             t->state = TASK_BLOCKED;
+@@ -927,19 +977,28 @@ static void ipc_op(struct task *t, int op)
+         if (c) {
+             struct task *owner = t->sc;
+             prev_stint_sc = owner;
+-            prev_stint_reply = 1;
+-            uint64_t drop = (uint64_t)((int64_t)owner->used_t - owner->ipc_base);
+-            uint64_t m = t->call_ran_t + t->call_kern_t;
+-            ipc.run_sum += t->call_ran_t;
++            uint64_t drop = owner->used_total - t->call_base;
++            uint64_t ran = t->call_ran_t + t->call_sub_ran;
++            uint64_t m = ran + t->call_kern_t + t->call_sub_kern;
+             uint64_t d = drop > m ? drop - m : m - drop;
+-            ipc.calls++;
+-            ipc.drop_sum += drop;
+-            ipc.meas_sum += m;
+-            ipc.self_sum += f->r[0];
+-            if (m > ipc.meas_max)
+-                ipc.meas_max = m;
+             if (d > ipc.diff_max)
+                 ipc.diff_max = d;
++            if (c->kind == KIND_SERVER && c->sc == owner) {
++                /* 转发的调用：算进外层那次调用，回复这段内核路径也属于外层调用 */
++                c->call_sub_ran += ran;
++                c->call_sub_kern += t->call_kern_t + t->call_sub_kern;
++                prev_stint_srv = c;
++                ipc.fwd_replies++;
++            } else {
++                prev_stint_reply = 1;
++                ipc.run_sum += ran;
++                ipc.calls++;
++                ipc.drop_sum += drop;
++                ipc.meas_sum += m;
++                ipc.self_sum += f->r[0];
++                if (m > ipc.meas_max)
++                    ipc.meas_max = m;
++            }
+             ((struct irq_frame *)c->sp)->r[0] = f->r[0];
+             c->server = 0;
+             c->state = TASK_READY;
+@@ -979,6 +1038,7 @@ static uint64_t schedule(uint64_t sp, int timer)
+ 
+     if (prev_stint_sc && !prev_guard && eret > prev_entry) {
+         uint64_t d = eret - prev_entry;
++        pend_b = pend_spin = 0;     /* 这段算调用者的，不算内核每周期 */
+         struct task *x = prev_stint_sc;
+         /* 全部记在调用者头上。Tier 2 超出预算上限的部分（调用者预算在内核路径里用完）
+          * 从它准入时多留的 IPC 余量里出（v013 起；v012 及以前改记系统预留）。 */
+@@ -992,11 +1052,13 @@ static uint64_t schedule(uint64_t sp, int timer)
+                 if (o > ipc.hr_max)
+                     ipc.hr_max = o;
+                 x->p_hr += o;
++                x->p_hr_n++;
+                 x->p_hr_pass |= x->run_cap > x->min_t ? 2 : 1;
+                 x->ipc_hold = 1;    /* v014：本周期不再接新调用 */
+             }
+         }
+         x->used_t += c;
++        x->used_total += c;
+         ipc.kern_sum += c;
+         if (prev_stint_srv && prev_stint_srv->sc == x) {
+             prev_stint_srv->call_kern_t += c;
+@@ -1074,6 +1136,8 @@ static uint64_t schedule(uint64_t sp, int timer)
+     int skipped = 0;
+     for (;;) {
+         uint64_t now = ticks_now();
++        uint64_t b0 = now;
++        int crossed = now >= pstart + P;
+         while (now >= pstart + P) {
+             if (!skipped)
+                 check_slot_ends(entry, now);
+@@ -1083,6 +1147,8 @@ static uint64_t schedule(uint64_t sp, int timer)
+             pstart += P;
+             begin_period();
+         }
++        if (crossed)
++            pend_b += ticks_now() - b0;
+         check_slot_ends(entry, now);
+         {
+             struct task *srv = 0, *x = dev_poll(now, &srv);
+@@ -1097,8 +1163,10 @@ static uint64_t schedule(uint64_t sp, int timer)
+         uint64_t ev = next_event(disp_now);
+         if (ev > disp_now && ev - disp_now >= EXIT_MARGIN_T)
+             break;
++        uint64_t s0 = ticks_now();
+         while (ticks_now() < ev)
+             asm volatile("" ::: "memory");
++        pend_spin += ticks_now() - s0;
+     }
+     struct task *next = dispatch(disp_now);
+     if (next->kind == KIND_JOB && next->job_open && !next->job_started) {
+@@ -1108,6 +1176,7 @@ static uint64_t schedule(uint64_t sp, int timer)
+     next->state = TASK_RUNNING;
+     cur = next;
+     prev_entry = entry;
++    prev_kind = timer == 1 ? KC_TIMER : timer == 2 ? KC_DEVIRQ : op ? KC_SVC_IPC : KC_SVC_OTHER;
+     return next->sp;
+ }
+ 

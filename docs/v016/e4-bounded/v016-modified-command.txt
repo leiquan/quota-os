@@ -1,0 +1,8 @@
+label: bounded icount e4 diagnostic. Not a PASS.
+external_timeout_s: 75
+kill: SIGKILL
+image: /workspace/build/quotaos.bin
+sha256: 8dbd8a40329c16a2c7c5de704cb1ea5c5ffc9abb9867977818b69f81aa18c95a
+utc: 2026-11-17T06:32:27Z
+command:
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M -nographic -nic none -kernel /workspace/build/quotaos.bin -append e4 -icount shift=4,sleep=off

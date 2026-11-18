@@ -1,0 +1,11 @@
+image: prebuilt/quotaos.bin at cc30662, banner Version: 016 (233674f)
+qemu: virt,gic-version=2 cortex-a72 128M host clock, -append isolate
+four host runs of this unchanged image all printed stale=-1 alive=0 for exec-kernel.
+The fault line is EL0 (spsr low nibble 0), EC=0x20, ESR=0x8200000e (permission fault, level 2).
+That is the other side of the publish race: the fault completed before make_handle.
+QA's stale=0 alive=1 is the side where the fault runs during the map printf, after task_start and before the returned handle is sampled.
+[fault] pid=5 ec=0x20 esr=0x8200000e elr=0x400813a0 far=0x400813a0 spsr=0x60000340 pte=0x40000040000701 level=2 ap_el0=0 class=kernel
+[fault] reap us=22 ticks=1395 periods=0 hold_before=0 cancelled=0 free 10 -> 13 refused=0 target_us=20000
+[map] pid=5 handle=0x1370002 gen=311 asid=2 draw_pa=0x401f0000
+[isolate] class exec-kernel yields=1 ec=0x20 far=0x400813a0 class=kernel ap_el0=0 spsr=0x60000340 us=22 stale=-1 alive=0
+[isolate] class exec-kernel match_ec=1 match_far=1 match_name=1 ledger=1

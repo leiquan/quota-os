@@ -1,0 +1,10 @@
+command: make webkit-osalloc-check
+g++: aarch64-linux-gnu-g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+webkit: 4d967f4ca7bdd75319e732247e714c2bc634555e
+nm -u build/OSAllocatorQuotaOS.o
+                 U wk_os_commit
+                 U wk_os_decommit
+                 U wk_os_protect
+                 U wk_os_release
+                 U wk_os_reserve
+                 U wk_os_zero

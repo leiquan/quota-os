@@ -1,0 +1,31 @@
+file  2259e51  A
+.gitignore                              1      2
+LICENSE                               202    202
+Makefile                               44     55
+README.md                             270    250
+boot/linker.ld                         47     47
+boot/startup.S                         89     89
+boot/vectors.S                        138    132
+docs/budget-diag.csv                 1101      -
+docs/budget-diag.txt                 8841      -
+docs/budget-new-10000.csv           10001      -
+docs/budget-old-10000.csv           10001      -
+docs/demo-output.txt                  618    572
+docs/regr20-summary.txt                21     21
+include/quotaos.h                     227    203
+kernel/demo.c                         757    516
+kernel/dtb.c                          171    155
+kernel/gic.c                           73     53
+kernel/main.c                          27     27
+kernel/printf.c                       121    121
+kernel/resource.c                     477    464
+kernel/sched.c                       1134    806
+kernel/string.c                        47     27
+kernel/timer.c                        101     94
+kernel/uart.c                          93     83
+tools/capture_budget_diag.py           73      -
+tools/capture_demos.py                144     75
+tools/menu_regress.py                   -     88
+tools/qemu_serial.py                    -     81
+kernel+boot+include (C/asm)          3455   2770
+total tracked (excl. prebuilt, regress-A logs)  34819   4163

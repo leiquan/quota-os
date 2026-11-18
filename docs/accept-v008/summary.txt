@@ -1,0 +1,16 @@
+v008 evidence (binary built at f9119e9, banner "Version: 008 (f9119e9)")
+
+1. Formatting-only check, icount qa, v007 docs/accept-D/qa-icount-run1.txt vs
+   v008 docs/accept-v008/repeat/qa-icount-02.txt: with ALL whitespace removed
+   (no digit masking) and the Version line excluded, the two logs are identical.
+   menu_regress compare (timing masked, whitespace-normalized):
+   docs/accept-v008/compare-qa-icount-v007-v008.txt, docs/regress-v008/compare-v007-v008.txt
+   -> only difference: "Version: 007 (82db71a)" vs "Version: 008 (f9119e9)".
+2. Max output line width (CJK = 2 columns) over docs/accept-v008/ and
+   docs/regress-v008/ guest output: 79 (tools/width_check.py prints nothing).
+3. 10 icount repeats (docs/accept-v008/repeat/, SHA256SUMS): 3 distinct file
+   hashes (7 / 2 / 1). With the two IRQ-entry lines removed all 10 are
+   identical. Those lines:
+     timer IRQ entry - CVAL: max 3 ticks in 19 of 20 occurrences, 5 in 1
+     cut by the slot-end timer: at most 3 ticks in 8 runs, 5 in 2
+   Cause not found (suspected QEMU interrupt delivery point under icount).

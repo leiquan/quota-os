@@ -1,0 +1,66 @@
+# cmd: qemu-system-aarch64 -machine virt,gic-version=3 -cpu cortex-a72 -nographic -nic none -m 128M -kernel build/quotaos.bin
+
+Quota OS microkernel
+三级资源声明的教学微内核。保证来自启动前的整机预分配，不来自事后抢占补救。
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB memory 134217728 bytes
+[boot] tier-1 reserved 13312 KB and 1500 us/period
+[boot] GICv3 from DTB: distributor 0x8000000, redistributor 0x80a0000
+[boot] CNTFRQ 62500000 Hz, cntpct 3206 -> 3929 us
+[boot] timer latency calibration n=62 mean=16256 ns max=27600 ns advance_ticks=1016
+[boot] tier-1 display-vsync and timer-server are reserved and armed
+[boot] shell task running
+[boot] timer IRQ ok, jiffies=3 now=38182 us
+
+命令（输入数字后回车）:
+  1  资源表：tier 1/2/3 的 CPU 和内存，已用和剩余
+  2  启动一个 tier-2 应用（会先问 allow y/n）
+  3  关闭一个 tier-2 应用（a = 全部关闭）
+  4  跑一次优先级演示（尊重当前的分级开关）
+  5  切换分级：ON 为三级预算服务器，OFF 为普通 1ms 轮转
+  6  失范应用隔离：tier-2 死循环 + tier-3 占 CPU
+  7  启动 Cluster Sim（声明超过本机容量）
+  8  制造内存压力，收回弹性配额
+  10 启动几十个带独立切片的 tier-2 应用
+  h  帮助    q  提示如何退出 QEMU
+select> 1
+
+========== 资源表 / resource table ==========
+检测到的 RAM: 131072 KB (128 MB)，来自设备树/探测
+内核保留:     16384 KB（映像、栈、内核记账，不参与应用分配）
+CPU 周期:     10000 us    分级调度: ON
+内核调度最长一次: 341 us   超过 200us 的次数: 2   跳过的周期: 0   时钟跳动: 95 次/最长 2677 us
+
+[Tier 1] 厂商声明，启动时静态保留，不能被抢走
+  timer-server     CPU  300 us  MEM  1024 KB  周期时钟，从上电就开始跑
+    运行中  hits=21  misses_on=0  misses_off=0  max_latency=657 us
+  gic-server       CPU  300 us  MEM  2048 KB  中断路由，只保留配额
+  blk-driver       CPU  400 us  MEM  4096 KB  存储驱动配额（失控驱动演示用它做上限）
+  net-driver       CPU    0 us  MEM  4096 KB  网络驱动，只占内存
+  display-vsync    CPU  500 us  MEM  2048 KB  显示提交，从上电就开始跑
+    运行中  hits=21  misses_on=0  misses_off=0  max_latency=342 us
+  小计             CPU 1500 us  MEM 13312 KB
+
+[Tier 2] 已准入的应用（保底不可被 tier-3 侵占，弹性可收回）
+  (无)
+  已承诺保底 CPU 0 / 8500 us    已承诺保底内存 0 / 101376 KB
+
+[Tier 3] 默认池，没声明就走这里，轮转分享剩余时间
+  剩余可承诺 CPU: 8500 us/period
+  剩余可承诺内存: 101376 KB
+  当前任务: shell
+压力标志: off（置位时弹性 CPU/内存都不再外借）
+==========================================
+保证期统计（分级 ON 期间释放的作业；OFF 期间释放的记进 OFF 对照）:
+  display-vsync  hits=21 misses=0 max_latency=342 us  (OFF 对照 misses=0)
+  timer-server   hits=21 misses=0 max_latency=657 us  (OFF 对照 misses=0)
+定时器中断 jiffies=106
+Tier 1 截止期（延迟从理想周期起点 epoch+k*10000 us 算；跳过的周期、未完成的作业都算错过）:
+T1STAT display-vsync jobs=21 hits=21 misses=0 skipped=0 unfinished=0 lat_p50=54 lat_p99=342 lat_max=342 dispatch_lag_max=338 deadline=800 misses_off=0
+T1HIST display-vsync 35:1 38:1 39:1 42:1 46:2 51:1 53:2 54:4 59:1 79:1 133:1 138:1 196:1 213:1 340:1 342:1
+T1STAT timer-server jobs=21 hits=21 misses=0 skipped=0 unfinished=0 lat_p50=160 lat_p99=657 lat_max=657 dispatch_lag_max=338 deadline=1500 misses_off=0
+T1HIST timer-server 128:1 131:1 135:1 140:1 144:1 145:2 146:1 150:2 160:1 164:2 169:1 172:1 225:1 229:1 292:1 316:1 441:1 657:1
+T1STAT periods=21 period_skips=0 clock_jumps=95 clock_jump_max=2677 us skip_events=0
+select> QEMU: Terminated
+

@@ -1,0 +1,811 @@
+##### 128M ok=True
+
+Quota OS microkernel
+Version: 007 (82db71a)
+基于三级资源声明的微内核，保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB memory 134217728 bytes
+[boot] system reserve 350 us/period, 16384 KB; tier-1 1500 us/period, 13312 KB; guard 40 us/period
+[boot] kernel image+bss 465 KB of the 16384 KB system reserve
+[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 625000, period 625000 ticks, guard 625 ticks
+[boot] shell task running
+
+命令（输入数字后回车）:
+  1  资源总览：系统预留、Tier 1 槽和浪费、Tier 2、Tier 3
+  2  安装应用：允许/拒绝（也可以停止应用）
+  3  资源不够：拒绝并说明先关哪个应用
+  4  旧设备：超过整机容量的请求被拒绝
+  5  Tier 1 准时：抖动和错过都是 0
+  6  Tier 1 超时在槽尾被掐断
+  7  Tier 1 槽从不外借
+  8  Tier 2 最低值有保证，建议值在压力下收回
+  9  Tier 3 过载不影响上层
+  10 任何一级的失控任务只拖慢自己
+  h  帮助    q  提示如何退出 QEMU
+select> 1
+
+=== 1 资源总览 / resource overview ===
+RAM 131072 KB. CPU period 10000 us. 1 tick = 16 ns.
+
+[系统预留] kernel, fixed, never lent
+  CPU 350 us/period = 21875 ticks
+  measured since boot: max 49224 ticks/period (period 0 of 9)
+  memory 16384 KB
+
+[Tier 1] one fixed slot per task; unused time stays idle
+  task           slot offset_us len_us max_used_us waste_us mem_kb
+  display-vsync     0      1000    500         545        0   2048
+  timer-server      1      3500    300          50      250   1024
+  gic-server        2      6000    300           0      300   2048
+  blk-driver        3      8000    400           0      400   4096
+  net-driver        -         -      -           -        -   4096
+  total CPU 1500 us/period, memory 13312 KB
+
+[Tier 2] admitted apps (minimum is guaranteed, suggested is spare only)
+  (none)
+  minimum sum: CPU 0 / 8110 us, memory 0 / 101376 KB
+  admission: reserve 350 + tier-1 1500 + tier-2 min 0 + guard 40 = 1890 <= 10000 us
+
+[Tier 3] everyone else, round robin 1000 us, leftover only
+  CPU not promised to anyone: 8110 us/period
+pressure: off
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+number to install, s<number> to stop, empty to go back. app> 1
+
+Pixel Racer: 游戏
+  CPU minimum 3000 us, suggested +1000 us per 10000 us
+  memory minimum 8192 KB, suggested 20480 KB
+allow this app to reserve its minimum? (y/n) allow> n
+CANCELLED: user denied permission. Nothing was reserved.
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+number to install, s<number> to stop, empty to go back. app> 1
+
+Pixel Racer: 游戏
+  CPU minimum 3000 us, suggested +1000 us per 10000 us
+  memory minimum 8192 KB, suggested 20480 KB
+allow this app to reserve its minimum? (y/n) allow> y
+started Pixel Racer: CPU 3000 us/period guaranteed, memory 8192 KB (+12288 KB suggested now)
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+  s1) stop Pixel Racer
+number to install, s<number> to stop, empty to go back. app> 2
+
+Cinema Play: 视频播放
+  CPU minimum 3000 us, suggested +500 us per 10000 us
+  memory minimum 8192 KB, suggested 16384 KB
+allow this app to reserve its minimum? (y/n) allow> y
+started Cinema Play: CPU 3000 us/period guaranteed, memory 8192 KB (+8192 KB suggested now)
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+  s1) stop Pixel Racer
+  s2) stop Cinema Play
+number to install, s<number> to stop, empty to go back. app> 3
+
+Studio Cut: 剪辑
+  CPU minimum 3000 us, suggested +1000 us per 10000 us
+  memory minimum 8192 KB, suggested 24576 KB
+REFUSED: not enough resources for Studio Cut
+  CPU left 2110 us/period, minimum needs 3000
+  memory left 84992 KB, minimum needs 8192
+Please close Pixel Racer first (frees 3000 us/period, 8192 KB).
+not started.
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+  s1) stop Pixel Racer
+  s2) stop Cinema Play
+number to install, s<number> to stop, empty to go back. app> s1
+stopped Pixel Racer: released CPU 3000 us/period and 20480 KB.
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+  s1) stop Cinema Play
+number to install, s<number> to stop, empty to go back. app> 3
+
+Studio Cut: 剪辑
+  CPU minimum 3000 us, suggested +1000 us per 10000 us
+  memory minimum 8192 KB, suggested 24576 KB
+allow this app to reserve its minimum? (y/n) allow> y
+started Studio Cut: CPU 3000 us/period guaranteed, memory 8192 KB (+16384 KB suggested now)
+select> 1
+
+=== 1 资源总览 / resource overview ===
+RAM 131072 KB. CPU period 10000 us. 1 tick = 16 ns.
+
+[系统预留] kernel, fixed, never lent
+  CPU 350 us/period = 21875 ticks
+  measured since boot: max 332751 ticks/period (period 358 of 442)
+  memory 16384 KB
+
+[Tier 1] one fixed slot per task; unused time stays idle
+  task           slot offset_us len_us max_used_us waste_us mem_kb
+  display-vsync     0      1000    500        2065        0   2048
+  timer-server      1      3500    300         826        0   1024
+  gic-server        2      6000    300           0      300   2048
+  blk-driver        3      8000    400           0      400   4096
+  net-driver        -         -      -           -        -   4096
+  total CPU 1500 us/period, memory 13312 KB
+
+[Tier 2] admitted apps (minimum is guaranteed, suggested is spare only)
+  Studio Cut     CPU min 3000 + sugg 1000 us, mem min 8192 KB, granted 24576 KB
+  Cinema Play    CPU min 3000 + sugg 500 us, mem min 8192 KB, granted 16384 KB
+  minimum sum: CPU 6000 / 8110 us, memory 16384 / 101376 KB
+  admission: reserve 350 + tier-1 1500 + tier-2 min 6000 + guard 40 = 7890 <= 10000 us
+
+[Tier 3] everyone else, round robin 1000 us, leftover only
+  CPU not promised to anyone: 2110 us/period
+pressure: off
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+  s1) stop Studio Cut
+  s2) stop Cinema Play
+number to install, s<number> to stop, empty to go back. app> s1
+stopped Studio Cut: released CPU 3000 us/period and 24576 KB.
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+  s1) stop Cinema Play
+number to install, s<number> to stop, empty to go back. app> s1
+stopped Cinema Play: released CPU 3000 us/period and 16384 KB.
+select> 3
+
+=== 3 资源不够：拒绝并说关谁 / not enough: which app to close ===
+The demo starts Pixel Racer, Cinema Play and Studio Cut in turn
+(3000 us minimum each) until admission says no.
+allow the demo to start them? (y/n) allow> y
+start Pixel Racer: OK, 3000 us/period minimum.
+start Cinema Play: OK, 3000 us/period minimum.
+start Studio Cut:
+REFUSED: not enough resources for Studio Cut
+  CPU left 2110 us/period, minimum needs 3000
+  memory left 84992 KB, minimum needs 8192
+Please close Pixel Racer first (frees 3000 us/period, 8192 KB).
+following the advice: closing Pixel Racer and retrying.
+start Studio Cut: OK
+demo apps closed; their minimums are back in the pool.
+select> 4
+
+=== 4 旧设备：超过整机容量 / old device: request too big ===
+apps get at most CPU 8110 us/period and memory 101376 KB on this device.
+
+Neural Forge (CPU min 1000 us, memory min 81920 KB):
+  fits this device (not started; use menu 2 to install).
+
+Cluster Sim (CPU min 1000 us, memory min 524288 KB):
+REFUSED: device does not meet minimum requirements
+  minimum memory 524288 KB > 101376 KB for apps
+  (RAM 131072 KB - system reserve - tier-1)
+No app can be closed to make room: this device is too small.
+
+Render Farm (CPU min 9000 us, memory min 4096 KB):
+REFUSED: device does not meet minimum requirements
+  minimum CPU 9000 us > 8110 us/period for apps
+  (period - system reserve - tier-1 - guard)
+No app can be closed to make room: this device is too small.
+select> 5
+
+=== 5 Tier 1 准时 / tier-1 on time ===
+8 tier-3 busy loops run for 200 periods. Each tier-1 job must start
+at the same tick of its slot every period and finish inside it.
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200   105        512      24230   23718    29306
+  timer-server      1    200   132        455      17537   17082    15218
+  display-vsync last release: period 891, tick 557562500, epoch+k*P+offset 557562500
+  timer-server last release: period 891, tick 557718750, epoch+k*P+offset 557718750
+T1MISS task=display-vsync period=691 reason=not_started start_t=-1 lat_t=113440 lat_us=1815 deadline_us=500 J_us=7550 class=a
+T1MISS task=timer-server period=691 reason=not_started start_t=-1 lat_t=205814 lat_us=3293 deadline_us=300 J_us=10853 class=a
+T1MISS task=display-vsync period=692 reason=not_started start_t=-1 lat_t=422294 lat_us=6756 deadline_us=500 J_us=14454 class=a
+T1MISS task=timer-server period=692 reason=not_started start_t=-1 lat_t=266044 lat_us=4256 deadline_us=300 J_us=14454 class=a
+T1MISS task=display-vsync period=693 reason=not_started start_t=-1 lat_t=102117 lat_us=1633 deadline_us=500 J_us=10969 class=a
+T1MISS task=timer-server period=694 reason=not_started start_t=-1 lat_t=73293 lat_us=1172 deadline_us=300 J_us=6681 class=a
+T1MISS task=display-vsync period=695 reason=not_started start_t=-1 lat_t=112017 lat_us=1792 deadline_us=500 J_us=7312 class=a
+T1MISS task=timer-server period=695 reason=not_started start_t=-1 lat_t=205920 lat_us=3294 deadline_us=300 J_us=10617 class=a
+T1MISS task=timer-server period=696 reason=not_started start_t=-1 lat_t=80478 lat_us=1287 deadline_us=300 J_us=10947 class=a
+T1MISS task=timer-server period=697 reason=not_started start_t=-1 lat_t=455828 lat_us=7293 deadline_us=300 J_us=13920 class=a
+T1MISS task=timer-server period=698 reason=not_started start_t=-1 lat_t=80482 lat_us=1287 deadline_us=300 J_us=10541 class=a
+T1MISS task=display-vsync period=699 reason=not_started start_t=-1 lat_t=111693 lat_us=1787 deadline_us=500 J_us=8529 class=a
+T1MISS task=timer-server period=699 reason=not_started start_t=-1 lat_t=206293 lat_us=3300 deadline_us=300 J_us=11840 class=a
+T1MISS task=display-vsync period=700 reason=not_started start_t=-1 lat_t=136184 lat_us=2178 deadline_us=500 J_us=9857 class=a
+T1MISS task=display-vsync period=701 reason=not_started start_t=-1 lat_t=362236 lat_us=5795 deadline_us=500 J_us=12953 class=a
+T1MISS task=timer-server period=701 reason=not_started start_t=-1 lat_t=205986 lat_us=3295 deadline_us=300 J_us=12953 class=a
+T1MISS task=timer-server period=702 reason=not_started start_t=-1 lat_t=80608 lat_us=1289 deadline_us=300 J_us=11063 class=a
+T1MISS task=display-vsync period=703 reason=not_started start_t=-1 lat_t=111612 lat_us=1785 deadline_us=500 J_us=8536 class=a
+T1MISS task=timer-server period=704 reason=not_started start_t=-1 lat_t=185854 lat_us=2973 deadline_us=300 J_us=9174 class=a
+T1MISS task=display-vsync period=705 reason=not_started start_t=-1 lat_t=121175 lat_us=1938 deadline_us=500 J_us=7298 class=a
+T1MISS task=timer-server period=705 reason=not_started start_t=-1 lat_t=65 lat_us=1 deadline_us=300 J_us=7298 class=a
+T1MISS task=timer-server period=706 reason=not_started start_t=-1 lat_t=303495 lat_us=4855 deadline_us=300 J_us=8073 class=a
+T1MISS task=display-vsync period=707 reason=not_started start_t=-1 lat_t=88159 lat_us=1410 deadline_us=500 J_us=7497 class=a
+T1MISS task=display-vsync period=708 reason=not_started start_t=-1 lat_t=87628 lat_us=1402 deadline_us=500 J_us=5758 class=a
+T1MISS task=timer-server period=708 reason=not_started start_t=-1 lat_t=51660 lat_us=826 deadline_us=300 J_us=6678 class=a
+T1MISS task=display-vsync period=709 reason=not_started start_t=-1 lat_t=66813 lat_us=1069 deadline_us=500 J_us=6803 class=a
+T1MISS task=timer-server period=709 reason=not_started start_t=-1 lat_t=206473 lat_us=3303 deadline_us=300 J_us=10510 class=a
+T1MISS task=display-vsync period=711 reason=not_started start_t=-1 lat_t=332369 lat_us=5317 deadline_us=500 J_us=9287 class=a
+T1MISS task=timer-server period=711 reason=not_started start_t=-1 lat_t=176119 lat_us=2817 deadline_us=300 J_us=9287 class=a
+T1MISS task=timer-server period=713 reason=not_started start_t=-1 lat_t=455138 lat_us=7282 deadline_us=300 J_us=13499 class=a
+T1MISS task=timer-server period=714 reason=not_started start_t=-1 lat_t=181632 lat_us=2906 deadline_us=300 J_us=13177 class=a
+T1MISS task=display-vsync period=718 reason=not_started start_t=-1 lat_t=237838 lat_us=3805 deadline_us=500 J_us=5697 class=a
+T1MISS task=timer-server period=718 reason=not_started start_t=-1 lat_t=81588 lat_us=1305 deadline_us=300 J_us=5697 class=a
+T1MISS task=display-vsync period=719 reason=skipped lat_us=- deadline_us=500 J_us=17673 covered=yes uncovered_us=0 class=a
+T1MISS task=timer-server period=719 reason=skipped lat_us=- deadline_us=300 J_us=17673 covered=yes uncovered_us=0 class=a
+T1MISS task=display-vsync period=721 reason=not_started start_t=-1 lat_t=362171 lat_us=5794 deadline_us=500 J_us=9649 class=a
+T1MISS task=timer-server period=721 reason=not_started start_t=-1 lat_t=205921 lat_us=3294 deadline_us=300 J_us=9649 class=a
+T1MISS task=display-vsync period=722 reason=unfinished start_t=707 lat_t=80050 lat_us=1280 deadline_us=500 J_us=6682 class=a
+T1MISS task=timer-server period=722 reason=not_started start_t=-1 lat_t=0 lat_us=0 deadline_us=300 J_us=6792 class=a
+T1MISS task=timer-server period=723 reason=unfinished start_t=496 lat_t=105210 lat_us=1683 deadline_us=300 J_us=3007 class=a
+T1MISS task=display-vsync period=724 reason=not_started start_t=-1 lat_t=444825 lat_us=7117 deadline_us=500 J_us=10897 class=a
+T1MISS task=timer-server period=724 reason=not_started start_t=-1 lat_t=288575 lat_us=4617 deadline_us=300 J_us=10897 class=a
+T1MISS task=display-vsync period=725 reason=not_started start_t=-1 lat_t=112361 lat_us=1797 deadline_us=500 J_us=11510 class=a
+T1MISS task=display-vsync period=731 reason=not_started start_t=-1 lat_t=373558 lat_us=5976 deadline_us=500 J_us=6435 class=a
+T1MISS task=timer-server period=731 reason=not_started start_t=-1 lat_t=217308 lat_us=3476 deadline_us=300 J_us=6435 class=a
+T1MISS task=timer-server period=732 reason=not_started start_t=-1 lat_t=82265 lat_us=1316 deadline_us=300 J_us=9215 class=a
+T1MISS task=display-vsync period=733 reason=not_started start_t=-1 lat_t=112206 lat_us=1795 deadline_us=500 J_us=9563 class=a
+T1MISS task=display-vsync period=736 reason=not_started start_t=-1 lat_t=486756 lat_us=7788 deadline_us=500 J_us=9456 class=a
+T1MISS task=timer-server period=736 reason=not_started start_t=-1 lat_t=330506 lat_us=5288 deadline_us=300 J_us=9456 class=a
+T1MISS task=timer-server period=737 reason=not_started start_t=-1 lat_t=205279 lat_us=3284 deadline_us=300 J_us=12082 class=a
+T1MISS task=display-vsync period=738 reason=not_started start_t=-1 lat_t=136581 lat_us=2185 deadline_us=500 J_us=5516 class=a
+T1MISS task=timer-server period=739 reason=not_started start_t=-1 lat_t=206465 lat_us=3303 deadline_us=300 J_us=9482 class=a
+T1MISS task=display-vsync period=740 reason=not_started start_t=-1 lat_t=236762 lat_us=3788 deadline_us=500 J_us=10277 class=a
+T1MISS task=timer-server period=740 reason=not_started start_t=-1 lat_t=80512 lat_us=1288 deadline_us=300 J_us=10277 class=a
+T1MISS task=display-vsync period=741 reason=not_started start_t=-1 lat_t=361670 lat_us=5786 deadline_us=500 J_us=14293 class=a
+T1MISS task=timer-server period=741 reason=not_started start_t=-1 lat_t=205420 lat_us=3286 deadline_us=300 J_us=14293 class=a
+T1MISS task=display-vsync period=742 reason=not_started start_t=-1 lat_t=486841 lat_us=7789 deadline_us=500 J_us=16160 class=a
+T1MISS task=timer-server period=742 reason=not_started start_t=-1 lat_t=330591 lat_us=5289 deadline_us=300 J_us=16160 class=a
+T1MISS task=timer-server period=744 reason=not_started start_t=-1 lat_t=82774 lat_us=1324 deadline_us=300 J_us=6036 class=a
+T1MISS task=display-vsync period=745 reason=not_started start_t=-1 lat_t=37964 lat_us=607 deadline_us=500 J_us=7389 class=a
+T1MISS task=timer-server period=746 reason=not_started start_t=-1 lat_t=84625 lat_us=1354 deadline_us=300 J_us=5769 class=a
+T1MISS task=display-vsync period=747 reason=not_started start_t=-1 lat_t=112041 lat_us=1792 deadline_us=500 J_us=8096 class=a
+T1MISS task=timer-server period=747 reason=not_started start_t=-1 lat_t=205572 lat_us=3289 deadline_us=300 J_us=11396 class=a
+T1MISS task=display-vsync period=748 reason=not_started start_t=-1 lat_t=486719 lat_us=7787 deadline_us=500 J_us=15464 class=a
+T1MISS (173 more not shown; class b among them: 0, listed below)
+misses: class a (clock jump) 237, class b (kernel) 0, skipped periods 4
+kernel per period: max 274875 avg 4057 ticks, reserve 21875, over 2
+timer IRQ entry - CVAL: min 514 max 841969 ticks (n=1301)
+kernel entry -> eret (no slot wait): min 65 max 267756 ticks
+slot guard: path max 0 ticks, slack min 0 ticks of 625 (n=0)
+wait loop exit late by 0/1/2/>2 ticks: 0/0/0/0
+clock jumps: 523, total 1098280 us
+结果: Tier 1 错过 237 次，起点抖动 23718 tick，槽内 Tier 2/3 共 10899319 tick。
+select> 6
+
+=== 6 Tier 1 超时在槽尾被掐断 / tier-1 overrun cut at slot end ===
+bad-driver loops forever in the blk-driver slot (25000 ticks).
+bad-driver per period: min 0 max 422147 ticks, slot 25000 ticks
+cut by the slot-end timer: IRQ entry at most 721781 ticks after slot end
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200   124        390      29195   28805    31104
+  timer-server      1    200   122        588      12577   11989    15122
+  display-vsync last release: period 1113, tick 696312500, epoch+k*P+offset 696312500
+  timer-server last release: period 1113, tick 696468750, epoch+k*P+offset 696468750
+T1MISS task=display-vsync period=913 reason=not_started start_t=-1 lat_t=111659 lat_us=1786 deadline_us=500 J_us=2786 class=a
+T1MISS task=timer-server period=913 reason=not_started start_t=-1 lat_t=205555 lat_us=3288 deadline_us=300 J_us=6085 class=a
+T1MISS task=display-vsync period=914 reason=not_started start_t=-1 lat_t=62689 lat_us=1003 deadline_us=500 J_us=9171 class=a
+T1MISS task=timer-server period=914 reason=not_started start_t=-1 lat_t=330822 lat_us=5293 deadline_us=300 J_us=14956 class=a
+T1MISS task=display-vsync period=915 reason=not_started start_t=-1 lat_t=112150 lat_us=1794 deadline_us=500 J_us=9784 class=a
+T1MISS task=display-vsync period=916 reason=not_started start_t=-1 lat_t=236664 lat_us=3786 deadline_us=500 J_us=11470 class=a
+T1MISS task=timer-server period=916 reason=not_started start_t=-1 lat_t=80414 lat_us=1286 deadline_us=300 J_us=11470 class=a
+T1MISS task=display-vsync period=917 reason=not_started start_t=-1 lat_t=111681 lat_us=1786 deadline_us=500 J_us=10769 class=a
+T1MISS task=display-vsync period=918 reason=not_started start_t=-1 lat_t=236957 lat_us=3791 deadline_us=500 J_us=9547 class=a
+T1MISS task=timer-server period=918 reason=not_started start_t=-1 lat_t=80707 lat_us=1291 deadline_us=300 J_us=9547 class=a
+T1MISS task=display-vsync period=919 reason=not_started start_t=-1 lat_t=111824 lat_us=1789 deadline_us=500 J_us=10264 class=a
+T1MISS task=display-vsync period=920 reason=not_started start_t=-1 lat_t=236566 lat_us=3785 deadline_us=500 J_us=8599 class=a
+T1MISS task=timer-server period=920 reason=not_started start_t=-1 lat_t=80316 lat_us=1285 deadline_us=300 J_us=8599 class=a
+T1MISS task=display-vsync period=921 reason=not_started start_t=-1 lat_t=115065 lat_us=1841 deadline_us=500 J_us=9320 class=a
+T1MISS task=timer-server period=921 reason=not_started start_t=-1 lat_t=206135 lat_us=3298 deadline_us=300 J_us=12628 class=a
+T1MISS task=display-vsync period=922 reason=unfinished start_t=29195 lat_t=31933 lat_us=510 deadline_us=500 J_us=7592 class=a
+T1MISS task=timer-server period=922 reason=not_started start_t=-1 lat_t=330756 lat_us=5292 deadline_us=300 J_us=12894 class=a
+T1MISS task=timer-server period=923 reason=not_started start_t=-1 lat_t=207446 lat_us=3319 deadline_us=300 J_us=11047 class=a
+T1MISS task=display-vsync period=924 reason=not_started start_t=-1 lat_t=237340 lat_us=3797 deadline_us=500 J_us=9608 class=a
+T1MISS task=timer-server period=924 reason=not_started start_t=-1 lat_t=81090 lat_us=1297 deadline_us=300 J_us=9608 class=a
+T1MISS task=display-vsync period=925 reason=not_started start_t=-1 lat_t=112905 lat_us=1806 deadline_us=500 J_us=9295 class=a
+T1MISS task=timer-server period=925 reason=not_started start_t=-1 lat_t=205192 lat_us=3283 deadline_us=300 J_us=12588 class=a
+T1MISS task=timer-server period=926 reason=not_started start_t=-1 lat_t=81484 lat_us=1303 deadline_us=300 J_us=9826 class=a
+T1MISS task=display-vsync period=927 reason=not_started start_t=-1 lat_t=47593 lat_us=761 deadline_us=500 J_us=6733 class=a
+T1MISS task=timer-server period=927 reason=not_started start_t=-1 lat_t=205670 lat_us=3290 deadline_us=300 J_us=10034 class=a
+T1MISS task=display-vsync period=928 reason=not_started start_t=-1 lat_t=236453 lat_us=3783 deadline_us=500 J_us=9845 class=a
+T1MISS task=timer-server period=928 reason=not_started start_t=-1 lat_t=80203 lat_us=1283 deadline_us=300 J_us=9845 class=a
+T1MISS task=display-vsync period=929 reason=not_started start_t=-1 lat_t=134610 lat_us=2153 deadline_us=500 J_us=10620 class=a
+T1MISS task=display-vsync period=930 reason=not_started start_t=-1 lat_t=237407 lat_us=3798 deadline_us=500 J_us=9968 class=a
+T1MISS task=timer-server period=930 reason=not_started start_t=-1 lat_t=81157 lat_us=1298 deadline_us=300 J_us=9968 class=a
+T1MISS task=display-vsync period=931 reason=not_started start_t=-1 lat_t=111733 lat_us=1787 deadline_us=500 J_us=10271 class=a
+T1MISS task=display-vsync period=932 reason=not_started start_t=-1 lat_t=237236 lat_us=3795 deadline_us=500 J_us=9554 class=a
+T1MISS task=timer-server period=932 reason=not_started start_t=-1 lat_t=80986 lat_us=1295 deadline_us=300 J_us=9554 class=a
+T1MISS task=display-vsync period=933 reason=not_started start_t=-1 lat_t=111748 lat_us=1787 deadline_us=500 J_us=10266 class=a
+T1MISS task=display-vsync period=934 reason=not_started start_t=-1 lat_t=200230 lat_us=3203 deadline_us=500 J_us=7976 class=a
+T1MISS task=timer-server period=934 reason=not_started start_t=-1 lat_t=43980 lat_us=703 deadline_us=300 J_us=7976 class=a
+T1MISS task=display-vsync period=935 reason=not_started start_t=-1 lat_t=361819 lat_us=5789 deadline_us=500 J_us=12686 class=a
+T1MISS task=timer-server period=935 reason=not_started start_t=-1 lat_t=205569 lat_us=3289 deadline_us=300 J_us=12686 class=a
+T1MISS task=timer-server period=936 reason=not_started start_t=-1 lat_t=205448 lat_us=3287 deadline_us=300 J_us=12421 class=a
+T1MISS task=display-vsync period=937 reason=not_started start_t=-1 lat_t=151633 lat_us=2426 deadline_us=500 J_us=8090 class=a
+T1MISS task=display-vsync period=938 reason=not_started start_t=-1 lat_t=237019 lat_us=3792 deadline_us=500 J_us=8208 class=a
+T1MISS task=timer-server period=938 reason=not_started start_t=-1 lat_t=80769 lat_us=1292 deadline_us=300 J_us=8208 class=a
+T1MISS task=timer-server period=939 reason=not_started start_t=-1 lat_t=205656 lat_us=3290 deadline_us=300 J_us=10949 class=a
+T1MISS task=display-vsync period=940 reason=not_started start_t=-1 lat_t=126578 lat_us=2025 deadline_us=500 J_us=8075 class=a
+T1MISS task=display-vsync period=941 reason=not_started start_t=-1 lat_t=118620 lat_us=1897 deadline_us=500 J_us=8905 class=a
+T1MISS task=timer-server period=941 reason=not_started start_t=-1 lat_t=206498 lat_us=3303 deadline_us=300 J_us=12219 class=a
+T1MISS task=display-vsync period=945 reason=not_started start_t=-1 lat_t=117906 lat_us=1886 deadline_us=500 J_us=4677 class=a
+T1MISS task=timer-server period=945 reason=not_started start_t=-1 lat_t=205561 lat_us=3288 deadline_us=300 J_us=7976 class=a
+T1MISS task=display-vsync period=946 reason=not_started start_t=-1 lat_t=52424 lat_us=838 deadline_us=500 J_us=8292 class=a
+T1MISS task=timer-server period=946 reason=not_started start_t=-1 lat_t=168145 lat_us=2690 deadline_us=300 J_us=11627 class=a
+T1MISS task=display-vsync period=948 reason=not_started start_t=-1 lat_t=238590 lat_us=3817 deadline_us=500 J_us=10864 class=a
+T1MISS task=timer-server period=948 reason=not_started start_t=-1 lat_t=82340 lat_us=1317 deadline_us=300 J_us=10864 class=a
+T1MISS task=timer-server period=949 reason=not_started start_t=-1 lat_t=205294 lat_us=3284 deadline_us=300 J_us=8942 class=a
+T1MISS task=timer-server period=950 reason=not_started start_t=-1 lat_t=81253 lat_us=1300 deadline_us=300 J_us=10576 class=a
+T1MISS task=display-vsync period=951 reason=not_started start_t=-1 lat_t=111835 lat_us=1789 deadline_us=500 J_us=11078 class=a
+T1MISS task=display-vsync period=952 reason=not_started start_t=-1 lat_t=66083 lat_us=1057 deadline_us=500 J_us=5829 class=a
+T1MISS task=timer-server period=952 reason=not_started start_t=-1 lat_t=80170 lat_us=1282 deadline_us=300 J_us=7550 class=a
+T1MISS task=display-vsync period=953 reason=not_started start_t=-1 lat_t=141350 lat_us=2261 deadline_us=500 J_us=8733 class=a
+T1MISS task=timer-server period=953 reason=not_started start_t=-1 lat_t=0 lat_us=0 deadline_us=300 J_us=8733 class=a
+T1MISS task=timer-server period=954 reason=not_started start_t=-1 lat_t=80561 lat_us=1288 deadline_us=300 J_us=10601 class=a
+T1MISS task=display-vsync period=955 reason=not_started start_t=-1 lat_t=112043 lat_us=1792 deadline_us=500 J_us=8559 class=a
+T1MISS task=display-vsync period=956 reason=not_started start_t=-1 lat_t=229866 lat_us=3677 deadline_us=500 J_us=8459 class=a
+T1MISS task=timer-server period=956 reason=not_started start_t=-1 lat_t=73616 lat_us=1177 deadline_us=300 J_us=8459 class=a
+T1MISS task=display-vsync period=957 reason=not_started start_t=-1 lat_t=362906 lat_us=5806 deadline_us=500 J_us=13187 class=a
+T1MISS (182 more not shown; class b among them: 0, listed below)
+misses: class a (clock jump) 246, class b (kernel) 0, skipped periods 0
+Tier 1 slots over 200 periods (ticks per period, average)
+  slot owner          start    len  owner_used  idle  foreign(total)
+     0 display-vsync   62500  31250        2100  9139  3911711
+     1 timer-server   218750  18750        1180  5855  2262323
+     2 (empty)        375000  18750           0  8055  2066097
+     3 bad-driver     500000  25000       11627   125  2580714
+Tier 2/3 ticks inside any Tier 1 slot: 10820845 (in 479 runs)
+  of which not covered by clock jumps: 31371
+结果: bad-driver 每周期最多 422147 tick（槽长 25000）；其他 Tier 1 错过 246 次。
+select> 7
+
+=== 7 Tier 1 槽从不外借 / tier-1 slots never lent ===
+display-vsync uses ~80 of 500 us, timer-server ~40 of 300 us,
+gic-server and blk-driver slots have no task. A greedy tier-2 app
+and 8 tier-3 loops want every tick they can get.
+Tier 1 slots over 200 periods (ticks per period, average)
+  slot owner          start    len  owner_used  idle  foreign(total)
+     0 display-vsync   62500  31250        2960 12823  3020759
+     1 timer-server   218750  18750        1288  6236  2176141
+     2 (empty)        375000  18750           0  6273  2401505
+     3 (empty)        500000  25000           0  8768  3194047
+Tier 2/3 ticks inside any Tier 1 slot: 10792452 (in 542 runs)
+  of which not covered by clock jumps: 44145
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  greedy-app      1000    6000         0     8335    19165      2
+结果: 空出来的槽时间全部空转，Tier 2/3 在槽内 10792452 tick。
+select> 8
+
+=== 8 Tier 2 最低值有保证，建议值在压力下收回 ===
+app-A min 2000 + sugg 1000 us, app-B min 2000 + sugg 2000 us,
+8 tier-3 loops. Phase 1: no pressure.
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  app-A           2000    1000         0     4163    16297     26
+  app-B           2000    2000         0     4248    16422     30
+Phase 2: memory/CPU pressure ON, suggested is reclaimed.
+pressure ON: reclaimed 0 KB of suggested memory; minimums untouched.
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  app-A           2000    1000         0     3954    11677     32
+  app-B           2000    2000         0     3420    12766     36
+结果: 无压力时最少拿到 0/0 us，有压力时 0/0 us；低于最低值的周期 68 个。
+select> 9
+
+=== 9 Tier 3 过载不影响上层 / tier-3 overload ===
+32 tier-3 busy loops for 200 periods, with a tier-2 game and audio-mix.
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200    98        400     362414  362014   367570
+  timer-server      1    200   120        434       4047    3613     6631
+  display-vsync last release: period 1963, tick 1227562500, epoch+k*P+offset 1227562500
+  timer-server last release: period 1963, tick 1227718750, epoch+k*P+offset 1227718750
+T1MISS task=timer-server period=1763 reason=not_started start_t=-1 lat_t=217736 lat_us=3483 deadline_us=300 J_us=4020 class=a
+T1MISS task=timer-server period=1764 reason=not_started start_t=-1 lat_t=80534 lat_us=1288 deadline_us=300 J_us=8121 class=a
+T1MISS task=timer-server period=1765 reason=not_started start_t=-1 lat_t=107075 lat_us=1713 deadline_us=300 J_us=5867 class=a
+T1MISS task=timer-server period=1766 reason=not_started start_t=-1 lat_t=81669 lat_us=1306 deadline_us=300 J_us=7077 class=a
+T1MISS task=display-vsync period=1767 reason=not_started start_t=-1 lat_t=112064 lat_us=1793 deadline_us=500 J_us=7586 class=a
+T1MISS task=display-vsync period=1768 reason=not_started start_t=-1 lat_t=237277 lat_us=3796 deadline_us=500 J_us=9447 class=a
+T1MISS task=timer-server period=1768 reason=not_started start_t=-1 lat_t=81027 lat_us=1296 deadline_us=300 J_us=9447 class=a
+T1MISS task=display-vsync period=1769 reason=not_started start_t=-1 lat_t=361707 lat_us=5787 deadline_us=500 J_us=13448 class=a
+T1MISS task=timer-server period=1769 reason=not_started start_t=-1 lat_t=205457 lat_us=3287 deadline_us=300 J_us=13448 class=a
+T1MISS task=timer-server period=1770 reason=not_started start_t=-1 lat_t=80591 lat_us=1289 deadline_us=300 J_us=10143 class=a
+T1MISS task=display-vsync period=1772 reason=not_started start_t=-1 lat_t=486601 lat_us=7785 deadline_us=500 J_us=11905 class=a
+T1MISS task=timer-server period=1772 reason=not_started start_t=-1 lat_t=330351 lat_us=5285 deadline_us=300 J_us=11905 class=a
+T1MISS task=timer-server period=1773 reason=not_started start_t=-1 lat_t=205777 lat_us=3292 deadline_us=300 J_us=12664 class=a
+T1MISS task=display-vsync period=1774 reason=not_started start_t=-1 lat_t=351157 lat_us=5618 deadline_us=500 J_us=11081 class=a
+T1MISS task=timer-server period=1774 reason=not_started start_t=-1 lat_t=194907 lat_us=3118 deadline_us=300 J_us=11081 class=a
+T1MISS task=display-vsync period=1775 reason=not_started start_t=-1 lat_t=112219 lat_us=1795 deadline_us=500 J_us=11424 class=a
+T1MISS task=display-vsync period=1776 reason=not_started start_t=-1 lat_t=238102 lat_us=3809 deadline_us=500 J_us=9434 class=a
+T1MISS task=timer-server period=1776 reason=not_started start_t=-1 lat_t=81852 lat_us=1309 deadline_us=300 J_us=9434 class=a
+T1MISS task=display-vsync period=1777 reason=not_started start_t=-1 lat_t=361684 lat_us=5786 deadline_us=500 J_us=14041 class=a
+T1MISS task=timer-server period=1777 reason=not_started start_t=-1 lat_t=205434 lat_us=3286 deadline_us=300 J_us=14041 class=a
+T1MISS task=display-vsync period=1778 reason=not_started start_t=-1 lat_t=549507 lat_us=8792 deadline_us=500 J_us=16948 class=a
+T1MISS task=timer-server period=1778 reason=not_started start_t=-1 lat_t=393257 lat_us=6292 deadline_us=300 J_us=16948 class=a
+T1MISS task=display-vsync period=1779 reason=not_started start_t=-1 lat_t=53468 lat_us=855 deadline_us=500 J_us=10657 class=a
+T1MISS task=timer-server period=1779 reason=not_started start_t=-1 lat_t=205399 lat_us=3286 deadline_us=300 J_us=15331 class=a
+T1MISS task=display-vsync period=1780 reason=skipped lat_us=- deadline_us=500 J_us=19318 covered=yes uncovered_us=0 class=a
+T1MISS task=timer-server period=1780 reason=skipped lat_us=- deadline_us=300 J_us=19318 covered=yes uncovered_us=0 class=a
+T1MISS task=display-vsync period=1781 reason=not_started start_t=-1 lat_t=136219 lat_us=2179 deadline_us=500 J_us=13179 class=a
+T1MISS task=display-vsync period=1782 reason=skipped lat_us=- deadline_us=500 J_us=17708 covered=yes uncovered_us=0 class=a
+T1MISS task=timer-server period=1782 reason=skipped lat_us=- deadline_us=300 J_us=17708 covered=yes uncovered_us=0 class=a
+T1MISS task=display-vsync period=1783 reason=not_started start_t=-1 lat_t=116519 lat_us=1864 deadline_us=500 J_us=12864 class=a
+T1MISS task=timer-server period=1784 reason=not_started start_t=-1 lat_t=330357 lat_us=5285 deadline_us=300 J_us=13726 class=a
+T1MISS task=display-vsync period=1785 reason=not_started start_t=-1 lat_t=65779 lat_us=1052 deadline_us=500 J_us=8346 class=a
+T1MISS task=display-vsync period=1786 reason=not_started start_t=-1 lat_t=239635 lat_us=3834 deadline_us=500 J_us=6410 class=a
+T1MISS task=timer-server period=1786 reason=not_started start_t=-1 lat_t=83385 lat_us=1334 deadline_us=300 J_us=6410 class=a
+T1MISS task=display-vsync period=1787 reason=not_started start_t=-1 lat_t=112499 lat_us=1799 deadline_us=500 J_us=6942 class=a
+T1MISS task=display-vsync period=1789 reason=not_started start_t=-1 lat_t=111879 lat_us=1790 deadline_us=500 J_us=5324 class=a
+T1MISS task=timer-server period=1789 reason=not_started start_t=-1 lat_t=113763 lat_us=1820 deadline_us=300 J_us=7154 class=a
+T1MISS task=display-vsync period=1790 reason=not_started start_t=-1 lat_t=236667 lat_us=3786 deadline_us=500 J_us=9991 class=a
+T1MISS task=timer-server period=1790 reason=not_started start_t=-1 lat_t=80417 lat_us=1286 deadline_us=300 J_us=9991 class=a
+T1MISS task=display-vsync period=1791 reason=not_started start_t=-1 lat_t=361997 lat_us=5791 deadline_us=500 J_us=12639 class=a
+T1MISS task=timer-server period=1791 reason=not_started start_t=-1 lat_t=205747 lat_us=3291 deadline_us=300 J_us=12639 class=a
+T1MISS task=display-vsync period=1792 reason=not_started start_t=-1 lat_t=486934 lat_us=7790 deadline_us=500 J_us=15933 class=a
+T1MISS task=timer-server period=1792 reason=not_started start_t=-1 lat_t=330684 lat_us=5290 deadline_us=300 J_us=15933 class=a
+T1MISS task=timer-server period=1793 reason=not_started start_t=-1 lat_t=87016 lat_us=1392 deadline_us=300 J_us=10740 class=a
+T1MISS task=timer-server period=1794 reason=not_started start_t=-1 lat_t=80496 lat_us=1287 deadline_us=300 J_us=6503 class=a
+T1MISS task=timer-server period=1795 reason=not_started start_t=-1 lat_t=205475 lat_us=3287 deadline_us=300 J_us=8780 class=a
+T1MISS task=timer-server period=1797 reason=not_started start_t=-1 lat_t=205776 lat_us=3292 deadline_us=300 J_us=9609 class=a
+T1MISS task=display-vsync period=1798 reason=not_started start_t=-1 lat_t=423157 lat_us=6770 deadline_us=500 J_us=12199 class=a
+T1MISS task=timer-server period=1798 reason=not_started start_t=-1 lat_t=266907 lat_us=4270 deadline_us=300 J_us=12199 class=a
+T1MISS task=display-vsync period=1799 reason=not_started start_t=-1 lat_t=111841 lat_us=1789 deadline_us=500 J_us=10559 class=a
+T1MISS task=display-vsync period=1800 reason=not_started start_t=-1 lat_t=236706 lat_us=3787 deadline_us=500 J_us=9869 class=a
+T1MISS task=timer-server period=1800 reason=not_started start_t=-1 lat_t=80456 lat_us=1287 deadline_us=300 J_us=9869 class=a
+T1MISS task=display-vsync period=1801 reason=not_started start_t=-1 lat_t=362409 lat_us=5798 deadline_us=500 J_us=14076 class=a
+T1MISS task=timer-server period=1801 reason=not_started start_t=-1 lat_t=206159 lat_us=3298 deadline_us=300 J_us=14076 class=a
+T1MISS task=display-vsync period=1802 reason=not_started start_t=-1 lat_t=236822 lat_us=3789 deadline_us=500 J_us=11921 class=a
+T1MISS task=timer-server period=1802 reason=not_started start_t=-1 lat_t=80572 lat_us=1289 deadline_us=300 J_us=11921 class=a
+T1MISS task=timer-server period=1803 reason=not_started start_t=-1 lat_t=242273 lat_us=3876 deadline_us=300 J_us=9239 class=a
+T1MISS task=timer-server period=1804 reason=not_started start_t=-1 lat_t=80630 lat_us=1290 deadline_us=300 J_us=8553 class=a
+T1MISS task=display-vsync period=1805 reason=not_started start_t=-1 lat_t=362305 lat_us=5796 deadline_us=500 J_us=11573 class=a
+T1MISS task=timer-server period=1805 reason=not_started start_t=-1 lat_t=206055 lat_us=3296 deadline_us=300 J_us=11573 class=a
+T1MISS task=display-vsync period=1806 reason=not_started start_t=-1 lat_t=237092 lat_us=3793 deadline_us=500 J_us=13600 class=a
+T1MISS task=timer-server period=1806 reason=not_started start_t=-1 lat_t=80842 lat_us=1293 deadline_us=300 J_us=13600 class=a
+T1MISS task=display-vsync period=1807 reason=not_started start_t=-1 lat_t=362153 lat_us=5794 deadline_us=500 J_us=13464 class=a
+T1MISS task=timer-server period=1807 reason=not_started start_t=-1 lat_t=205903 lat_us=3294 deadline_us=300 J_us=13464 class=a
+T1MISS (154 more not shown; class b among them: 0, listed below)
+misses: class a (clock jump) 218, class b (kernel) 0, skipped periods 9
+  app           min_us sugg_us  recv_min recv_avg recv_max  short
+  game            2000    1000         0     4622    16179     13
+  audio-mix: jobs 200, misses 73, worst response 9246 us (deadline 4000 us)
+tier-3 per loop: avg 51..200 us/period, all 32 together 3995 us
+Tier 1 slots over 200 periods (ticks per period, average)
+  slot owner          start    len  owner_used  idle  foreign(total)
+     0 display-vsync   62500  31250        3112 12548  3052750
+     1 timer-server   218750  18750        1265  6401  2170543
+     2 (empty)        375000  18750           0  7110  2309993
+     3 (empty)        500000  25000           0 11569  2663411
+Tier 2/3 ticks inside any Tier 1 slot: 10196697 (in 533 runs)
+  of which not covered by clock jumps: 61565
+kernel per period: max 70065 avg 2698 ticks, reserve 21875, over 1
+timer IRQ entry - CVAL: min 508 max 859885 ticks (n=1358)
+kernel entry -> eret (no slot wait): min 56 max 67892 ticks
+slot guard: path max 0 ticks, slack min 0 ticks of 625 (n=0)
+wait loop exit late by 0/1/2/>2 ticks: 0/0/0/0
+clock jumps: 463, total 1004881 us
+结果: Tier 1 错过 218 次，起点抖动 362014 tick，槽内 Tier 2/3 共 10196697 tick。
+结果: Tier 2 低于最低值 13 个周期，audio-mix 错过 73 次。
+select> 10
+
+=== 10 任何一级的失控任务只拖慢自己 / runaway only slows itself ===
+runaways: bad-driver (tier 1, blk slot), bad-encoder (tier 2, min 1000),
+bad-t3 (tier 3). Well behaved: vsync, timer-server, audio-mix, polite-t3.
+bad-driver  avg 211 max 6771 us/period (slot 400)
+bad-encoder avg 3875 max 17857 us/period (min 1000, no suggested)
+bad-t3 avg 2283 us/period, polite-t3 avg 2482 us/period
+  audio-mix: jobs 200, misses 86, worst response 9302 us (deadline 4000 us)
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0    200   111        474      20860   20386    25909
+  timer-server      1    200   126        410      11818   11408    14371
+  display-vsync last release: period 2189, tick 1368812500, epoch+k*P+offset 1368812500
+  timer-server last release: period 2189, tick 1368968750, epoch+k*P+offset 1368968750
+T1MISS task=display-vsync period=1989 reason=not_started start_t=-1 lat_t=362640 lat_us=5802 deadline_us=500 J_us=12789 class=a
+T1MISS task=timer-server period=1989 reason=not_started start_t=-1 lat_t=206390 lat_us=3302 deadline_us=300 J_us=12789 class=a
+T1MISS task=display-vsync period=1990 reason=not_started start_t=-1 lat_t=238149 lat_us=3810 deadline_us=500 J_us=13622 class=a
+T1MISS task=timer-server period=1990 reason=not_started start_t=-1 lat_t=81899 lat_us=1310 deadline_us=300 J_us=13622 class=a
+T1MISS task=display-vsync period=1991 reason=not_started start_t=-1 lat_t=113139 lat_us=1810 deadline_us=500 J_us=11074 class=a
+T1MISS task=timer-server period=1991 reason=not_started start_t=-1 lat_t=98462 lat_us=1575 deadline_us=300 J_us=12659 class=a
+T1MISS task=timer-server period=1992 reason=not_started start_t=-1 lat_t=81077 lat_us=1297 deadline_us=300 J_us=10200 class=a
+T1MISS task=display-vsync period=1993 reason=not_started start_t=-1 lat_t=112285 lat_us=1796 deadline_us=500 J_us=8600 class=a
+T1MISS task=timer-server period=1993 reason=not_started start_t=-1 lat_t=205726 lat_us=3291 deadline_us=300 J_us=11902 class=a
+T1MISS task=display-vsync period=1994 reason=not_started start_t=-1 lat_t=79542 lat_us=1272 deadline_us=500 J_us=8370 class=a
+T1MISS task=timer-server period=1995 reason=not_started start_t=-1 lat_t=178287 lat_us=2852 deadline_us=300 J_us=5358 class=a
+T1MISS task=timer-server period=1996 reason=not_started start_t=-1 lat_t=33944 lat_us=543 deadline_us=300 J_us=7904 class=a
+T1MISS task=timer-server period=1997 reason=not_started start_t=-1 lat_t=52073 lat_us=833 deadline_us=300 J_us=3741 class=a
+T1MISS task=timer-server period=1998 reason=not_started start_t=-1 lat_t=37372 lat_us=597 deadline_us=300 J_us=3151 class=a
+T1MISS task=display-vsync period=1999 reason=not_started start_t=-1 lat_t=90666 lat_us=1450 deadline_us=500 J_us=4049 class=a
+T1MISS task=display-vsync period=2001 reason=not_started start_t=-1 lat_t=91030 lat_us=1456 deadline_us=500 J_us=5715 class=a
+T1MISS task=display-vsync period=2002 reason=not_started start_t=-1 lat_t=119991 lat_us=1919 deadline_us=500 J_us=8961 class=a
+T1MISS task=display-vsync period=2003 reason=not_started start_t=-1 lat_t=128182 lat_us=2050 deadline_us=500 J_us=5910 class=a
+T1MISS task=display-vsync period=2005 reason=not_started start_t=-1 lat_t=362378 lat_us=5798 deadline_us=500 J_us=10608 class=a
+T1MISS task=timer-server period=2005 reason=not_started start_t=-1 lat_t=206128 lat_us=3298 deadline_us=300 J_us=10608 class=a
+T1MISS task=display-vsync period=2006 reason=not_started start_t=-1 lat_t=236797 lat_us=3788 deadline_us=500 J_us=10596 class=a
+T1MISS task=timer-server period=2006 reason=not_started start_t=-1 lat_t=80547 lat_us=1288 deadline_us=300 J_us=10596 class=a
+T1MISS task=display-vsync period=2007 reason=not_started start_t=-1 lat_t=111673 lat_us=1786 deadline_us=500 J_us=7189 class=a
+T1MISS task=timer-server period=2013 reason=not_started start_t=-1 lat_t=75175 lat_us=1202 deadline_us=300 J_us=5783 class=a
+T1MISS task=display-vsync period=2015 reason=not_started start_t=-1 lat_t=60884 lat_us=974 deadline_us=500 J_us=7178 class=a
+T1MISS task=timer-server period=2018 reason=not_started start_t=-1 lat_t=331943 lat_us=5311 deadline_us=300 J_us=5824 class=a
+T1MISS task=timer-server period=2019 reason=not_started start_t=-1 lat_t=207592 lat_us=3321 deadline_us=300 J_us=9416 class=a
+T1MISS task=display-vsync period=2020 reason=not_started start_t=-1 lat_t=167248 lat_us=2675 deadline_us=500 J_us=7555 class=a
+T1MISS task=display-vsync period=2022 reason=not_started start_t=-1 lat_t=0 lat_us=0 deadline_us=500 J_us=4308 class=a
+T1MISS task=timer-server period=2022 reason=not_started start_t=-1 lat_t=0 lat_us=0 deadline_us=300 J_us=4308 class=a
+T1MISS task=display-vsync period=2023 reason=not_started start_t=-1 lat_t=112512 lat_us=1800 deadline_us=500 J_us=7708 class=a
+T1MISS task=timer-server period=2024 reason=not_started start_t=-1 lat_t=80741 lat_us=1291 deadline_us=300 J_us=10771 class=a
+T1MISS task=display-vsync period=2026 reason=not_started start_t=-1 lat_t=237123 lat_us=3793 deadline_us=500 J_us=8902 class=a
+T1MISS task=timer-server period=2026 reason=not_started start_t=-1 lat_t=80873 lat_us=1293 deadline_us=300 J_us=8902 class=a
+T1MISS task=display-vsync period=2027 reason=not_started start_t=-1 lat_t=111795 lat_us=1788 deadline_us=500 J_us=8328 class=a
+T1MISS task=timer-server period=2028 reason=not_started start_t=-1 lat_t=330782 lat_us=5292 deadline_us=300 J_us=12261 class=a
+T1MISS task=display-vsync period=2030 reason=not_started start_t=-1 lat_t=487679 lat_us=7802 deadline_us=500 J_us=11500 class=a
+T1MISS task=timer-server period=2030 reason=not_started start_t=-1 lat_t=331429 lat_us=5302 deadline_us=300 J_us=11500 class=a
+T1MISS task=display-vsync period=2031 reason=not_started start_t=-1 lat_t=362397 lat_us=5798 deadline_us=500 J_us=15601 class=a
+T1MISS task=timer-server period=2031 reason=not_started start_t=-1 lat_t=206147 lat_us=3298 deadline_us=300 J_us=15601 class=a
+T1MISS task=timer-server period=2032 reason=not_started start_t=-1 lat_t=330710 lat_us=5291 deadline_us=300 J_us=13864 class=a
+T1MISS task=display-vsync period=2033 reason=not_started start_t=-1 lat_t=114040 lat_us=1824 deadline_us=500 J_us=8385 class=a
+T1MISS task=display-vsync period=2037 reason=not_started start_t=-1 lat_t=112628 lat_us=1802 deadline_us=500 J_us=3792 class=a
+T1MISS task=display-vsync period=2039 reason=not_started start_t=-1 lat_t=112084 lat_us=1793 deadline_us=500 J_us=5572 class=a
+T1MISS task=timer-server period=2040 reason=not_started start_t=-1 lat_t=32815 lat_us=525 deadline_us=300 J_us=4438 class=a
+T1MISS task=timer-server period=2041 reason=not_started start_t=-1 lat_t=207978 lat_us=3327 deadline_us=300 J_us=7763 class=a
+T1MISS task=timer-server period=2042 reason=not_started start_t=-1 lat_t=330976 lat_us=5295 deadline_us=300 J_us=14342 class=a
+T1MISS task=display-vsync period=2043 reason=not_started start_t=-1 lat_t=111842 lat_us=1789 deadline_us=500 J_us=11272 class=a
+T1MISS task=display-vsync period=2044 reason=not_started start_t=-1 lat_t=487354 lat_us=7797 deadline_us=500 J_us=17190 class=a
+T1MISS task=timer-server period=2044 reason=not_started start_t=-1 lat_t=331104 lat_us=5297 deadline_us=300 J_us=17190 class=a
+T1MISS task=display-vsync period=2045 reason=skipped lat_us=- deadline_us=500 J_us=19589 covered=yes uncovered_us=0 class=a
+T1MISS task=timer-server period=2045 reason=skipped lat_us=- deadline_us=300 J_us=19589 covered=yes uncovered_us=0 class=a
+T1MISS task=timer-server period=2048 reason=not_started start_t=-1 lat_t=330695 lat_us=5291 deadline_us=300 J_us=12287 class=a
+T1MISS task=display-vsync period=2049 reason=not_started start_t=-1 lat_t=161448 lat_us=2583 deadline_us=500 J_us=10848 class=a
+T1MISS task=timer-server period=2050 reason=not_started start_t=-1 lat_t=82119 lat_us=1313 deadline_us=300 J_us=10064 class=a
+T1MISS task=display-vsync period=2051 reason=not_started start_t=-1 lat_t=112258 lat_us=1796 deadline_us=500 J_us=8355 class=a
+T1MISS task=timer-server period=2051 reason=not_started start_t=-1 lat_t=205926 lat_us=3294 deadline_us=300 J_us=11660 class=a
+T1MISS task=display-vsync period=2052 reason=not_started start_t=-1 lat_t=189795 lat_us=3036 deadline_us=500 J_us=9168 class=a
+T1MISS task=timer-server period=2052 reason=not_started start_t=-1 lat_t=33545 lat_us=536 deadline_us=300 J_us=9168 class=a
+T1MISS task=timer-server period=2053 reason=not_started start_t=-1 lat_t=207324 lat_us=3317 deadline_us=300 J_us=7950 class=a
+T1MISS task=timer-server period=2054 reason=not_started start_t=-1 lat_t=83040 lat_us=1328 deadline_us=300 J_us=10156 class=a
+T1MISS task=display-vsync period=2055 reason=not_started start_t=-1 lat_t=112101 lat_us=1793 deadline_us=500 J_us=8585 class=a
+T1MISS task=display-vsync period=2056 reason=not_started start_t=-1 lat_t=236642 lat_us=3786 deadline_us=500 J_us=9844 class=a
+T1MISS task=timer-server period=2056 reason=not_started start_t=-1 lat_t=80392 lat_us=1286 deadline_us=300 J_us=9844 class=a
+T1MISS (173 more not shown; class b among them: 0, listed below)
+misses: class a (clock jump) 237, class b (kernel) 0, skipped periods 30
+Tier 2/3 ticks inside tier-1 slots: 11435889
+结果: 守规矩的 Tier 1 错过 237 次，audio-mix 错过 86 次；失控者都停在自己的额度。
+select> 1
+
+=== 1 资源总览 / resource overview ===
+RAM 131072 KB. CPU period 10000 us. 1 tick = 16 ns.
+
+[系统预留] kernel, fixed, never lent
+  CPU 350 us/period = 21875 ticks
+  measured since boot: max 515022 ticks/period (period 1045 of 2210)
+  memory 16384 KB
+
+[Tier 1] one fixed slot per task; unused time stays idle
+  task           slot offset_us len_us max_used_us waste_us mem_kb
+  display-vsync     0      1000    500        6136        0   2048
+  timer-server      1      3500    300        5305        0   1024
+  gic-server        2      6000    300           0      300   2048
+  blk-driver        3      8000    400           0      400   4096
+  net-driver        -         -      -           -        -   4096
+  total CPU 1500 us/period, memory 13312 KB
+
+[Tier 2] admitted apps (minimum is guaranteed, suggested is spare only)
+  (none)
+  minimum sum: CPU 0 / 8110 us, memory 0 / 101376 KB
+  admission: reserve 350 + tier-1 1500 + tier-2 min 0 + guard 40 = 1890 <= 10000 us
+
+[Tier 3] everyone else, round robin 1000 us, leftover only
+  CPU not promised to anyone: 8110 us/period
+pressure: off
+select> x
+未知选项。按 h 看命令。
+select> h
+
+命令（输入数字后回车）:
+  1  资源总览：系统预留、Tier 1 槽和浪费、Tier 2、Tier 3
+  2  安装应用：允许/拒绝（也可以停止应用）
+  3  资源不够：拒绝并说明先关哪个应用
+  4  旧设备：超过整机容量的请求被拒绝
+  5  Tier 1 准时：抖动和错过都是 0
+  6  Tier 1 超时在槽尾被掐断
+  7  Tier 1 槽从不外借
+  8  Tier 2 最低值有保证，建议值在压力下收回
+  9  Tier 3 过载不影响上层
+  10 任何一级的失控任务只拖慢自己
+  h  帮助    q  提示如何退出 QEMU
+select> QEMU: Terminated
+
+
+##### 64M ok=True
+
+Quota OS microkernel
+Version: 007 (82db71a)
+基于三级资源声明的微内核，保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] x0=0x42000000 physical RAM span 64 MB (probed)
+[boot] DTB at 0x42000000
+[boot] DTB memory 67108864 bytes
+[boot] system reserve 350 us/period, 16384 KB; tier-1 1500 us/period, 13312 KB; guard 40 us/period
+[boot] kernel image+bss 465 KB of the 16384 KB system reserve
+[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 625000, period 625000 ticks, guard 625 ticks
+[boot] shell task running
+
+命令（输入数字后回车）:
+  1  资源总览：系统预留、Tier 1 槽和浪费、Tier 2、Tier 3
+  2  安装应用：允许/拒绝（也可以停止应用）
+  3  资源不够：拒绝并说明先关哪个应用
+  4  旧设备：超过整机容量的请求被拒绝
+  5  Tier 1 准时：抖动和错过都是 0
+  6  Tier 1 超时在槽尾被掐断
+  7  Tier 1 槽从不外借
+  8  Tier 2 最低值有保证，建议值在压力下收回
+  9  Tier 3 过载不影响上层
+  10 任何一级的失控任务只拖慢自己
+  h  帮助    q  提示如何退出 QEMU
+select> 1
+
+=== 1 资源总览 / resource overview ===
+RAM 65536 KB. CPU period 10000 us. 1 tick = 16 ns.
+
+[系统预留] kernel, fixed, never lent
+  CPU 350 us/period = 21875 ticks
+  measured since boot: max 74652 ticks/period (period 0 of 21)
+  memory 16384 KB
+
+[Tier 1] one fixed slot per task; unused time stays idle
+  task           slot offset_us len_us max_used_us waste_us mem_kb
+  display-vsync     0      1000    500         104      396   2048
+  timer-server      1      3500    300          63      237   1024
+  gic-server        2      6000    300           0      300   2048
+  blk-driver        3      8000    400           0      400   4096
+  net-driver        -         -      -           -        -   4096
+  total CPU 1500 us/period, memory 13312 KB
+
+[Tier 2] admitted apps (minimum is guaranteed, suggested is spare only)
+  (none)
+  minimum sum: CPU 0 / 8110 us, memory 0 / 35840 KB
+  admission: reserve 350 + tier-1 1500 + tier-2 min 0 + guard 40 = 1890 <= 10000 us
+
+[Tier 3] everyone else, round robin 1000 us, leftover only
+  CPU not promised to anyone: 8110 us/period
+pressure: off
+select> 4
+
+=== 4 旧设备：超过整机容量 / old device: request too big ===
+apps get at most CPU 8110 us/period and memory 35840 KB on this device.
+
+Neural Forge (CPU min 1000 us, memory min 81920 KB):
+REFUSED: device does not meet minimum requirements
+  minimum memory 81920 KB > 35840 KB for apps
+  (RAM 65536 KB - system reserve - tier-1)
+No app can be closed to make room: this device is too small.
+
+Cluster Sim (CPU min 1000 us, memory min 524288 KB):
+REFUSED: device does not meet minimum requirements
+  minimum memory 524288 KB > 35840 KB for apps
+  (RAM 65536 KB - system reserve - tier-1)
+No app can be closed to make room: this device is too small.
+
+Render Farm (CPU min 9000 us, memory min 4096 KB):
+REFUSED: device does not meet minimum requirements
+  minimum CPU 9000 us > 8110 us/period for apps
+  (period - system reserve - tier-1 - guard)
+No app can be closed to make room: this device is too small.
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+number to install, s<number> to stop, empty to go back. app> 4
+
+Neural Forge: 最低 80MB，小内存机器装不下
+  CPU minimum 1000 us, suggested +0 us per 10000 us
+  memory minimum 81920 KB, suggested 98304 KB
+REFUSED: device does not meet minimum requirements
+  minimum memory 81920 KB > 35840 KB for apps
+  (RAM 65536 KB - system reserve - tier-1)
+No app can be closed to make room: this device is too small.
+not started.
+select> 2
+
+=== 2 安装应用：允许/拒绝 / install app: allow or deny ===
+  1) Pixel Racer    CPU 3000+1000 us  memory 8192..20480 KB
+  2) Cinema Play    CPU 3000+500 us  memory 8192..16384 KB
+  3) Studio Cut     CPU 3000+1000 us  memory 8192..24576 KB
+  4) Neural Forge   CPU 1000+0 us  memory 81920..98304 KB
+  5) Cluster Sim    CPU 1000+0 us  memory 524288..524288 KB
+  6) Render Farm    CPU 9000+0 us  memory 4096..4096 KB
+number to install, s<number> to stop, empty to go back. app> 1
+
+Pixel Racer: 游戏
+  CPU minimum 3000 us, suggested +1000 us per 10000 us
+  memory minimum 8192 KB, suggested 20480 KB
+allow this app to reserve its minimum? (y/n) allow> y
+started Pixel Racer: CPU 3000 us/period guaranteed, memory 8192 KB (+12288 KB suggested now)
+select> 1
+
+=== 1 资源总览 / resource overview ===
+RAM 65536 KB. CPU period 10000 us. 1 tick = 16 ns.
+
+[系统预留] kernel, fixed, never lent
+  CPU 350 us/period = 21875 ticks
+  measured since boot: max 74652 ticks/period (period 0 of 162)
+  memory 16384 KB
+
+[Tier 1] one fixed slot per task; unused time stays idle
+  task           slot offset_us len_us max_used_us waste_us mem_kb
+  display-vsync     0      1000    500         104      396   2048
+  timer-server      1      3500    300          63      237   1024
+  gic-server        2      6000    300           0      300   2048
+  blk-driver        3      8000    400           0      400   4096
+  net-driver        -         -      -           -        -   4096
+  total CPU 1500 us/period, memory 13312 KB
+
+[Tier 2] admitted apps (minimum is guaranteed, suggested is spare only)
+  Pixel Racer    CPU min 3000 + sugg 1000 us, mem min 8192 KB, granted 20480 KB
+  minimum sum: CPU 3000 / 8110 us, memory 8192 / 35840 KB
+  admission: reserve 350 + tier-1 1500 + tier-2 min 3000 + guard 40 = 4890 <= 10000 us
+
+[Tier 3] everyone else, round robin 1000 us, leftover only
+  CPU not promised to anyone: 5110 us/period
+pressure: off
+select> QEMU: Terminated
+

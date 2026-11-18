@@ -1,0 +1,66 @@
+Default kernel. LVGL screen. Not the old serial menu.
+
+Boot arguments empty, or absent, start LVGL. They do not fall through
+to select>. The serial menu on this image is -append serial.
+-append e4 still runs e4. -append webkit still runs the JSC guest
+only when that image is the JSC file, not this one.
+
+Machine
+  virt, GICv2, Cortex-A72, 128 MB. Do not change those.
+  Banner Version: 016 (11b8eb6). 11b8eb6 is the parent of the commit
+  that introduced these bytes.
+  White page. Four colored groups: draw, stress, admit, fault.
+  Text status stays on each row. The tier legend prints quotas.
+
+SHA-256
+  quotaos.bin dc71eb9a2ec4124d79c13b5e506d11f6614a124d35abf91fcb6278d09d2dfded
+  quotaos.elf 56994c73c4251b2e8a18fce67758c81dfc1d5043ef0900de44fc86b9a25585ad
+  size quotaos.bin 682232
+
+Not this file
+  ac565ac white cursor, 667656 bytes,
+  sha256 198eb516bd00188a68bae7a4538adb40a8b6a1b5410512fae187700a31738988
+  11b8eb6 eighteen-row menu, 674264 bytes,
+  sha256 8f7d4e077730c12a288faff06b3c7c94d8077b532e7cbd904c5f1625d270c416
+  quotaos-lvgl.bin is the same bytes.
+
+Previous serial drop-in, kept under a new name
+  quotaos-serial.bin afed7949f5b3adc6dcb3d6c86e05356ed69fd315eca55fbeafae656f62880e05
+  quotaos-serial.elf bf6338345233296ffac12393f37e477078299ec91c65ce68ab90fa5e656b8f64
+  93744 bytes. Banner Version: 016 (af050b5). That file still opens select>.
+
+QEMU 8.2.2 command that showed the button and the text field
+  qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M \
+    -display none -nic none \
+    -device ramfb \
+    -device virtio-keyboard-device \
+    -device virtio-tablet-device \
+    -kernel prebuilt/quotaos.bin
+
+No -append. Scroll once, menu 9 for 200 periods, +1, keys a b.
+Tier-1 misses 2. Shell avg 143 us/period. Click, key, and scroll
+each have a framebuffer-commit sample. Panel light and p99 are
+not measured. Log docs/v016/lvgl/groups.raw
+Screenshots docs/v016/lvgl/groups-page.png docs/v016/lvgl/groups-end.png
+QEMU also prints: Could not open option rom 'vgabios-ramfb.bin'.
+The guest still programs etc/ramfb.
+
+Without those three devices the serial log says
+  [boot] no bootarg, starting LVGL
+  [fb] etc/ramfb not in fw_cfg
+and does not print select>. docs/v016/lvgl/default-nodev.raw
+
+The owner has shown this guest on ramfb. In UTM's custom arguments,
+each argv is its own row:
+  -device
+  virtio-keyboard-device
+  -device
+  virtio-tablet-device
+Putting those four tokens on one row does not attach the devices.
+Button and text entry on UTM are not confirmed. QEMU is the run above.
+
+Same file, icount e4
+  python3 tools/e4_bound.py prebuilt/quotaos.bin docs/v016/lvgl/e4-groups.raw 40 icount
+item9 PASS, item10 PASS, QA DONE. Tier-1 stays 13312 KB and 1500 us.
+This screen is one EL1 address space with the MMU off. It is not
+a tier-1 hardware isolation claim.

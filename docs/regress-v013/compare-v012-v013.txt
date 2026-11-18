@@ -1,0 +1,213 @@
+@@ ...128M ok=True Quota OS microkernel Version:
+- 012 (fb77426)
++ 013 (36f3c33)
+@@ ...[dev] sim-dma: job 396/400 us, stop
+- 16/20
++ 18/20
+@@ ...参 考 ] [dev] sim-cam: job
+- 296/300
++ 291/300
+@@ ...[dev] sim-cam: job 296/300 us, stop
+- 7/30
++ 8/30
+@@ ...yes 400 5 20 | 396
+- 16
++ 18
+@@ ...yes yes 300 5 30 |
+- 296 7
++ 291 8
+@@ ...谁 的 预 算 === cam-app
+- 
++ asks Tier 2 CPU 3000 us + IPC headroom 120 us CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0 + this 3120 = 5050 <= 10000 OK: admitted cam-app
+@@ ...us of device work each. calls
+- 3089;
++ 3075;
+@@ ...kernel during the calls: driver running
+- 39609839
++ 39336724
+@@ ...39609839 ticks + IPC kernel path
+- 306002
++ 349402
+@@ ...IPC kernel path 306002 ticks =
+- 39915841
++ 39686126
+@@ ...39915841 ticks; caller budgets dropped by
+- 39915841
++ 39686126
+@@ ...dropped by 39915841 ticks longest call
+- 28091
++ 26214
+@@ ...path charged to callers in total
+- (not
++ (none
+@@ ...total (not to the system reserve):
+- 930656
++ 1047594
+@@ ...reserve): 930656 ticks = in-call window
+- 305878
++ 349490
+@@ ...window 305878 + entry and queueing
+- 147816
++ 130248
+@@ ...and queueing 147816 + reply return
+- 476962
++ 567856
+@@ ...147816 + reply return 476962 (sum
+- 930656)
++ 1047594)
+@@ ...window (per-period budgets): caller budget drops
+- 40543098
++ 40349728
+@@ ...budget drops 40543098 = driver run
+- 39615534
++ 39319757
+@@ ...= driver run 39615534 + in-call
+- 305878
++ 341388
+@@ ...39615534 + in-call 305878 + entry
+- 144724
++ 130248
+@@ ...305878 + entry 144724 + reply
+- 476962
++ 558335
+@@ ...entry 144724 + reply 476962 =
+- 40543098;
++ 40349728; error 0 ticks counting windows (ticks): cumulative: from stats reset 1320571345 to read 1445633168 per-period: periods 2108..2307, ticks 1320625000..1445625000 part before window after cumulative err driver run 32024 39319757 0 39351781 0 in-call 8102 341388 0 349490 0 entry 0 130248 0 130248 0 reply 9521 558335 0 567856 0 driver run per replied call 39336724 = charged 39351781 + ran before reset in calls open then 0 - ran in 1 calls still open at the end 15057;
+@@ ...kernel path past the end of
+- the
++ a tier-2
+@@ ...the end of the caller's budget,
+- 
++ taken from its admitted IPC headroom (120 us = 7500 ticks per period): 5 times, total 3133, max 904 ticks; most in one period 904;
+@@ ...caller's budget, charged to the system
+- reserve instead: 8 times, total 2622, max 536 ticks
++ reserve: 0
+@@ ...timing incl. preemption (reference only): total
+- 119254832
++ 119672300
+@@ ...period #, tick #, epoch+k*P+offset #
+- 
++ <T1MISS rows>
+@@ ...the gate. [health] sim-dma timeout: measured
+- 553
++ 421
+@@ ...us > declared 400 us, period
+- 2320
++ 2330
+@@ ...period 2320 job aborted; stop took
+- 54
++ 39
+@@ ...超 出 声 明 (timeout): measured
+- 553
++ 421
+@@ ...us > declared 400 us, period
+- 2320;
++ 2330;
+@@ ...us > declared 400 us, period
+- 2320
++ 2330
+@@ ...参 考 ] device jobs: submitted
+- 1034,
++ 970,
+@@ ...] device jobs: submitted 1034, completed
+- 598,
++ 541,
+@@ ...submitted 1034, completed 598, timed out
+- 436
++ 429
+@@ ...and discarded); first timeout in period
+- 2320
++ 2330
+@@ ...would reach the next tier-1 guard
+- 1796,
++ 1569,
+@@ ...3 and caller not Tier 3
+- 32023
++ 32073
+@@ ...Tier 3 32023 abort -> stopped:
+- 436
++ 429
+@@ ...abort -> stopped: 436 aborts, max
+- 54
++ 39
+@@ ...guard 20 us); over the bound
+- 2,
++ 1,
+@@ ...the bound 2, over the guard
+- 2
++ 1
+@@ ...ending after the next tier-1 guard:
+- 0
++ 5
+@@ ...0 device time charged to callers:
+- 21870245
++ 21196221
+@@ ...callers: 21870245 ticks cam-app calls ok
+- 1
++ 0
+@@ ...cam-app calls ok 1 / refused
+- 32023;
++ 32073;
+@@ ...1 / refused 32023; bg-caller ok
+- 597
++ 541
+@@ ...32023; bg-caller ok 597 / refused
+- 2231
++ 1997
+@@ ...tail, deadline moved to 12 ticks:
+- 13
++ 8
+@@ ...超 出 声 明 (timeout measured
+- 553
++ 421
+@@ ...us > declared 400 us, period
+- 2320;
++ 2330;
+@@ ...by the device (its own counter)
+- 125908,
++ 125921,
+@@ ...device (its own counter) 125908, handled
+- 8070,
++ 8048,
+@@ ...125908, handled 8070, not delivered (limited)
+- 117838;
++ 117873;
+@@ ...inside a tier-1 guard or slot:
+- 1
++ 0
+@@ ...min 3000 us): lowest per period
+- 3010
++ 3009
+@@ ...period #, tick #, epoch+k*P+offset #
+- <T1MISS rows>
++ 
+@@ ...超 出 声 明 (timeout): measured
+- 553
++ 421
+@@ ...us > declared 400 us, period
+- 2320;
++ 2330;
+@@ ...stalled #, accesses per period min
+- 152548
++ 152732
+@@ ...accesses per period min 152548 max
+- 165604
++ 200356
+@@ ...(budget 150000); most over the budget
+- 15604
++ 50356
+@@ ...in a period after a stall
+- 152548
++ 152732
+@@ ...152548 cam-app: accesses per period max
+- 397556
++ 392854
+@@ ...超 出 声 明 (timeout): measured
+- 553
++ 421
+@@ ...us > declared 400 us, period
+- 2320;
++ 2330;
+@@ ...64M ok=True Quota OS microkernel Version:
+- 012 (fb77426)
++ 013 (36f3c33)

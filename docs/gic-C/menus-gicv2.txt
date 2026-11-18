@@ -1,0 +1,649 @@
+##### 128M ok=True
+
+Quota OS microkernel
+三级资源声明的教学微内核。保证来自启动前的整机预分配，不来自事后抢占补救。
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB memory 134217728 bytes
+[boot] tier-1 reserved 13312 KB and 1500 us/period
+[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+[boot] CNTFRQ 62500000 Hz, cntpct 3691 -> 4323 us
+[boot] timer latency calibration n=62 mean=21792 ns max=368784 ns advance_ticks=1362
+[boot] tier-1 display-vsync and timer-server are reserved and armed
+[boot] shell task running
+[boot] timer IRQ ok, jiffies=3 now=39087 us
+
+命令（输入数字后回车）:
+  1  资源表：tier 1/2/3 的 CPU 和内存，已用和剩余
+  2  启动一个 tier-2 应用（会先问 allow y/n）
+  3  关闭一个 tier-2 应用（a = 全部关闭）
+  4  跑一次优先级演示（尊重当前的分级开关）
+  5  切换分级：ON 为三级预算服务器，OFF 为普通 1ms 轮转
+  6  失范应用隔离：tier-2 死循环 + tier-3 占 CPU
+  7  启动 Cluster Sim（声明超过本机容量）
+  8  制造内存压力，收回弹性配额
+  10 启动几十个带独立切片的 tier-2 应用
+  h  帮助    q  提示如何退出 QEMU
+select> 1
+
+========== 资源表 / resource table ==========
+检测到的 RAM: 131072 KB (128 MB)，来自设备树/探测
+内核保留:     16384 KB（映像、栈、内核记账，不参与应用分配）
+CPU 周期:     10000 us    分级调度: ON
+内核调度最长一次: 444 us   超过 200us 的次数: 2   跳过的周期: 0   时钟跳动: 86 次/最长 312 us
+
+[Tier 1] 厂商声明，启动时静态保留，不能被抢走
+  timer-server     CPU  300 us  MEM  1024 KB  周期时钟，从上电就开始跑
+    运行中  hits=21  misses_on=0  misses_off=0  max_latency=769 us
+  gic-server       CPU  300 us  MEM  2048 KB  中断路由，只保留配额
+  blk-driver       CPU  400 us  MEM  4096 KB  存储驱动配额（失控驱动演示用它做上限）
+  net-driver       CPU    0 us  MEM  4096 KB  网络驱动，只占内存
+  display-vsync    CPU  500 us  MEM  2048 KB  显示提交，从上电就开始跑
+    运行中  hits=21  misses_on=0  misses_off=0  max_latency=421 us
+  小计             CPU 1500 us  MEM 13312 KB
+
+[Tier 2] 已准入的应用（保底不可被 tier-3 侵占，弹性可收回）
+  (无)
+  已承诺保底 CPU 0 / 8500 us    已承诺保底内存 0 / 101376 KB
+
+[Tier 3] 默认池，没声明就走这里，轮转分享剩余时间
+  剩余可承诺 CPU: 8500 us/period
+  剩余可承诺内存: 101376 KB
+  当前任务: shell
+压力标志: off（置位时弹性 CPU/内存都不再外借）
+==========================================
+保证期统计（分级 ON 期间释放的作业；OFF 期间释放的记进 OFF 对照）:
+  display-vsync  hits=21 misses=0 max_latency=421 us  (OFF 对照 misses=0)
+  timer-server   hits=21 misses=0 max_latency=769 us  (OFF 对照 misses=0)
+定时器中断 jiffies=105
+Tier 1 截止期（延迟从理想周期起点 epoch+k*10000 us 算；跳过的周期、未完成的作业都算错过）:
+T1STAT display-vsync jobs=21 hits=21 misses=0 skipped=0 unfinished=0 lat_p50=48 lat_p99=421 lat_max=421 dispatch_lag_max=262 deadline=800 misses_off=0
+T1HIST display-vsync 36:1 38:1 39:1 41:2 43:1 44:2 47:1 48:2 51:1 52:2 54:1 57:1 83:1 113:1 228:1 276:1 421:1
+T1STAT timer-server jobs=21 hits=21 misses=0 skipped=0 unfinished=0 lat_p50=143 lat_p99=769 lat_max=769 dispatch_lag_max=263 deadline=1500 misses_off=0
+T1HIST timer-server 123:1 128:1 129:2 132:1 136:1 139:1 140:2 141:1 143:2 144:1 152:2 168:1 173:1 245:1 318:1 374:1 769:1
+T1STAT periods=21 period_skips=0 clock_jumps=87 clock_jump_max=312 us skip_events=0
+select> 4
+
+=== 优先级保证 / priority guarantee ===
+模式: tiering ON
+tier-1 display-vsync 每 10000 us 释放，必须在 800 us 内开始。
+同时有 8 个 tier-3 忙等任务 bg-load，它们不声明预算。
+period  latency_us  response_us  deadline_us  result
+   0        343        431        800  OK
+   1        166        252        800  OK
+   2         44        126        800  OK
+   3         30        113        800  OK
+   4         31        113        800  OK
+   5         33        116        800  OK
+   6         26        121        800  OK
+   7         33        115        800  OK
+   8         31        114        800  OK
+   9         30        113        800  OK
+  10         30        113        800  OK
+  11         34        117        800  OK
+summary: samples=12  deadline_misses=0  max_latency=343 us
+window misses=0  max_latency=343 us  jobs=12
+分级打开时，释放 vsync 的同一次中断会立刻把它派上去。
+select> 5
+分级已关闭：OFF (plain fair scheduling)。
+所有就绪任务每 1000 us 轮转一次，tier-1 不再插队，预算笼子也先松开。
+这只用于对照。真正的保证在分级 ON 里。
+select> 4
+
+=== 优先级保证 / priority guarantee ===
+模式: tiering OFF (plain fair scheduling)
+tier-1 display-vsync 每 10000 us 释放，必须在 800 us 内开始。
+同时有 8 个 tier-3 忙等任务 bg-load，它们不声明预算。
+period  latency_us  response_us  deadline_us  result
+   0       8793       8876        800  MISS
+   1       7183       7265        800  MISS
+   2       5263       5345        800  MISS
+   3       3178       3261        800  MISS
+   4       1041       1123        800  MISS
+   5       8031       8113        800  MISS
+   6       6146       6228        800  MISS
+   7       4098       4180        800  MISS
+   8       2273       2355        800  MISS
+   9         20        102        800  OK
+  10       6323       6405        800  MISS
+  11       4128       4210        800  MISS
+summary: samples=12  deadline_misses=11  max_latency=8793 us
+window misses=11  max_latency=8793 us  jobs=12
+分级关闭时，vsync 跟 bg-load 轮转，开始时间经常晚于截止期。
+select> 5
+分级已打开：ON。
+顺序：tier-1 最早截止期，然后 tier-2 保底，然后弹性，最后 tier-3 轮转。
+超过声明预算的任务会被掐断到下一个周期。
+select> 6
+
+=== 失范应用隔离 / misbehaving app containment ===
+场景: bad-driver (tier-1 死循环, 上限 400us), audio-mix (tier-2 守规矩),
+      bad-encoder (tier-2 死循环, 上限 1000us), bg-hog (tier-3 无声明)。
+audio-mix 的响应截止期是 4000 us。vsync 的开始截止期是 800 us。
+period  latency_us  response_us  deadline_us  result
+   0        144        230        800  OK
+   1         61        147        800  OK
+   2         60        143        800  OK
+   3         38        122        800  OK
+   4         79        162        800  OK
+   5         30        113        800  OK
+   6       1359       1443        800  MISS
+   7         29        112        800  OK
+   8         71        163        800  OK
+   9         42        125        800  OK
+  10         65        158        800  OK
+  11         29        112        800  OK
+summary: samples=12  deadline_misses=1  max_latency=1359 us
+tier-1 display-vsync: jobs=12 misses=1 max_latency=1359 us
+tier-1 timer-server:  jobs=12 misses=0 max_latency=1447 us
+tier-2 audio-mix:     jobs=12 misses=0 max_response=2306 us (deadline 4000)
+tier-1 bad-driver:    throttled 12 times, recv_avg 399 us (cap 400, not 10000)
+tier-2 bad-encoder:   throttled 12 times, recv_avg 1000 us (cap 1000, not 10000)
+tier-3 bg-hog:        recv_avg 7770 us（只拿到没人要的剩余时间）
+bad-driver max_recv=407 us/period, bad-encoder max_recv=1007 us/period
+结果: 失范任务被预算笼子掐住（单周期不超过声明预算 + 40us 记账容差）。
+截止期: tier-1 错过 1 次，守规矩的 tier-2 错过 0 次；同一窗口内时钟跳动 21 次、跳过周期 0 个。
+select> 2
+
+可启动的 tier-2 清单（开发者声明，不是现在才现编的）:
+  1) Pixel Racer    内存 8192..20480 KB  CPU 3000+1000 us
+  2) Cinema Play    内存 8192..16384 KB  CPU 3000+500 us
+  3) Studio Cut     内存 8192..24576 KB  CPU 3000+1000 us
+  4) Neural Forge   内存 81920..98304 KB  CPU 1000+0 us
+  5) Cluster Sim    内存 524288..524288 KB  CPU 1000+0 us
+app> 1
+
+--- tier-2 启动请求 ---
+应用: Pixel Racer
+说明: 游戏，保底 3ms/10ms
+保底内存 8192 KB，弹性上限 20480 KB
+保底 CPU 3000 us / 10000 us 周期，弹性 +1000 us
+允许该应用占用上述保底资源? allow> n
+CANCELLED: user denied permission
+应用未启动。
+select> 2
+
+可启动的 tier-2 清单（开发者声明，不是现在才现编的）:
+  1) Pixel Racer    内存 8192..20480 KB  CPU 3000+1000 us
+  2) Cinema Play    内存 8192..16384 KB  CPU 3000+500 us
+  3) Studio Cut     内存 8192..24576 KB  CPU 3000+1000 us
+  4) Neural Forge   内存 81920..98304 KB  CPU 1000+0 us
+  5) Cluster Sim    内存 524288..524288 KB  CPU 1000+0 us
+app> 1
+
+--- tier-2 启动请求 ---
+应用: Pixel Racer
+说明: 游戏，保底 3ms/10ms
+保底内存 8192 KB，弹性上限 20480 KB
+保底 CPU 3000 us / 10000 us 周期，弹性 +1000 us
+允许该应用占用上述保底资源? allow> y
+已启动 Pixel Racer。
+  落入保底内存 8192 KB，另给弹性 12288 KB（压力下会收回）。
+  落入保底 CPU 3000 us/period，弹性上限 +1000 us（有空闲才给）。
+select> 2
+
+可启动的 tier-2 清单（开发者声明，不是现在才现编的）:
+  1) Pixel Racer    内存 8192..20480 KB  CPU 3000+1000 us
+  2) Cinema Play    内存 8192..16384 KB  CPU 3000+500 us
+  3) Studio Cut     内存 8192..24576 KB  CPU 3000+1000 us
+  4) Neural Forge   内存 81920..98304 KB  CPU 1000+0 us
+  5) Cluster Sim    内存 524288..524288 KB  CPU 1000+0 us
+app> 2
+
+--- tier-2 启动请求 ---
+应用: Cinema Play
+说明: 视频播放
+保底内存 8192 KB，弹性上限 16384 KB
+保底 CPU 3000 us / 10000 us 周期，弹性 +500 us
+允许该应用占用上述保底资源? allow> y
+已启动 Cinema Play。
+  落入保底内存 8192 KB，另给弹性 8192 KB（压力下会收回）。
+  落入保底 CPU 3000 us/period，弹性上限 +500 us（有空闲才给）。
+select> 2
+
+可启动的 tier-2 清单（开发者声明，不是现在才现编的）:
+  1) Pixel Racer    内存 8192..20480 KB  CPU 3000+1000 us
+  2) Cinema Play    内存 8192..16384 KB  CPU 3000+500 us
+  3) Studio Cut     内存 8192..24576 KB  CPU 3000+1000 us
+  4) Neural Forge   内存 81920..98304 KB  CPU 1000+0 us
+  5) Cluster Sim    内存 524288..524288 KB  CPU 1000+0 us
+app> 3
+
+--- tier-2 启动请求 ---
+应用: Studio Cut
+说明: 剪辑，用来把 CPU 预算撑满
+保底内存 8192 KB，弹性上限 24576 KB
+保底 CPU 3000 us / 10000 us 周期，弹性 +1000 us
+允许该应用占用上述保底资源? allow> y
+REFUSED: please close Pixel Racer first
+Candidates: Pixel Racer, Cinema Play
+CPU remaining 2500 us/period, need 3000 us/period.
+Memory remaining 84992 KB, need 8192 KB.
+应用未启动。
+select> 3
+
+正在运行:
+  1) Pixel Racer
+  2) Cinema Play
+  a) 全部关闭
+close> 1
+已关闭 Pixel Racer，释放保底内存 8192 KB、CPU 3000 us/period。
+select> 2
+
+可启动的 tier-2 清单（开发者声明，不是现在才现编的）:
+  1) Pixel Racer    内存 8192..20480 KB  CPU 3000+1000 us
+  2) Cinema Play    内存 8192..16384 KB  CPU 3000+500 us
+  3) Studio Cut     内存 8192..24576 KB  CPU 3000+1000 us
+  4) Neural Forge   内存 81920..98304 KB  CPU 1000+0 us
+  5) Cluster Sim    内存 524288..524288 KB  CPU 1000+0 us
+app> 3
+
+--- tier-2 启动请求 ---
+应用: Studio Cut
+说明: 剪辑，用来把 CPU 预算撑满
+保底内存 8192 KB，弹性上限 24576 KB
+保底 CPU 3000 us / 10000 us 周期，弹性 +1000 us
+允许该应用占用上述保底资源? allow> y
+已启动 Studio Cut。
+  落入保底内存 8192 KB，另给弹性 16384 KB（压力下会收回）。
+  落入保底 CPU 3000 us/period，弹性上限 +1000 us（有空闲才给）。
+select> 1
+
+========== 资源表 / resource table ==========
+检测到的 RAM: 131072 KB (128 MB)，来自设备树/探测
+内核保留:     16384 KB（映像、栈、内核记账，不参与应用分配）
+CPU 周期:     10000 us    分级调度: ON
+内核调度最长一次: 444 us   超过 200us 的次数: 2   跳过的周期: 0   时钟跳动: 2036 次/最长 8784 us
+
+[Tier 1] 厂商声明，启动时静态保留，不能被抢走
+  timer-server     CPU  300 us  MEM  1024 KB  周期时钟，从上电就开始跑
+    运行中  hits=449  misses_on=1  misses_off=10  max_latency=9079 us
+  gic-server       CPU  300 us  MEM  2048 KB  中断路由，只保留配额
+  blk-driver       CPU  400 us  MEM  4096 KB  存储驱动配额（失控驱动演示用它做上限）
+  net-driver       CPU    0 us  MEM  4096 KB  网络驱动，只占内存
+  display-vsync    CPU  500 us  MEM  2048 KB  显示提交，从上电就开始跑
+    运行中  hits=447  misses_on=3  misses_off=11  max_latency=1359 us
+  小计             CPU 1500 us  MEM 13312 KB
+
+[Tier 2] 已准入的应用（保底不可被 tier-3 侵占，弹性可收回）
+  Studio Cut       CPU 3000+1000 us  MEM 8192 KB (elastic now 16384 KB)
+  Cinema Play      CPU 3000+500 us  MEM 8192 KB (elastic now 8192 KB)
+  已承诺保底 CPU 6000 / 8500 us    已承诺保底内存 16384 / 101376 KB
+
+[Tier 3] 默认池，没声明就走这里，轮转分享剩余时间
+  剩余可承诺 CPU: 2500 us/period
+  剩余可承诺内存: 84992 KB
+  当前任务: shell
+压力标志: off（置位时弹性 CPU/内存都不再外借）
+==========================================
+保证期统计（分级 ON 期间释放的作业；OFF 期间释放的记进 OFF 对照）:
+  display-vsync  hits=448 misses=3 max_latency=1359 us  (OFF 对照 misses=11)
+  timer-server   hits=450 misses=1 max_latency=9079 us  (OFF 对照 misses=10)
+定时器中断 jiffies=2666
+Tier 1 截止期（延迟从理想周期起点 epoch+k*10000 us 算；跳过的周期、未完成的作业都算错过）:
+T1STAT display-vsync jobs=451 hits=448 misses=3 skipped=0 unfinished=1 lat_p50=52 lat_p99=520 lat_max=1359 dispatch_lag_max=1356 deadline=800 misses_off=11
+T1HIST display-vsync 26:1 29:2 30:4 31:2 32:2 33:5 34:7 35:5 36:9 37:10 38:14 39:16 40:10 41:17 42:11 43:14 44:17 45:14 46:15 47:11 48:10 49:8 50:7 51:6 52:14 53:7 54:6 55:8 56:3 57:8 58:6 59:4 60:9 61:10 62:4 63:6 64:5 65:3 66:1 67:3 69:4 70:2 71:4 72:1 73:5 74:2 75:2 76:1 77:1 78:2 79:3 80:1 81:1 82:2 83:2 84:4 85:1 86:3 87:2 88:3 89:1 91:2 92:3 93:1 98:1 101:1 105:1 106:1 108:1 111:1 112:1 113:1 116:1 117:1 124:1 125:1 138:1 140:1 144:1 151:1 154:1 163:1 164:1 166:1 167:1 177:1 178:1 180:1 186:1 188:1 197:1 210:3 211:1 212:1 219:1 220:1 228:1 232:1 234:1 235:1 236:1 238:1 240:1 243:1 250:1 255:2 257:1 260:1 265:1 268:1 275:1 276:1 282:1 284:1 285:1 292:1 301:1 303:1 305:2 311:1 343:1 356:1 366:1 367:1 370:1 380:1 391:1 394:1 395:2 399:1 400:1 416:1 421:1 426:1 481:1 484:1 496:1 507:1 520:1 522:1 558:1 881:1 1359:1
+T1STAT timer-server jobs=451 hits=450 misses=1 skipped=0 unfinished=0 lat_p50=153 lat_p99=647 lat_max=9079 dispatch_lag_max=1356 deadline=1500 misses_off=10
+T1HIST timer-server 114:1 115:3 116:4 117:1 118:2 119:1 120:4 121:4 122:4 123:4 124:4 125:8 126:7 127:8 128:5 129:7 130:6 131:4 132:9 133:5 134:7 135:6 136:4 137:5 138:5 139:6 140:6 141:9 142:10 143:8 144:5 145:13 146:11 147:5 148:4 149:6 150:6 151:9 152:9 153:9 154:4 155:1 156:10 157:5 158:1 159:4 160:5 161:4 162:3 163:8 164:5 165:6 166:3 167:5 168:6 169:5 170:7 171:2 172:5 173:2 174:4 175:1 176:1 177:2 178:2 179:1 180:2 181:1 182:1 183:4 184:2 186:3 187:1 188:3 189:2 190:1 192:2 194:2 195:2 196:1 197:2 199:1 202:1 205:2 207:1 208:1 209:1 210:1 220:1 222:1 229:1 237:2 241:1 243:1 245:1 247:1 256:1 262:1 266:1 268:1 271:1 281:1 285:2 286:1 295:2 300:1 305:1 309:1 313:1 315:1 316:1 318:2 325:2 329:1 331:1 332:2 341:1 346:3 350:1 352:1 356:2 359:1 373:1 374:1 383:2 391:1 395:1 400:1 401:1 406:1 410:1 446:1 456:1 458:1 460:1 470:1 485:1 486:1 489:2 493:1 503:1 506:1 510:1 519:1 583:1 584:1 586:1 602:1 610:1 613:1 647:1 769:1 973:1 1447:1 9079:1
+T1STAT periods=494 period_skips=0 clock_jumps=2037 clock_jump_max=8784 us skip_events=0
+select> 8
+施加压力前:
+
+========== 资源表 / resource table ==========
+检测到的 RAM: 131072 KB (128 MB)，来自设备树/探测
+内核保留:     16384 KB（映像、栈、内核记账，不参与应用分配）
+CPU 周期:     10000 us    分级调度: ON
+内核调度最长一次: 444 us   超过 200us 的次数: 2   跳过的周期: 0   时钟跳动: 2122 次/最长 8784 us
+
+[Tier 1] 厂商声明，启动时静态保留，不能被抢走
+  timer-server     CPU  300 us  MEM  1024 KB  周期时钟，从上电就开始跑
+    运行中  hits=470  misses_on=1  misses_off=10  max_latency=9079 us
+  gic-server       CPU  300 us  MEM  2048 KB  中断路由，只保留配额
+  blk-driver       CPU  400 us  MEM  4096 KB  存储驱动配额（失控驱动演示用它做上限）
+  net-driver       CPU    0 us  MEM  4096 KB  网络驱动，只占内存
+  display-vsync    CPU  500 us  MEM  2048 KB  显示提交，从上电就开始跑
+    运行中  hits=468  misses_on=3  misses_off=11  max_latency=1359 us
+  小计             CPU 1500 us  MEM 13312 KB
+
+[Tier 2] 已准入的应用（保底不可被 tier-3 侵占，弹性可收回）
+  Studio Cut       CPU 3000+1000 us  MEM 8192 KB (elastic now 16384 KB)
+  Cinema Play      CPU 3000+500 us  MEM 8192 KB (elastic now 8192 KB)
+  已承诺保底 CPU 6000 / 8500 us    已承诺保底内存 16384 / 101376 KB
+
+[Tier 3] 默认池，没声明就走这里，轮转分享剩余时间
+  剩余可承诺 CPU: 2500 us/period
+  剩余可承诺内存: 84992 KB
+  当前任务: shell
+压力标志: off（置位时弹性 CPU/内存都不再外借）
+==========================================
+内存压力：收回弹性配额 24576 KB，保底不动。
+CPU 弹性同样停止出借，调度器只给 tier-2 的保底预算。
+施加压力后:
+
+========== 资源表 / resource table ==========
+检测到的 RAM: 131072 KB (128 MB)，来自设备树/探测
+内核保留:     16384 KB（映像、栈、内核记账，不参与应用分配）
+CPU 周期:     10000 us    分级调度: ON
+内核调度最长一次: 444 us   超过 200us 的次数: 2   跳过的周期: 0   时钟跳动: 2122 次/最长 8784 us
+
+[Tier 1] 厂商声明，启动时静态保留，不能被抢走
+  timer-server     CPU  300 us  MEM  1024 KB  周期时钟，从上电就开始跑
+    运行中  hits=470  misses_on=1  misses_off=10  max_latency=9079 us
+  gic-server       CPU  300 us  MEM  2048 KB  中断路由，只保留配额
+  blk-driver       CPU  400 us  MEM  4096 KB  存储驱动配额（失控驱动演示用它做上限）
+  net-driver       CPU    0 us  MEM  4096 KB  网络驱动，只占内存
+  display-vsync    CPU  500 us  MEM  2048 KB  显示提交，从上电就开始跑
+    运行中  hits=468  misses_on=3  misses_off=11  max_latency=1359 us
+  小计             CPU 1500 us  MEM 13312 KB
+
+[Tier 2] 已准入的应用（保底不可被 tier-3 侵占，弹性可收回）
+  Studio Cut       CPU 3000+1000 us  MEM 8192 KB (elastic now 0 KB)
+  Cinema Play      CPU 3000+500 us  MEM 8192 KB (elastic now 0 KB)
+  已承诺保底 CPU 6000 / 8500 us    已承诺保底内存 16384 / 101376 KB
+
+[Tier 3] 默认池，没声明就走这里，轮转分享剩余时间
+  剩余可承诺 CPU: 2500 us/period
+  剩余可承诺内存: 84992 KB
+  当前任务: shell
+压力标志: ON（置位时弹性 CPU/内存都不再外借）
+==========================================
+压力标志已清除。弹性 CPU 可以再借；已经收回的弹性内存不会自动加回。
+select> 7
+
+--- tier-2 启动请求 ---
+应用: Cluster Sim
+说明: 声明 512MB，超过这台机器
+保底内存 524288 KB，弹性上限 524288 KB
+保底 CPU 1000 us / 10000 us 周期，弹性 +0 us
+REFUSED: device does not meet minimum requirements
+Cluster Sim declares more than the device has.
+  declared minimum memory: 524288 KB
+  detected RAM: 131072 KB
+  available to applications after kernel reserve and tier-1: 101376 KB
+The app cannot run on this device at all.
+应用未启动。
+select> 10
+
+=== 每应用 CPU 切片 / per-app budget servers ===
+REFUSED: please close Studio Cut first
+批量切片要占用整段 tier-2 预算，请先在菜单 3 里关闭已有应用。
+应用未启动。
+select> 3
+
+正在运行:
+  1) Studio Cut
+  2) Cinema Play
+  a) 全部关闭
+close> a
+已关闭全部 tier-2 应用（2 个）。
+select> 3
+没有正在运行的 tier-2 应用。
+select> 10
+
+=== 每应用 CPU 切片 / per-app budget servers ===
+启动 32 个 tier-2 应用，每个是一条预算服务器：200 us / 10000 us。
+虚拟 CPU = 200/10000 = 2.00% of one core。
+它们都会试图占满自己的切片；调度器在预算用完时掐断。
+app      declared_us  recv_avg  periods  under_miss
+app-00           200       195        8           0
+app-01           200       195        8           0
+app-02           200       194        8           0
+app-03           200       199        8           0
+app-04           200       200        8           0
+app-05           200       196        8           0
+app-06           200       197        8           0
+app-07           200       197        8           0
+app-08           200       195        8           0
+app-09           200       196        8           0
+app-10           200       195        8           0
+app-11           200       194        8           0
+app-12           200       194        8           0
+app-13           200       195        8           0
+app-14           200       194        8           0
+app-15           200       194        8           0
+app-16           200       195        8           0
+app-17           200       195        8           0
+app-18           200       195        8           0
+app-19           200       196        8           0
+app-20           200       194        8           0
+app-21           200       194        8           0
+app-22           200       194        8           0
+app-23           200       194        8           0
+app-24           200       194        8           0
+app-25           200       194        8           0
+app-26           200       195        8           0
+app-27           200       195        8           0
+app-28           200       195        8           0
+app-29           200       195        8           0
+app-30           200       194        8           0
+app-31           200       194        8           0
+tier-1 display-vsync during the slice run: jobs=8 misses=0 max_latency=352 us
+TOTAL apps=32  declared_each=200  recv_avg=195  under_miss=0
+sum of declared slices = 6400 us/period, tier-1 reserve stays outside this pool.
+结果: 切片没给够 0 次，tier-1 display-vsync 错过 0 次；同一窗口内时钟跳动 0 次、跳过周期 0 个。
+批量应用已全部关闭，保底额度归还。
+select> 8
+当前没有 tier-2 应用。先用菜单 2 启动一个带弹性内存的应用（例如 Pixel Racer）。
+select> 1
+
+========== 资源表 / resource table ==========
+检测到的 RAM: 131072 KB (128 MB)，来自设备树/探测
+内核保留:     16384 KB（映像、栈、内核记账，不参与应用分配）
+CPU 周期:     10000 us    分级调度: ON
+内核调度最长一次: 444 us   超过 200us 的次数: 2   跳过的周期: 0   时钟跳动: 2787 次/最长 8784 us
+
+[Tier 1] 厂商声明，启动时静态保留，不能被抢走
+  timer-server     CPU  300 us  MEM  1024 KB  周期时钟，从上电就开始跑
+    运行中  hits=641  misses_on=1  misses_off=10  max_latency=9079 us
+  gic-server       CPU  300 us  MEM  2048 KB  中断路由，只保留配额
+  blk-driver       CPU  400 us  MEM  4096 KB  存储驱动配额（失控驱动演示用它做上限）
+  net-driver       CPU    0 us  MEM  4096 KB  网络驱动，只占内存
+  display-vsync    CPU  500 us  MEM  2048 KB  显示提交，从上电就开始跑
+    运行中  hits=639  misses_on=3  misses_off=11  max_latency=1359 us
+  小计             CPU 1500 us  MEM 13312 KB
+
+[Tier 2] 已准入的应用（保底不可被 tier-3 侵占，弹性可收回）
+  (无)
+  已承诺保底 CPU 0 / 8500 us    已承诺保底内存 0 / 101376 KB
+
+[Tier 3] 默认池，没声明就走这里，轮转分享剩余时间
+  剩余可承诺 CPU: 8500 us/period
+  剩余可承诺内存: 101376 KB
+  当前任务: shell
+压力标志: off（置位时弹性 CPU/内存都不再外借）
+==========================================
+保证期统计（分级 ON 期间释放的作业；OFF 期间释放的记进 OFF 对照）:
+  display-vsync  hits=639 misses=3 max_latency=1359 us  (OFF 对照 misses=11)
+  timer-server   hits=641 misses=1 max_latency=9079 us  (OFF 对照 misses=10)
+定时器中断 jiffies=3857
+Tier 1 截止期（延迟从理想周期起点 epoch+k*10000 us 算；跳过的周期、未完成的作业都算错过）:
+T1STAT display-vsync jobs=642 hits=639 misses=3 skipped=0 unfinished=1 lat_p50=54 lat_p99=496 lat_max=1359 dispatch_lag_max=1356 deadline=800 misses_off=11
+T1HIST display-vsync 26:1 29:3 30:4 31:4 32:3 33:6 34:11 35:5 36:13 37:16 38:15 39:22 40:14 41:21 42:15 43:20 44:20 45:19 46:18 47:17 48:13 49:10 50:10 51:9 52:16 53:9 54:7 55:9 56:7 57:11 58:9 59:7 60:10 61:11 62:7 63:7 64:6 65:4 66:3 67:3 69:5 70:2 71:4 72:2 73:5 74:2 75:5 76:2 77:1 78:3 79:3 80:1 81:1 82:3 83:3 84:6 85:1 86:3 87:3 88:4 89:2 91:2 92:3 93:1 95:1 97:1 98:1 100:1 101:1 103:1 105:1 106:1 108:1 111:1 112:1 113:1 115:1 116:1 117:1 119:1 124:1 125:1 134:1 135:1 138:1 140:1 144:1 151:1 154:1 163:3 164:1 166:1 167:1 177:1 178:1 180:1 181:1 184:1 186:1 188:1 189:1 191:1 192:1 193:2 194:1 197:1 202:2 204:2 205:1 207:1 209:2 210:5 211:1 212:2 213:1 216:1 217:1 219:2 220:1 221:1 223:2 224:1 225:2 226:1 228:1 231:1 232:1 233:1 234:6 235:1 236:1 237:1 238:2 240:2 241:1 242:2 243:1 250:1 251:1 252:2 255:2 257:1 258:1 260:1 261:3 265:1 267:1 268:2 270:1 275:1 276:1 277:1 279:1 280:1 282:1 283:1 284:1 285:1 292:1 293:1 301:1 303:1 305:2 310:1 311:1 330:1 336:1 343:1 344:1 352:1 356:1 366:1 367:1 368:1 370:1 380:1 391:1 394:1 395:2 399:1 400:1 416:1 421:1 426:1 466:1 481:1 484:1 489:1 496:1 507:1 520:1 522:1 558:1 881:1 1359:1
+T1STAT timer-server jobs=643 hits=642 misses=1 skipped=0 unfinished=0 lat_p50=154 lat_p99=610 lat_max=9079 dispatch_lag_max=1356 deadline=1500 misses_off=10
+T1HIST timer-server 114:1 115:4 116:4 117:1 118:2 119:4 120:6 121:6 122:5 123:6 124:6 125:8 126:8 127:12 128:5 129:11 130:7 131:5 132:10 133:9 134:10 135:10 136:5 137:10 138:8 139:6 140:6 141:13 142:13 143:9 144:8 145:17 146:17 147:5 148:11 149:7 150:9 151:11 152:10 153:11 154:7 155:2 156:14 157:6 158:2 159:4 160:5 161:4 162:3 163:11 164:7 165:8 166:4 167:5 168:7 169:9 170:7 171:2 172:5 173:4 174:4 175:1 176:1 177:2 178:2 179:1 180:3 181:1 182:2 183:4 184:2 186:5 187:2 188:3 189:2 190:4 192:2 194:3 195:2 196:1 197:2 198:1 199:1 202:1 203:1 205:2 207:1 208:1 209:1 210:2 220:1 222:1 227:2 229:1 235:1 237:2 239:1 241:1 243:1 244:1 245:1 247:1 249:1 256:1 262:1 265:1 266:1 268:1 271:1 279:1 281:2 282:1 284:1 285:2 286:1 289:2 292:1 294:1 295:2 297:1 299:2 300:1 301:1 303:1 305:1 308:1 309:1 310:1 311:1 312:2 313:1 314:1 315:2 316:3 318:4 320:2 322:2 325:2 327:2 329:3 330:1 331:1 332:5 335:2 336:1 337:1 339:2 341:2 344:1 346:3 350:2 352:3 355:1 356:2 357:2 359:1 360:1 365:1 367:1 369:1 373:1 374:1 379:1 380:1 381:1 383:2 391:2 395:1 400:1 401:1 406:1 409:1 410:1 421:1 434:1 446:1 454:1 455:1 456:1 457:1 458:1 460:1 470:1 485:1 486:1 489:2 493:1 503:1 506:1 510:1 519:1 575:1 583:1 584:1 586:1 602:1 607:1 610:1 613:1 647:1 769:1 973:1 1447:1 9079:1
+T1STAT periods=686 period_skips=0 clock_jumps=2788 clock_jump_max=8784 us skip_events=0
+select> x
+未知选项。按 h 看命令。
+select> h
+
+命令（输入数字后回车）:
+  1  资源表：tier 1/2/3 的 CPU 和内存，已用和剩余
+  2  启动一个 tier-2 应用（会先问 allow y/n）
+  3  关闭一个 tier-2 应用（a = 全部关闭）
+  4  跑一次优先级演示（尊重当前的分级开关）
+  5  切换分级：ON 为三级预算服务器，OFF 为普通 1ms 轮转
+  6  失范应用隔离：tier-2 死循环 + tier-3 占 CPU
+  7  启动 Cluster Sim（声明超过本机容量）
+  8  制造内存压力，收回弹性配额
+  10 启动几十个带独立切片的 tier-2 应用
+  h  帮助    q  提示如何退出 QEMU
+select> QEMU: Terminated
+
+
+##### 64M ok=True
+
+Quota OS microkernel
+三级资源声明的教学微内核。保证来自启动前的整机预分配，不来自事后抢占补救。
+[boot] x0=0x42000000 physical RAM span 64 MB (probed)
+[boot] DTB at 0x42000000
+[boot] DTB memory 67108864 bytes
+[boot] tier-1 reserved 13312 KB and 1500 us/period
+[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+[boot] CNTFRQ 62500000 Hz, cntpct 2979 -> 3633 us
+[boot] timer latency calibration n=62 mean=19088 ns max=36544 ns advance_ticks=1193
+[boot] tier-1 display-vsync and timer-server are reserved and armed
+[boot] shell task running
+[boot] timer IRQ ok, jiffies=3 now=38220 us
+
+命令（输入数字后回车）:
+  1  资源表：tier 1/2/3 的 CPU 和内存，已用和剩余
+  2  启动一个 tier-2 应用（会先问 allow y/n）
+  3  关闭一个 tier-2 应用（a = 全部关闭）
+  4  跑一次优先级演示（尊重当前的分级开关）
+  5  切换分级：ON 为三级预算服务器，OFF 为普通 1ms 轮转
+  6  失范应用隔离：tier-2 死循环 + tier-3 占 CPU
+  7  启动 Cluster Sim（声明超过本机容量）
+  8  制造内存压力，收回弹性配额
+  10 启动几十个带独立切片的 tier-2 应用
+  h  帮助    q  提示如何退出 QEMU
+select> 1
+
+========== 资源表 / resource table ==========
+检测到的 RAM: 65536 KB (64 MB)，来自设备树/探测
+内核保留:     16384 KB（映像、栈、内核记账，不参与应用分配）
+CPU 周期:     10000 us    分级调度: ON
+内核调度最长一次: 450 us   超过 200us 的次数: 2   跳过的周期: 0   时钟跳动: 89 次/最长 388 us
+
+[Tier 1] 厂商声明，启动时静态保留，不能被抢走
+  timer-server     CPU  300 us  MEM  1024 KB  周期时钟，从上电就开始跑
+    运行中  hits=21  misses_on=0  misses_off=0  max_latency=1012 us
+  gic-server       CPU  300 us  MEM  2048 KB  中断路由，只保留配额
+  blk-driver       CPU  400 us  MEM  4096 KB  存储驱动配额（失控驱动演示用它做上限）
+  net-driver       CPU    0 us  MEM  4096 KB  网络驱动，只占内存
+  display-vsync    CPU  500 us  MEM  2048 KB  显示提交，从上电就开始跑
+    运行中  hits=21  misses_on=0  misses_off=0  max_latency=674 us
+  小计             CPU 1500 us  MEM 13312 KB
+
+[Tier 2] 已准入的应用（保底不可被 tier-3 侵占，弹性可收回）
+  (无)
+  已承诺保底 CPU 0 / 8500 us    已承诺保底内存 0 / 35840 KB
+
+[Tier 3] 默认池，没声明就走这里，轮转分享剩余时间
+  剩余可承诺 CPU: 8500 us/period
+  剩余可承诺内存: 35840 KB
+  当前任务: shell
+压力标志: off（置位时弹性 CPU/内存都不再外借）
+==========================================
+保证期统计（分级 ON 期间释放的作业；OFF 期间释放的记进 OFF 对照）:
+  display-vsync  hits=21 misses=0 max_latency=674 us  (OFF 对照 misses=0)
+  timer-server   hits=21 misses=0 max_latency=1012 us  (OFF 对照 misses=0)
+定时器中断 jiffies=105
+Tier 1 截止期（延迟从理想周期起点 epoch+k*10000 us 算；跳过的周期、未完成的作业都算错过）:
+T1STAT display-vsync jobs=21 hits=21 misses=0 skipped=0 unfinished=0 lat_p50=75 lat_p99=674 lat_max=674 dispatch_lag_max=444 deadline=800 misses_off=0
+T1HIST display-vsync 35:2 39:2 42:1 47:1 48:1 55:1 59:1 60:1 75:1 96:1 192:1 206:1 227:2 231:1 239:1 265:1 322:1 674:1
+T1STAT timer-server jobs=21 hits=21 misses=0 skipped=0 unfinished=0 lat_p50=174 lat_p99=1012 lat_max=1012 dispatch_lag_max=518 deadline=1500 misses_off=0
+T1HIST timer-server 123:1 127:1 129:1 131:1 134:1 137:1 141:1 145:1 148:1 165:1 174:1 189:1 296:1 314:1 321:1 324:1 338:1 342:1 361:1 418:1 1012:1
+T1STAT periods=21 period_skips=0 clock_jumps=90 clock_jump_max=388 us skip_events=0
+select> 2
+
+可启动的 tier-2 清单（开发者声明，不是现在才现编的）:
+  1) Pixel Racer    内存 8192..20480 KB  CPU 3000+1000 us
+  2) Cinema Play    内存 8192..16384 KB  CPU 3000+500 us
+  3) Studio Cut     内存 8192..24576 KB  CPU 3000+1000 us
+  4) Neural Forge   内存 81920..98304 KB  CPU 1000+0 us
+  5) Cluster Sim    内存 524288..524288 KB  CPU 1000+0 us
+app> 1
+
+--- tier-2 启动请求 ---
+应用: Pixel Racer
+说明: 游戏，保底 3ms/10ms
+保底内存 8192 KB，弹性上限 20480 KB
+保底 CPU 3000 us / 10000 us 周期，弹性 +1000 us
+允许该应用占用上述保底资源? allow> y
+已启动 Pixel Racer。
+  落入保底内存 8192 KB，另给弹性 12288 KB（压力下会收回）。
+  落入保底 CPU 3000 us/period，弹性上限 +1000 us（有空闲才给）。
+select> 2
+
+可启动的 tier-2 清单（开发者声明，不是现在才现编的）:
+  1) Pixel Racer    内存 8192..20480 KB  CPU 3000+1000 us
+  2) Cinema Play    内存 8192..16384 KB  CPU 3000+500 us
+  3) Studio Cut     内存 8192..24576 KB  CPU 3000+1000 us
+  4) Neural Forge   内存 81920..98304 KB  CPU 1000+0 us
+  5) Cluster Sim    内存 524288..524288 KB  CPU 1000+0 us
+app> 4
+
+--- tier-2 启动请求 ---
+应用: Neural Forge
+说明: 声明 80MB，小内存机器装不下
+保底内存 81920 KB，弹性上限 98304 KB
+保底 CPU 1000 us / 10000 us 周期，弹性 +0 us
+REFUSED: device does not meet minimum requirements
+Neural Forge declares more than the device has.
+  declared minimum memory: 81920 KB
+  detected RAM: 65536 KB
+  available to applications after kernel reserve and tier-1: 35840 KB
+The app cannot run on this device at all.
+应用未启动。
+select> 2
+
+可启动的 tier-2 清单（开发者声明，不是现在才现编的）:
+  1) Pixel Racer    内存 8192..20480 KB  CPU 3000+1000 us
+  2) Cinema Play    内存 8192..16384 KB  CPU 3000+500 us
+  3) Studio Cut     内存 8192..24576 KB  CPU 3000+1000 us
+  4) Neural Forge   内存 81920..98304 KB  CPU 1000+0 us
+  5) Cluster Sim    内存 524288..524288 KB  CPU 1000+0 us
+app> 5
+
+--- tier-2 启动请求 ---
+应用: Cluster Sim
+说明: 声明 512MB，超过这台机器
+保底内存 524288 KB，弹性上限 524288 KB
+保底 CPU 1000 us / 10000 us 周期，弹性 +0 us
+REFUSED: device does not meet minimum requirements
+Cluster Sim declares more than the device has.
+  declared minimum memory: 524288 KB
+  detected RAM: 65536 KB
+  available to applications after kernel reserve and tier-1: 35840 KB
+The app cannot run on this device at all.
+应用未启动。
+select> 1
+
+========== 资源表 / resource table ==========
+检测到的 RAM: 65536 KB (64 MB)，来自设备树/探测
+内核保留:     16384 KB（映像、栈、内核记账，不参与应用分配）
+CPU 周期:     10000 us    分级调度: ON
+内核调度最长一次: 450 us   超过 200us 的次数: 2   跳过的周期: 0   时钟跳动: 765 次/最长 2547 us
+
+[Tier 1] 厂商声明，启动时静态保留，不能被抢走
+  timer-server     CPU  300 us  MEM  1024 KB  周期时钟，从上电就开始跑
+    运行中  hits=183  misses_on=0  misses_off=0  max_latency=1012 us
+  gic-server       CPU  300 us  MEM  2048 KB  中断路由，只保留配额
+  blk-driver       CPU  400 us  MEM  4096 KB  存储驱动配额（失控驱动演示用它做上限）
+  net-driver       CPU    0 us  MEM  4096 KB  网络驱动，只占内存
+  display-vsync    CPU  500 us  MEM  2048 KB  显示提交，从上电就开始跑
+    运行中  hits=183  misses_on=0  misses_off=0  max_latency=674 us
+  小计             CPU 1500 us  MEM 13312 KB
+
+[Tier 2] 已准入的应用（保底不可被 tier-3 侵占，弹性可收回）
+  Pixel Racer      CPU 3000+1000 us  MEM 8192 KB (elastic now 12288 KB)
+  已承诺保底 CPU 3000 / 8500 us    已承诺保底内存 8192 / 35840 KB
+
+[Tier 3] 默认池，没声明就走这里，轮转分享剩余时间
+  剩余可承诺 CPU: 5500 us/period
+  剩余可承诺内存: 27648 KB
+  当前任务: shell
+压力标志: off（置位时弹性 CPU/内存都不再外借）
+==========================================
+保证期统计（分级 ON 期间释放的作业；OFF 期间释放的记进 OFF 对照）:
+  display-vsync  hits=183 misses=0 max_latency=674 us  (OFF 对照 misses=0)
+  timer-server   hits=183 misses=0 max_latency=1012 us  (OFF 对照 misses=0)
+定时器中断 jiffies=914
+Tier 1 截止期（延迟从理想周期起点 epoch+k*10000 us 算；跳过的周期、未完成的作业都算错过）:
+T1STAT display-vsync jobs=183 hits=183 misses=0 skipped=0 unfinished=0 lat_p50=83 lat_p99=474 lat_max=674 dispatch_lag_max=471 deadline=800 misses_off=0
+T1HIST display-vsync 13:1 27:1 30:1 33:2 34:1 35:3 36:4 37:2 38:7 39:5 40:2 41:3 42:3 43:4 44:3 45:5 46:1 47:3 48:1 49:1 50:1 51:1 52:2 54:4 55:2 56:1 57:2 59:1 60:2 61:1 62:2 63:2 64:2 66:1 67:1 68:1 69:1 72:1 75:4 76:1 77:1 80:1 82:1 83:3 88:1 95:2 96:1 100:1 101:1 102:1 124:1 137:1 181:1 184:1 188:1 190:2 192:1 197:1 198:1 200:3 201:1 203:2 205:2 206:1 208:1 209:3 210:2 211:2 212:1 213:1 214:1 217:1 218:1 219:1 223:1 224:1 225:1 227:2 229:3 230:1 231:3 232:1 233:1 235:1 236:1 238:1 239:1 240:1 241:1 242:1 244:1 245:1 249:1 250:1 251:1 258:1 259:1 261:1 264:1 265:1 267:1 269:1 275:1 278:1 280:1 282:1 288:1 289:2 292:1 296:1 300:1 318:1 322:1 324:1 338:1 350:1 354:1 474:1 674:1
+T1STAT timer-server jobs=183 hits=183 misses=0 skipped=0 unfinished=0 lat_p50=189 lat_p99=565 lat_max=1012 dispatch_lag_max=518 deadline=1500 misses_off=0
+T1HIST timer-server 103:1 113:1 121:2 123:3 125:4 126:3 127:1 128:2 129:5 130:4 131:2 132:5 133:2 134:4 135:2 137:3 139:2 140:1 141:5 142:1 144:1 145:3 147:1 148:2 150:1 152:5 154:1 155:1 156:1 158:3 159:3 160:2 161:1 165:1 166:1 167:1 169:1 174:1 176:1 177:1 178:1 179:1 183:1 185:1 189:3 198:1 200:2 201:1 207:2 210:1 232:1 236:1 280:1 281:1 285:1 287:1 290:2 293:1 295:1 296:4 298:1 300:2 301:2 303:1 305:2 307:3 310:1 312:1 314:1 315:2 320:2 321:1 322:1 324:1 325:2 326:2 328:2 329:2 331:2 333:2 336:1 337:1 338:2 339:1 340:1 341:1 342:2 343:1 347:1 348:1 350:1 355:1 356:1 361:1 362:1 363:1 368:1 369:1 373:1 379:3 380:1 386:1 392:1 395:1 397:1 416:1 418:1 420:1 429:1 440:1 454:1 565:1 1012:1
+T1STAT periods=183 period_skips=0 clock_jumps=765 clock_jump_max=2547 us skip_events=0
+select> QEMU: Terminated
+

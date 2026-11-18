@@ -1,142 +1,48 @@
 #!/usr/bin/env python3
-"""Drive the serial menu and save the console transcript."""
+"""Drive the serial menu on 128MB and 64MB guests and write docs/demo-output.txt."""
 import os
-import select
-import subprocess
 import sys
-import time
 
-QEMU = [
-    "qemu-system-aarch64",
-    "-machine", "virt,gic-version=2",
-    "-cpu", "cortex-a72",
-    "-nographic", "-nic", "none",
-    "-kernel", "build/quotaos.bin",
-]
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from qemu_serial import Session  # noqa: E402
+from menu_regress import BIG, SMALL  # noqa: E402  same steps as the regression
+
+HEADER = """# Quota OS 演示实录
+
+下面两段都是用 tools/capture_demos.py 驱动 qemu-system-aarch64 实际跑出来的串口记录，不是手写的预期输出。
+计时来自客户机的通用定时器，不是脚本填的数字。
+
+命令：
+
+    qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M -nographic -nic none -kernel build/quotaos.bin
+    qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 64M -nographic -nic none -kernel build/quotaos.bin
+
+"""
 
 
-def run_case(mem, steps, timeout):
-    cmd = QEMU + ["-m", mem]
-    proc = subprocess.Popen(
-        cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-    )
-    buf = b""
-    pos = 0
-
-    def pull(deadline):
-        nonlocal buf
-        while time.time() < deadline:
-            r, _, _ = select.select([proc.stdout], [], [], 0.2)
-            if not r:
-                continue
-            chunk = os.read(proc.stdout.fileno(), 65536)
-            if not chunk:
-                return False
-            buf += chunk
-        return True
-
-    def wait_prompt(token, limit):
-        nonlocal pos
-        deadline = time.time() + limit
-        token_b = token.encode()
-        while time.time() < deadline:
-            idx = buf.find(token_b, pos)
-            if idx >= 0:
-                pos = idx + len(token_b)
-                return True
-            if proc.poll() is not None:
-                return False
-            pull(time.time() + 0.3)
-        return False
-
-    ok = True
-    if not wait_prompt("select> ", 15):
-        ok = False
-    for token, reply, limit in steps:
-        if reply is not None:
-            proc.stdin.write(reply.encode())
-            proc.stdin.flush()
-        if token and not wait_prompt(token, limit):
-            ok = False
-            break
-    proc.stdin.write(b"\x01x")
-    try:
-        proc.stdin.flush()
-    except BrokenPipeError:
-        pass
-    time.sleep(0.3)
-    pull(time.time() + 0.5)
-    proc.kill()
-    proc.wait(timeout=2)
-    return ok, buf.decode("utf-8", "replace")
+def section(title, text):
+    bar = "=" * 80
+    return "%s\n%s\n%s\n%s\n" % (bar, title, bar, text)
 
 
 def main():
-    big_steps = [
-        ("select> ", "1\n", 10),
-        ("select> ", "4\n", 20),   # priority ON
-        ("select> ", "5\n", 10),   # tiering OFF
-        ("select> ", "4\n", 20),   # priority OFF
-        ("select> ", "5\n", 10),   # tiering ON
-        ("select> ", "6\n", 20),   # containment
-        ("app> ", "2\n", 10),
-        ("allow> ", "1\n", 10),
-        ("select> ", "n\n", 10),   # deny Pixel
-        ("app> ", "2\n", 10),
-        ("allow> ", "1\n", 10),
-        ("select> ", "y\n", 10),   # allow Pixel
-        ("app> ", "2\n", 10),
-        ("allow> ", "2\n", 10),
-        ("select> ", "y\n", 10),   # Cinema
-        ("app> ", "2\n", 10),
-        ("allow> ", "3\n", 10),
-        ("select> ", "y\n", 10),   # Studio, expect refuse
-        ("close> ", "3\n", 10),
-        ("select> ", "1\n", 10),   # close Pixel
-        ("app> ", "2\n", 10),
-        ("allow> ", "3\n", 10),
-        ("select> ", "y\n", 10),   # Studio succeeds
-        ("select> ", "1\n", 10),   # table
-        ("select> ", "8\n", 15),   # pressure
-        ("select> ", "7\n", 10),   # Cluster Sim
-        ("close> ", "3\n", 10),
-        ("select> ", "a\n", 10),   # close all
-        ("select> ", "9\n", 60),   # min slice
-        ("select> ", "10\n", 40),  # dozens of slices
-        ("select> ", "1\n", 10),   # final table
-        (None, None, 5),
-    ]
-    small_steps = [
-        ("select> ", "1\n", 10),
-        ("app> ", "2\n", 10),
-        ("allow> ", "1\n", 10),
-        ("select> ", "y\n", 10),   # Pixel should fit
-        ("select> ", "2\n", 10),
-        ("app> ", None, 10),       # wait app prompt then send 4
-    ]
-    # The last step above is awkward. Do Neural Forge as its own exchange.
-    small_steps = [
-        ("select> ", "1\n", 10),
-        ("app> ", "2\n", 10),
-        ("allow> ", "1\n", 10),
-        ("select> ", "y\n", 10),
-        ("app> ", "2\n", 10),
-        ("select> ", "4\n", 10),   # Neural Forge, device refusal, no allow prompt
-        ("select> ", "1\n", 10),
-        (None, None, 5),
-    ]
-
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     os.chdir(root)
-    print("running 128M ...", flush=True)
-    ok128, text128 = run_case("128M", big_steps, 180)
-    open("/tmp/demo128.txt", "w").write(text128)
-    print("128M ok", ok128, "bytes", len(text128))
-    print("running 64M ...", flush=True)
-    ok64, text64 = run_case("64M", small_steps, 30)
-    open("/tmp/demo64.txt", "w").write(text64)
-    print("64M ok", ok64, "bytes", len(text64))
-    if not ok128 or not ok64:
+    kernel = sys.argv[1] if len(sys.argv) > 1 else "build/quotaos.bin"
+    out = sys.argv[2] if len(sys.argv) > 2 else "docs/demo-output.txt"
+    results = []
+    for title, mem, steps in (("场景 A：128MB（普通演示机）", "128M", BIG),
+                              ("场景 B：64MB（-m 64M，模拟旧设备）", "64M", SMALL)):
+        s = Session(kernel, mem)
+        ok = s.run(steps)
+        results.append((title, ok, s.close()))
+        print(mem, "ok" if ok else "FAILED", flush=True)
+    with open(out, "w") as f:
+        f.write(HEADER)
+        for title, _, text in results:
+            f.write(section(title, text))
+    print("wrote", out)
+    if not all(ok for _, ok, _ in results):
         sys.exit(1)
 
 

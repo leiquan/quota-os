@@ -1,0 +1,41 @@
+mode: icount shift=4,sleep=off
+kernel: build/quotaos.bin
+rounds: 30
+
+round 01 ok=True | display-vsync jobs=7257 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7257 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=146 | periods=7257 skips=0 clock_jumps=0
+round 02 ok=True | display-vsync jobs=6964 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=6964 misses=0 skipped=0 unfinished=0 p50=111 p99=119 max=146 | periods=6965 skips=0 clock_jumps=0
+round 03 ok=True | display-vsync jobs=7226 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7226 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=145 | periods=7226 skips=0 clock_jumps=0
+round 04 ok=True | display-vsync jobs=7229 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7229 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=145 | periods=7230 skips=0 clock_jumps=0
+round 05 ok=True | display-vsync jobs=6988 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=6988 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=146 | periods=6988 skips=0 clock_jumps=0
+round 06 ok=True | display-vsync jobs=6700 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=6700 misses=0 skipped=0 unfinished=0 p50=111 p99=119 max=146 | periods=6700 skips=0 clock_jumps=0
+round 07 ok=True | display-vsync jobs=7274 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7275 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=146 | periods=7275 skips=0 clock_jumps=0
+round 08 ok=True | display-vsync jobs=7211 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7211 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=146 | periods=7211 skips=0 clock_jumps=0
+round 09 ok=True | display-vsync jobs=7265 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7265 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=146 | periods=7265 skips=0 clock_jumps=0
+round 10 ok=True | display-vsync jobs=7111 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7112 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=146 | periods=7112 skips=0 clock_jumps=0
+round 11 ok=True | display-vsync jobs=6834 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=6834 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=146 | periods=6834 skips=0 clock_jumps=0
+round 12 ok=True | display-vsync jobs=7227 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7227 misses=0 skipped=0 unfinished=0 p50=111 p99=119 max=145 | periods=7228 skips=0 clock_jumps=0
+round 13 ok=True | display-vsync jobs=7267 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7268 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=146 | periods=7268 skips=0 clock_jumps=0
+round 14 ok=True | display-vsync jobs=7377 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7377 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=145 | periods=7377 skips=0 clock_jumps=0
+round 15 ok=True | display-vsync jobs=7181 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7181 misses=0 skipped=0 unfinished=0 p50=111 p99=119 max=146 | periods=7181 skips=0 clock_jumps=0
+round 16 ok=True | display-vsync jobs=7176 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7176 misses=0 skipped=0 unfinished=0 p50=111 p99=119 max=146 | periods=7176 skips=0 clock_jumps=0
+round 17 ok=True | display-vsync jobs=7182 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=235 | timer-server jobs=7182 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=328 | periods=7182 skips=0 clock_jumps=0
+round 18 ok=True | display-vsync jobs=7385 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7385 misses=0 skipped=0 unfinished=0 p50=111 p99=119 max=146 | periods=7385 skips=0 clock_jumps=0
+round 19 ok=True | display-vsync jobs=6916 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=6916 misses=0 skipped=0 unfinished=0 p50=111 p99=119 max=145 | periods=6916 skips=0 clock_jumps=0
+round 20 ok=True | display-vsync jobs=7153 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7153 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=146 | periods=7153 skips=0 clock_jumps=0
+round 21 ok=True | display-vsync jobs=7037 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=235 | timer-server jobs=7037 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=328 | periods=7037 skips=0 clock_jumps=0
+round 22 ok=True | display-vsync jobs=6762 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=6762 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=146 | periods=6762 skips=0 clock_jumps=0
+round 23 ok=True | display-vsync jobs=7265 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7265 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=146 | periods=7265 skips=0 clock_jumps=0
+round 24 ok=True | display-vsync jobs=6298 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=6298 misses=0 skipped=0 unfinished=0 p50=111 p99=119 max=145 | periods=6298 skips=0 clock_jumps=0
+round 25 ok=True | display-vsync jobs=6713 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=6713 misses=0 skipped=0 unfinished=0 p50=111 p99=119 max=146 | periods=6714 skips=0 clock_jumps=0
+round 26 ok=True | display-vsync jobs=7077 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7077 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=146 | periods=7077 skips=0 clock_jumps=0
+round 27 ok=True | display-vsync jobs=7253 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7253 misses=0 skipped=0 unfinished=0 p50=111 p99=119 max=145 | periods=7253 skips=0 clock_jumps=0
+round 28 ok=True | display-vsync jobs=6774 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=6774 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=145 | periods=6774 skips=0 clock_jumps=0
+round 29 ok=True | display-vsync jobs=7133 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=53 | timer-server jobs=7133 misses=0 skipped=0 unfinished=0 p50=112 p99=119 max=145 | periods=7133 skips=0 clock_jumps=0
+round 30 ok=True | display-vsync jobs=7057 misses=0 skipped=0 unfinished=0 p50=19 p99=26 max=236 | timer-server jobs=7058 misses=0 skipped=0 unfinished=0 p50=111 p99=119 max=330 | periods=7058 skips=0 clock_jumps=0
+
+TOTAL
+display-vsync jobs=212292 misses=0 (skipped=0 unfinished=0) lat_from_ideal p50=19 p99=26 max=236 us deadline=800 us dispatch_lag_max=210 us
+timer-server jobs=212296 misses=0 (skipped=0 unfinished=0) lat_from_ideal p50=112 p99=119 max=330 us deadline=1500 us dispatch_lag_max=211 us
+periods=212300 period_skips=0 clock_jumps=0
+failed_rounds=0
+kernel sha256: 08bdaf40837b058dd2184fe30ab7597755840a938e74290f7771eb5690ce3cae (commit B source)

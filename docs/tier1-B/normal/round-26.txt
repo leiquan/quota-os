@@ -1,0 +1,249 @@
+# cmd: qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -nographic -nic none -m 128M -kernel build/quotaos.bin
+
+Quota OS microkernel
+三级资源声明的教学微内核。保证来自启动前的整机预分配，不来自事后抢占补救。
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB memory 134217728 bytes
+[boot] tier-1 reserved 13312 KB and 1500 us/period
+[boot] CNTFRQ 62500000 Hz, cntpct 2087 -> 2667 us
+[boot] timer latency calibration n=62 mean=30512 ns max=520704 ns advance_ticks=1907
+[boot] tier-1 display-vsync and timer-server are reserved and armed
+[boot] shell task running
+[boot] timer IRQ ok, jiffies=3 now=37956 us
+
+命令（输入数字后回车）:
+  1  资源表：tier 1/2/3 的 CPU 和内存，已用和剩余
+  2  启动一个 tier-2 应用（会先问 allow y/n）
+  3  关闭一个 tier-2 应用（a = 全部关闭）
+  4  跑一次优先级演示（尊重当前的分级开关）
+  5  切换分级：ON 为三级预算服务器，OFF 为普通 1ms 轮转
+  6  失范应用隔离：tier-2 死循环 + tier-3 占 CPU
+  7  启动 Cluster Sim（声明超过本机容量）
+  8  制造内存压力，收回弹性配额
+  10 启动几十个带独立切片的 tier-2 应用
+  h  帮助    q  提示如何退出 QEMU
+select> 1
+
+========== 资源表 / resource table ==========
+检测到的 RAM: 131072 KB (128 MB)，来自设备树/探测
+内核保留:     16384 KB（映像、栈、内核记账，不参与应用分配）
+CPU 周期:     10000 us    分级调度: ON
+内核调度最长一次: 343 us   超过 200us 的次数: 2   跳过的周期: 0   时钟跳动: 91 次/最长 391 us
+
+[Tier 1] 厂商声明，启动时静态保留，不能被抢走
+  timer-server     CPU  300 us  MEM  1024 KB  周期时钟，从上电就开始跑
+    运行中  hits=21  misses_on=0  misses_off=0  max_latency=900 us
+  gic-server       CPU  300 us  MEM  2048 KB  中断路由，只保留配额
+  blk-driver       CPU  400 us  MEM  4096 KB  存储驱动配额（失控驱动演示用它做上限）
+  net-driver       CPU    0 us  MEM  4096 KB  网络驱动，只占内存
+  display-vsync    CPU  500 us  MEM  2048 KB  显示提交，从上电就开始跑
+    运行中  hits=21  misses_on=0  misses_off=0  max_latency=603 us
+  小计             CPU 1500 us  MEM 13312 KB
+
+[Tier 2] 已准入的应用（保底不可被 tier-3 侵占，弹性可收回）
+  (无)
+  已承诺保底 CPU 0 / 8500 us    已承诺保底内存 0 / 101376 KB
+
+[Tier 3] 默认池，没声明就走这里，轮转分享剩余时间
+  剩余可承诺 CPU: 8500 us/period
+  剩余可承诺内存: 101376 KB
+  当前任务: shell
+压力标志: off（置位时弹性 CPU/内存都不再外借）
+==========================================
+保证期统计（分级 ON 期间释放的作业；OFF 期间释放的记进 OFF 对照）:
+  display-vsync  hits=21 misses=0 max_latency=603 us  (OFF 对照 misses=0)
+  timer-server   hits=21 misses=0 max_latency=900 us  (OFF 对照 misses=0)
+定时器中断 jiffies=105
+Tier 1 截止期（延迟从理想周期起点 epoch+k*10000 us 算；跳过的周期、未完成的作业都算错过）:
+T1STAT display-vsync jobs=21 hits=21 misses=0 skipped=0 unfinished=0 lat_p50=56 lat_p99=603 lat_max=603 dispatch_lag_max=453 deadline=800 misses_off=0
+T1HIST display-vsync 35:1 36:1 37:1 38:1 40:3 42:1 44:1 46:1 56:1 57:1 91:1 198:1 202:1 206:1 225:1 245:1 253:1 315:1 603:1
+T1STAT timer-server jobs=21 hits=21 misses=0 skipped=0 unfinished=0 lat_p50=158 lat_p99=900 lat_max=900 dispatch_lag_max=480 deadline=1500 misses_off=0
+T1HIST timer-server 125:1 126:1 127:2 128:1 129:1 134:1 136:1 138:1 153:1 158:1 168:1 189:1 290:1 300:1 306:1 327:1 333:1 357:1 404:1 900:1
+T1STAT periods=21 period_skips=0 clock_jumps=91 clock_jump_max=391 us skip_events=0
+select> 4
+
+=== 优先级保证 / priority guarantee ===
+模式: tiering ON
+tier-1 display-vsync 每 10000 us 释放，必须在 800 us 内开始。
+同时有 8 个 tier-3 忙等任务 bg-load，它们不声明预算。
+period  latency_us  response_us  deadline_us  result
+   0         50        135        800  OK
+   1        192        283        800  OK
+   2         29        112        800  OK
+   3         36        129        800  OK
+   4         33        116        800  OK
+   5         29        119        800  OK
+   6        140        222        800  OK
+   7         26        108        800  OK
+   8         28        112        800  OK
+   9         89        181        800  OK
+  10         26        109        800  OK
+  11        224        317        800  OK
+summary: samples=12  deadline_misses=0  max_latency=224 us
+window misses=0  max_latency=224 us  jobs=12
+分级打开时，释放 vsync 的同一次中断会立刻把它派上去。
+select> 6
+
+=== 失范应用隔离 / misbehaving app containment ===
+场景: bad-driver (tier-1 死循环, 上限 400us), audio-mix (tier-2 守规矩),
+      bad-encoder (tier-2 死循环, 上限 1000us), bg-hog (tier-3 无声明)。
+audio-mix 的响应截止期是 4000 us。vsync 的开始截止期是 800 us。
+period  latency_us  response_us  deadline_us  result
+   0        232        318        800  OK
+   1        163        248        800  OK
+   2        129        219        800  OK
+   3         26        108        800  OK
+   4         32        116        800  OK
+   5         77        161        800  OK
+   6         49        141        800  OK
+   7        278        364        800  OK
+   8        287        370        800  OK
+   9        150        240        800  OK
+  10         42        126        800  OK
+  11        202        286        800  OK
+summary: samples=12  deadline_misses=0  max_latency=287 us
+tier-1 display-vsync: jobs=12 misses=0 max_latency=287 us
+tier-1 timer-server:  jobs=12 misses=0 max_latency=372 us
+tier-2 audio-mix:     jobs=12 misses=0 max_response=1273 us (deadline 4000)
+tier-1 bad-driver:    throttled 12 times, recv_avg 392 us (cap 400, not 10000)
+tier-2 bad-encoder:   throttled 12 times, recv_avg 992 us (cap 1000, not 10000)
+tier-3 bg-hog:        recv_avg 7678 us（只拿到没人要的剩余时间）
+bad-driver max_recv=413 us/period, bad-encoder max_recv=1000 us/period
+结果: 失范任务被预算笼子掐住（单周期不超过声明预算 + 40us 记账容差）。
+截止期: tier-1 错过 0 次，守规矩的 tier-2 错过 0 次；同一窗口内时钟跳动 32 次、跳过周期 0 个。
+select> 10
+
+=== 每应用 CPU 切片 / per-app budget servers ===
+启动 32 个 tier-2 应用，每个是一条预算服务器：200 us / 10000 us。
+虚拟 CPU = 200/10000 = 2.00% of one core。
+它们都会试图占满自己的切片；调度器在预算用完时掐断。
+app      declared_us  recv_avg  periods  under_miss
+app-00           200       191        8           0
+app-01           200       190        8           0
+app-02           200       188        8           0
+app-03           200       197        8           0
+app-04           200       192        8           0
+app-05           200       188        8           0
+app-06           200       185        8           0
+app-07           200       185        8           0
+app-08           200       185        8           0
+app-09           200       187        8           0
+app-10           200       187        8           0
+app-11           200       186        8           0
+app-12           200       187        8           0
+app-13           200       187        8           0
+app-14           200       187        8           0
+app-15           200       186        8           0
+app-16           200       186        8           0
+app-17           200       185        8           0
+app-18           200       186        8           0
+app-19           200       186        8           0
+app-20           200       186        8           0
+app-21           200       185        8           0
+app-22           200       187        8           0
+app-23           200       188        8           0
+app-24           200       187        8           0
+app-25           200       190        8           0
+app-26           200       187        8           0
+app-27           200       188        8           0
+app-28           200       188        8           0
+app-29           200       189        8           0
+app-30           200       190        8           0
+app-31           200       191        8           0
+tier-1 display-vsync during the slice run: jobs=8 misses=0 max_latency=221 us
+TOTAL apps=32  declared_each=200  recv_avg=188  under_miss=0
+sum of declared slices = 6400 us/period, tier-1 reserve stays outside this pool.
+结果: 切片没给够 0 次，tier-1 display-vsync 错过 0 次；同一窗口内时钟跳动 1 次、跳过周期 0 个。
+批量应用已全部关闭，保底额度归还。
+select> 4
+
+=== 优先级保证 / priority guarantee ===
+模式: tiering ON
+tier-1 display-vsync 每 10000 us 释放，必须在 800 us 内开始。
+同时有 8 个 tier-3 忙等任务 bg-load，它们不声明预算。
+period  latency_us  response_us  deadline_us  result
+   0         41        125        800  OK
+   1         27        110        800  OK
+   2         42        127        800  OK
+   3        100        191        800  OK
+   4        168        258        800  OK
+   5         78        163        800  OK
+   6         37        121        800  OK
+   7         34        117        800  OK
+   8         42        126        800  OK
+   9         24        115        800  OK
+  10         32        117        800  OK
+  11         27        112        800  OK
+summary: samples=12  deadline_misses=0  max_latency=168 us
+window misses=0  max_latency=168 us  jobs=12
+分级打开时，释放 vsync 的同一次中断会立刻把它派上去。
+select> 6
+
+=== 失范应用隔离 / misbehaving app containment ===
+场景: bad-driver (tier-1 死循环, 上限 400us), audio-mix (tier-2 守规矩),
+      bad-encoder (tier-2 死循环, 上限 1000us), bg-hog (tier-3 无声明)。
+audio-mix 的响应截止期是 4000 us。vsync 的开始截止期是 800 us。
+period  latency_us  response_us  deadline_us  result
+   0         40        125        800  OK
+   1         26        108        800  OK
+   2         55        140        800  OK
+   3         44        126        800  OK
+   4         28        112        800  OK
+   5         35        118        800  OK
+   6         30        114        800  OK
+   7         45        136        800  OK
+   8         25        108        800  OK
+   9         44        133        800  OK
+  10         45        130        800  OK
+  11        145        236        800  OK
+summary: samples=12  deadline_misses=0  max_latency=145 us
+tier-1 display-vsync: jobs=12 misses=0 max_latency=145 us
+tier-1 timer-server:  jobs=12 misses=0 max_latency=237 us
+tier-2 audio-mix:     jobs=12 misses=0 max_response=1084 us (deadline 4000)
+tier-1 bad-driver:    throttled 12 times, recv_avg 392 us (cap 400, not 10000)
+tier-2 bad-encoder:   throttled 12 times, recv_avg 992 us (cap 1000, not 10000)
+tier-3 bg-hog:        recv_avg 7823 us（只拿到没人要的剩余时间）
+bad-driver max_recv=415 us/period, bad-encoder max_recv=998 us/period
+结果: 失范任务被预算笼子掐住（单周期不超过声明预算 + 40us 记账容差）。
+截止期: tier-1 错过 0 次，守规矩的 tier-2 错过 0 次；同一窗口内时钟跳动 25 次、跳过周期 0 个。
+select> 1
+
+========== 资源表 / resource table ==========
+检测到的 RAM: 131072 KB (128 MB)，来自设备树/探测
+内核保留:     16384 KB（映像、栈、内核记账，不参与应用分配）
+CPU 周期:     10000 us    分级调度: ON
+内核调度最长一次: 343 us   超过 200us 的次数: 2   跳过的周期: 0   时钟跳动: 596 次/最长 2587 us
+
+[Tier 1] 厂商声明，启动时静态保留，不能被抢走
+  timer-server     CPU  300 us  MEM  1024 KB  周期时钟，从上电就开始跑
+    运行中  hits=162  misses_on=0  misses_off=0  max_latency=900 us
+  gic-server       CPU  300 us  MEM  2048 KB  中断路由，只保留配额
+  blk-driver       CPU  400 us  MEM  4096 KB  存储驱动配额（失控驱动演示用它做上限）
+  net-driver       CPU    0 us  MEM  4096 KB  网络驱动，只占内存
+  display-vsync    CPU  500 us  MEM  2048 KB  显示提交，从上电就开始跑
+    运行中  hits=162  misses_on=0  misses_off=0  max_latency=603 us
+  小计             CPU 1500 us  MEM 13312 KB
+
+[Tier 2] 已准入的应用（保底不可被 tier-3 侵占，弹性可收回）
+  (无)
+  已承诺保底 CPU 0 / 8500 us    已承诺保底内存 0 / 101376 KB
+
+[Tier 3] 默认池，没声明就走这里，轮转分享剩余时间
+  剩余可承诺 CPU: 8500 us/period
+  剩余可承诺内存: 101376 KB
+  当前任务: shell
+压力标志: off（置位时弹性 CPU/内存都不再外借）
+==========================================
+保证期统计（分级 ON 期间释放的作业；OFF 期间释放的记进 OFF 对照）:
+  display-vsync  hits=162 misses=0 max_latency=603 us  (OFF 对照 misses=0)
+  timer-server   hits=162 misses=0 max_latency=900 us  (OFF 对照 misses=0)
+定时器中断 jiffies=1067
+Tier 1 截止期（延迟从理想周期起点 epoch+k*10000 us 算；跳过的周期、未完成的作业都算错过）:
+T1STAT display-vsync jobs=162 hits=162 misses=0 skipped=0 unfinished=0 lat_p50=52 lat_p99=336 lat_max=603 dispatch_lag_max=453 deadline=800 misses_off=0
+T1HIST display-vsync 24:1 25:1 26:5 27:2 28:2 29:2 30:1 31:1 32:4 33:4 34:1 35:3 36:5 37:11 38:4 39:4 40:5 41:3 42:6 43:1 44:6 45:3 46:1 47:1 49:1 50:2 52:1 53:3 55:1 56:1 57:3 59:1 63:2 67:2 69:1 77:1 78:1 81:1 82:1 83:1 88:1 89:1 91:1 94:1 95:2 100:1 117:1 123:1 129:1 135:1 139:1 140:1 145:1 150:1 151:1 163:1 167:1 168:1 169:1 177:1 183:1 191:1 192:1 198:1 200:1 201:2 202:2 206:2 208:1 213:2 220:1 221:1 222:1 224:1 225:2 232:1 237:1 238:1 244:2 245:1 253:1 257:1 261:1 266:1 278:1 287:1 290:1 295:1 310:1 315:1 318:1 323:1 330:1 336:1 603:1
+T1STAT timer-server jobs=162 hits=162 misses=0 skipped=0 unfinished=0 lat_p50=145 lat_p99=426 lat_max=900 dispatch_lag_max=480 deadline=1500 misses_off=0
+T1HIST timer-server 110:4 111:1 112:1 113:1 114:2 115:1 116:1 117:1 118:2 119:3 120:2 121:5 122:1 123:3 124:2 125:3 126:7 127:5 128:5 129:4 130:1 131:3 132:1 133:3 134:2 135:1 136:2 137:1 138:3 139:4 141:2 142:1 143:2 145:1 147:2 149:1 150:2 151:1 153:1 156:2 158:1 163:1 164:1 165:1 168:2 173:1 179:1 182:1 183:1 189:1 190:1 191:1 193:1 195:1 197:1 198:1 214:1 220:1 221:1 223:1 226:1 236:1 237:1 241:1 242:1 251:1 255:1 260:1 271:1 273:1 278:1 279:1 286:1 288:2 290:1 296:1 300:2 301:1 303:1 305:1 306:1 308:1 309:1 310:1 312:1 319:1 321:1 323:1 326:1 327:1 329:1 333:1 339:1 347:1 352:1 354:1 357:1 359:1 366:1 372:1 378:1 383:1 404:1 406:1 407:1 412:1 418:1 426:1 900:1
+T1STAT periods=162 period_skips=0 clock_jumps=596 clock_jump_max=2587 us skip_events=0
+select> QEMU: Terminated
+

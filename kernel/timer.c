@@ -1,8 +1,11 @@
-/* ARM 通用定时器，EL1 物理定时器 CNTP_*。频率从 CNTFRQ_EL0 读，不写死。 */
+/*
+ * ARM 通用定时器，EL1 虚拟定时器 CNTV_*（PPI 27）。频率从 CNTFRQ_EL0 读。
+ * 调度器只写绝对比较值 CNTV_CVAL：周期起点 + 槽偏移，或运行起点 + 剩余预算。
+ * 写 CVAL 的那一步在 boot/vectors.S 的出口里，紧挨着 eret。
+ */
 #include "quotaos.h"
 
 static uint64_t cntfrq;
-static volatile uint64_t jiffies;
 
 static inline uint64_t rd_cntfrq(void)
 {
@@ -11,11 +14,10 @@ static inline uint64_t rd_cntfrq(void)
     return v;
 }
 
-static inline uint64_t rd_cntpct(void)
+uint64_t ticks_now(void)
 {
     uint64_t v;
-    asm volatile("isb");
-    asm volatile("mrs %0, cntpct_el0" : "=r"(v));
+    asm volatile("mrs %0, cntvct_el0" : "=r"(v) :: "memory");
     return v;
 }
 
@@ -24,58 +26,10 @@ void timer_init(void)
     cntfrq = rd_cntfrq();
     if (cntfrq == 0)
         cntfrq = 62500000;
+    uint64_t far = ~0ull;
+    asm volatile("msr cntv_cval_el0, %0" :: "r"(far));
     uint64_t ctl = 1; /* ENABLE, IMASK=0 */
-    asm volatile("msr cntp_ctl_el0, %0" :: "r"(ctl));
-    timer_arm_us(2000);
-}
-
-uint64_t timer_arm_ticks(uint64_t ticks)
-{
-    if (ticks < 1)
-        ticks = 1;
-    if (ticks > 0x7fffffff)
-        ticks = 0x7fffffff;
-    asm volatile("msr cntp_tval_el0, %0" :: "r"(ticks));
-    asm volatile("isb");
-    return ticks;
-}
-
-uint64_t timer_arm_us(uint64_t us)
-{
-    uint64_t ticks = (us * cntfrq) / 1000000ull;
-    return timer_arm_ticks(ticks);
-}
-
-uint64_t timer_read_pct(void)
-{
-    uint64_t v;
-    asm volatile("mrs %0, cntpct_el0" : "=r"(v));
-    return v;
-}
-
-uint64_t timer_read_cval(void)
-{
-    uint64_t v;
-    asm volatile("mrs %0, cntp_cval_el0" : "=r"(v));
-    return v;
-}
-
-int64_t timer_ticks_to_ns(int64_t ticks)
-{
-    uint64_t f = cntfrq ? cntfrq : 62500000ull;
-    int neg = ticks < 0;
-    uint64_t t = neg ? (uint64_t)(-ticks) : (uint64_t)ticks;
-    uint64_t ns = (t / f) * 1000000000ull + ((t % f) * 1000000000ull) / f;
-    if (ns > 0x7fffffff)
-        ns = 0x7fffffff;
-    return neg ? -(int64_t)ns : (int64_t)ns;
-}
-
-uint64_t now_us(void)
-{
-    uint64_t pct = rd_cntpct();
-    uint64_t f = cntfrq;
-    return (pct / f) * 1000000ull + ((pct % f) * 1000000ull) / f;
+    asm volatile("msr cntv_ctl_el0, %0; isb" :: "r"(ctl));
 }
 
 uint64_t timer_freq(void)
@@ -83,19 +37,24 @@ uint64_t timer_freq(void)
     return cntfrq;
 }
 
-uint64_t timer_jiffies(void)
+uint64_t us_to_ticks(uint64_t us)
 {
-    return jiffies;
+    return (us * cntfrq) / 1000000ull;
 }
 
-void timer_note_irq(void)
+uint64_t ticks_to_us(uint64_t t)
 {
-    jiffies++;
+    return (t / cntfrq) * 1000000ull + ((t % cntfrq) * 1000000ull) / cntfrq;
 }
 
-void busy_us(uint32_t us)
+uint64_t now_us(void)
 {
-    uint64_t end = now_us() + us;
-    while (now_us() < end)
+    return ticks_to_us(ticks_now());
+}
+
+void busy_ticks(uint64_t t)
+{
+    uint64_t start = ticks_now();
+    while (ticks_now() - start < t)
         asm volatile("" ::: "memory");
 }

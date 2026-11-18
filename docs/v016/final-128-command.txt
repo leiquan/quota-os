@@ -1,0 +1,5 @@
+label: final-128
+image_sha256: 8dbd8a40329c16a2c7c5de704cb1ea5c5ffc9abb9867977818b69f81aa18c95a
+utc: 2026-11-17T06:06:57Z
+command:
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M -nographic -nic none -kernel /workspace/build/quotaos.bin

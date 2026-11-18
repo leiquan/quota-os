@@ -1,0 +1,87 @@
+[mmu] tables ready
+[mmu] identity map on, EL1. RAM 0x40000000-0x48000000, devices 0x08000000-0x0c000000
+[mmu] one kernel address space. Not separate user processes. Not completed three-tier isolation.
+[mmu] protect none-fault=1 read=1 write-fault=1 rw=1
+
+Quota OS microkernel
+Version: 016 (f6d58fd)
+基于三级资源声明的微内核，
+保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] EL1 SPSel=1 SCTLR_EL1.M=1
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB snapshot 7540 bytes (header said 1048576)
+[boot] DTB memory 134217728 bytes
+[boot] system reserve 350 us/period, 16384 KB;
+       tier-1 1500 us/period, 13312 KB; guard 80 us/period
+[boot] webkit admission: structure reservation 65536 KB; system reserve 16384 KB includes the framebuffer; tier-1 declarations unchanged (13312 KB, 1500 us)
+[boot] cache colors: 32 (model: 2 MB 16-way cache, 4 KB pages);
+       tier-1 pages in 11 own colors, padding 3584 KB
+[boot] kernel image+bss 14640 KB of the 16384 KB system reserve
+[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] clock: host time (not icount; timings are reference only)
+[boot] simulated device IRQ line: EL1 physical timer, PPI 30
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 2500000, period 625000 ticks, guard 1250 ticks
+[boot] shell task running
+[dev] 3 new simulated devices start in Tier 3; verifying
+      (8 jobs, 8 aborts each, IRQs masked, before the next guard)
+[dev] sim-dma: job 396/400 us, stop 18/20 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-blk: job 1991/2000 us, stop 1770/2000 us (measured/declared)
+      [非 icount，仅供参考]
+[dev] sim-cam: job 291/300 us, stop 7/30 us (measured/declared)
+      [非 icount，仅供参考]
+[fb] reserved 1228800 bytes at 0x40ed4000 inside the system reserve
+[webkit] autostart on the Tier-3 shell task
+[webkit] app mem capacity 32256 KB
+[webkit] inspected 4d967f4ca7bd tag WebKit-7625.2.8.18.3
+[webkit] that tree's WPE project version is 2.53.3
+[webkit] engine linked: no
+[webkit] WebCore is not linked
+[webkit] unfinished: no QuotaOS port in WebKit ALL_PORTS
+[webkit] unfinished: WebCore is not linked
+[webkit] unfinished: OSAllocatorPOSIX uses mmap, mprotect, guard pages
+[webkit] unfinished: wkalloc does not grant executable or guard pages
+[wk] refuse executable 4096 bytes
+[wk] refuse 1 guard pages
+[wk] reserved 4096 bytes at 0x40ed3000 in system reserve
+[webkit] OSAllocator probe exec -1 guard -1 plain 0
+[webkit] commit 0 protect-ro -1 cxx 42
+[webkit] unfinished: WPE needs ICU, libxml2, sqlite, harfbuzz, png, jpeg, webp
+[webkit] unfinished: WPE also needs glib, libsoup, epoxy, and a UI process
+[webkit] unfinished: virtio EV_KEY is not a PlatformKeyboardEvent
+[webkit] unfinished: a contiguous app heap would use Tier-1 colors
+[fb] reserve surface 640x480 at 0x40ed4000
+[fb] self-test checksum 0xfffda800 (not a WebKit paint)
+[fb] etc/ramfb not in fw_cfg (9 files)
+[input] virtio-mmio nodes 32
+[input] no virtio-input (id 18)
+[jsc] arena 0x46000000 33554432 bytes
+[jsc] layout pool 0x41000000 <= structure 0x44000000 < arena 0x46000000-0x48000000
+[boot] ranges image 0x40080000-0x40ecc190 fb 0x40ed4000-0x41000000 pool 0x41000000-0x44000000 structure 0x44000000-0x48000000 arena 0x46000000-0x48000000
+[boot] reservation overlap 0; framebuffer 1200 KB stays inside the 16384 KB system reserve
+[jsc] constructors 5
+[jsc] mmap addr 0x0 len 8589934592 prot 0x3 flags 0x4022
+[jsc] mmap refused len 8589934592 used 1888
+[jsc] mmap addr 0x0 len 4294967296 prot 0x3 flags 0x4022
+[jsc] mmap refused len 4294967296 used 1888
+[jsc] mmap addr 0x0 len 2147483648 prot 0x3 flags 0x4022
+[jsc] mmap refused len 2147483648 used 1888
+[jsc] mmap addr 0x0 len 1073741824 prot 0x3 flags 0x4022
+[jsc] mmap refused len 1073741824 used 1888
+[jsc] mmap addr 0x0 len 536870912 prot 0x3 flags 0x4022
+[jsc] mmap refused len 536870912 used 1888
+[jsc] mmap addr 0x0 len 268435456 prot 0x3 flags 0x4022
+[jsc] mmap refused len 268435456 used 1888
+[jsc] mmap addr 0x0 len 134217728 prot 0x3 flags 0x4022
+[jsc] mmap refused len 134217728 used 1888
+[jsc] mmap addr 0x0 len 67108864 prot 0x3 flags 0x4022
+[jsc] structure window 0x44000000 67108864 bytes
+[jsc] mmap addr 0x0 len 5242880 prot 0x3 flags 0x4022
+[jsc] mmap ok 0x46025000 5242880
+[jsc] entropy is CNTVCT, not cryptographic
+[jsc] 1+2 -> number 3000/1000 icu 0
+[jsc] 'ab'+'c' -> string [abc] icu 0
+[jsc] guest PASS

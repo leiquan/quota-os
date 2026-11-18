@@ -1,0 +1,264 @@
+@@ ...128M ok=True Quota OS microkernel Version:
+- 013 (36f3c33)
++ 014 (7065679)
+@@ ...[dev] sim-dma: job 396/400 us, stop
+- 18/20
++ 16/20
+@@ ...己 的 缓 存 颜 色
+- 
++ 18 IPC 余 量 ： 用 过 余 量 的 调 用 者 本 周 期 新 调 用 扣 到 下 个 周 期
+@@ ...period #, tick #, epoch+k*P+offset #
+- 
++ <T1MISS rows>
+@@ ...period #, tick #, epoch+k*P+offset #
+- 
++ <T1MISS rows>
+@@ ...yes 400 5 20 | 396
+- 18
++ 16
+@@ ...us of device work each. calls
+- 3075;
++ 3259;
+@@ ...kernel during the calls: driver running
+- 39336724
++ 42059451
+@@ ...39336724 ticks + IPC kernel path
+- 349402
++ 466403
+@@ ...IPC kernel path 349402 ticks =
+- 39686126
++ 42525854
+@@ ...39686126 ticks; caller budgets dropped by
+- 39686126
++ 42525854
+@@ ...dropped by 39686126 ticks longest call
+- 26214
++ 31305
+@@ ...total (none to the system reserve):
+- 1047594
++ 1252773
+@@ ...reserve): 1047594 ticks = in-call window
+- 349490
++ 466489
+@@ ...window 349490 + entry and queueing
+- 130248
++ 185024
+@@ ...and queueing 130248 + reply return
+- 567856
++ 601260
+@@ ...130248 + reply return 567856 (sum
+- 1047594)
++ 1252773)
+@@ ...window (per-period budgets): caller budget drops
+- 40349728
++ 43126949
+@@ ...budget drops 40349728 = driver run
+- 39319757
++ 41896550
+@@ ...= driver run 39319757 + in-call
+- 341388
++ 457533
+@@ ...39319757 + in-call 341388 + entry
+- 130248
++ 182285
+@@ ...341388 + entry 130248 + reply
+- 558335
++ 590581
+@@ ...entry 130248 + reply 558335 =
+- 40349728;
++ 43126949;
+@@ ...windows (ticks): cumulative: from stats reset
+- 1320571345
++ 1313157510
+@@ ...from stats reset 1320571345 to read
+- 1445633168
++ 1438771824
+@@ ...1320571345 to read 1445633168 per-period: periods
+- 2108..2307,
++ 2100..2299,
+@@ ...read 1445633168 per-period: periods 2108..2307, ticks
+- 1320625000..1445625000
++ 1313750000..1438750000
+@@ ...window after cumulative err driver run
+- 32024 39319757
++ 164362 41896550
+@@ ...err driver run 32024 39319757 0
+- 39351781
++ 42060912
+@@ ...32024 39319757 0 39351781 0 in-call
+- 8102 341388
++ 8956 457533
+@@ ...39351781 0 in-call 8102 341388 0
+- 349490
++ 466489
+@@ ...8102 341388 0 349490 0 entry
+- 
++ 2739 182285
+@@ ...341388 0 349490 0 entry 0
+- 130248 0 130248
++ 185024
+@@ ...0 130248 0 130248 0 reply
+- 9521 558335
++ 10679 590581
+@@ ...130248 0 reply 9521 558335 0
+- 567856
++ 601260
+@@ ...0 driver run per replied call
+- 39336724
++ 42059451
+@@ ...per replied call 39336724 = charged
+- 39351781
++ 42060912
+@@ ...calls still open at the end
+- 15057;
++ 1461;
+@@ ...us = 7500 ticks per period):
+- 5
++ 15
+@@ ...ticks per period): 5 times, total
+- 3133,
++ 6149,
+@@ ...period): 5 times, total 3133, max
+- 904
++ 714
+@@ ...904 ticks; most in one period
+- 904;
++ 714;
+@@ ...904; charged to the system reserve:
+- 
++ 0 caller-periods with a draw 15, with draws in both the guaranteed and the suggested pass 0; new calls held to the next period 0, released at the next period start
+@@ ...timing incl. preemption (reference only): total
+- 119672300
++ 119897427
+@@ ...period #, tick #, epoch+k*P+offset #
+- <T1MISS rows>
++ 
+@@ ...the gate. [health] sim-dma timeout: measured
+- 421
++ 432
+@@ ...us > declared 400 us, period
+- 2330
++ 2321
+@@ ...period 2330 job aborted; stop took
+- 39
++ 40
+@@ ...超 出 声 明 (timeout): measured
+- 421
++ 432
+@@ ...us > declared 400 us, period
+- 2330;
++ 2321;
+@@ ...3, ALARM [health] sim-dma timeout: measured
+- 426
++ 430
+@@ ...us > declared 400 us, period
+- 2330
++ 2321
+@@ ...period 2330 job aborted; stop took
+- 6
++ 7
+@@ ...参 考 ] device jobs: submitted
+- 970,
++ 1088,
+@@ ...] device jobs: submitted 970, completed
+- 541,
++ 609,
+@@ ...submitted 970, completed 541, timed out
+- 429
++ 479
+@@ ...and discarded); first timeout in period
+- 2330
++ 2321
+@@ ...would reach the next tier-1 guard
+- 1569,
++ 1397,
+@@ ...3 and caller not Tier 3
+- 32073
++ 29628
+@@ ...Tier 3 32073 abort -> stopped:
+- 429
++ 479
+@@ ...abort -> stopped: 429 aborts, max
+- 39
++ 40
+@@ ...ending after the next tier-1 guard:
+- 5
++ 15
+@@ ...0 device time charged to callers:
+- 21196221
++ 23565255
+@@ ...callers: 21196221 ticks cam-app calls ok
+- 0
++ 1
+@@ ...cam-app calls ok 0 / refused
+- 32073;
++ 29642;
+@@ ...0 / refused 32073; bg-caller ok
+- 541
++ 608
+@@ ...32073; bg-caller ok 541 / refused
+- 1997
++ 1861
+@@ ...tail, deadline moved to 12 ticks:
+- 8
++ 12
+@@ ...超 出 声 明 (timeout measured
+- 421
++ 432
+@@ ...us > declared 400 us, period
+- 2330;
++ 2321;
+@@ ...by the device (its own counter)
+- 125921,
++ 125838,
+@@ ...device (its own counter) 125921, handled
+- 8048,
++ 8018,
+@@ ...125921, handled 8048, not delivered (limited)
+- 117873;
++ 117820;
+@@ ...period #, tick #, epoch+k*P+offset #
+- 
++ <T1MISS rows>
+@@ ...超 出 声 明 (timeout): measured
+- 421
++ 432
+@@ ...us > declared 400 us, period
+- 2330;
++ 2321;
+@@ ...stalled #, accesses per period min
+- 152732
++ 152504
+@@ ...accesses per period min 152732 max
+- 200356
++ 165732
+@@ ...(budget 150000); most over the budget
+- 50356
++ 15732
+@@ ...in a period after a stall
+- 152732
++ 152504
+@@ ...152732 cam-app: accesses per period max
+- 392854
++ 396922
+@@ ...stalled 0; CPU per period min
+- 3009
++ 3003
+@@ ...(QEMU has no cache model) select>
+- 
++ 18 === 18 对 照 ： 不 扣 住 新 调 用 （ v013 的 做 法 ） === cam-app asks Tier 2 CPU 3000 us + IPC headroom 120 us CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0 + this 3120 = 5050 <= 10000 OK: admitted hud-app asks Tier 2 CPU 1500 us + IPC headroom 120 us CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0 + admitted before 3120 + this 1620 = 6670 <= 10000 OK: admitted cam-app (tier 2, min 3000 us, suggested 1000 us), hud-app (tier 2, min 1500 us, suggested 500 us) and bg-caller (tier 3) call sim-dma-drv for 5..60 us of device work each. calls 26277; measured by the kernel during the calls: driver running 58481355 ticks + IPC kernel path 1569881 ticks = 60051236 ticks; caller budgets dropped by 60051236 ticks longest call 21702 ticks; max |drop - measured| per call: 0 ticks IPC kernel path charged to callers in total (none to the system reserve): 8476016 ticks = in-call window 1569975 + entry and queueing 3673379 + reply return 3232662 (sum 8476016) whole window (per-period budgets): caller budget drops 66918662 = driver run 58446884 + in-call 1569239 + entry 3671317 + reply 3231222 = 66918662; error 0 ticks counting windows (ticks): cumulative: from stats reset 1892456986 to read 2017513416 per-period: periods 3026..3225, ticks 1892500000..2017500000 part before window after cumulative err driver run 34471 58446884 0 58481355 0 in-call 736 1569239 0 1569975 0 entry 2062 3671317 0 3673379 0 reply 1440 3231222 0 3232662 0 driver run per replied call 58481355 = charged 58481355 + ran before reset in calls open then 0 - ran in 1 calls still open at the end 0; error 0 ticks IPC kernel path past the end of a tier-2 caller's budget, taken from its admitted IPC headroom (120 us = 7500 ticks per period): 157 times, total 31212, max 693 ticks; most in one period 1174; charged to the system reserve: 0 caller-periods with a draw 136, with draws in both the guaranteed and the suggested pass 21; new calls held to the next period 0, released at the next period start 0 driver's own budget used during the window: 0 ticks driver's own wall-clock timing incl. preemption (reference only): total 94296563 ticks Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start) task slot jobs miss start_min start_max jitter lat_max display-vsync # # # # # # # timer-server # # # # # # # display-vsync last release: period #, tick #, epoch+k*P+offset # timer-server last release: period #, tick #, epoch+k*P+offset # misses: class a (clock jump) #, class b (kernel) #, skipped periods # kernel per period: max # avg # ticks, reserve #, over # timer IRQ entry - CVAL: min # max # ticks (n=#) kernel entry -> eret (no slot wait): min # max # ticks slot guard: path max # ticks, slack min # ticks of # (n=#) wait loop exit late by #/#/#/># ticks: #/#/#/# clock jumps: #, total # us deadline already past at eret: # times, max # ticks; pick time -> eret max # ticks (margin #); tier-# budget overrun max # ticks (# times) budget left < exit tail, deadline moved to 12 ticks: 4 times === 18 IPC 余 量 ： 用 过 余 量 的 调 用 者 本 周 期 新 调 用 扣 到 下 个 周 期 === cam-app asks Tier 2 CPU 3000 us + IPC headroom 120 us CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0 + this 3120 = 5050 <= 10000 OK: admitted hud-app asks Tier 2 CPU 1500 us + IPC headroom 120 us CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0 + admitted before 3120 + this 1620 = 6670 <= 10000 OK: admitted cam-app (tier 2, min 3000 us, suggested 1000 us), hud-app (tier 2, min 1500 us, suggested 500 us) and bg-caller (tier 3) call sim-dma-drv for 5..60 us of device work each. calls 26288; measured by the kernel during the calls: driver running 58604557 ticks + IPC kernel path 1707362 ticks = 60311919 ticks; caller budgets dropped by 60311919 ticks longest call 19992 ticks; max |drop - measured| per call: 0 ticks IPC kernel path charged to callers in total (none to the system reserve): 8273663 ticks = in-call window 1707360 + entry and queueing 3330515 + reply return 3235788 (sum 8273663) whole window (per-period budgets): caller budget drops 66878308 = driver run 58604914 + in-call 1707360 + entry 3330246 + reply 3235788 = 66878308; error 0 ticks counting windows (ticks): cumulative: from stats reset 2018073727 to read 2143127448 per-period: periods 3227..3426, ticks 2018125000..2143125000 part before window after cumulative err driver run 0 58604914 0 58604914 0 in-call 0 1707360 0 1707360 0 entry 269 3330246 0 3330515 0 reply 0 3235788 0 3235788 0 driver run per replied call 58604557 = charged 58604914 + ran before reset in calls open then 2279 - ran in 1 calls still open at the end 2636; error 0 ticks IPC kernel path past the end of a tier-2 caller's budget, taken from its admitted IPC headroom (120 us = 7500 ticks per period): 123 times, total 28572, max 1877 ticks; most in one period 1877; charged to the system reserve: 0 caller-periods with a draw 123, with draws in both the guaranteed and the suggested pass 0; new calls held to the next period 81, released at the next period start 81 driver's own budget used during the window: 0 ticks driver's own wall-clock timing incl. preemption (reference only): total 97533951 ticks Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start) task slot jobs miss start_min start_max jitter lat_max display-vsync # # # # # # # timer-server # # # # # # # display-vsync last release: period #, tick #, epoch+k*P+offset # timer-server last release: period #, tick #, epoch+k*P+offset # <T1MISS rows> misses: class a (clock jump) #, class b (kernel) #, skipped periods # kernel per period: max # avg # ticks, reserve #, over # timer IRQ entry - CVAL: min # max # ticks (n=#) kernel entry -> eret (no slot wait): min # max # ticks slot guard: path max # ticks, slack min # ticks of # (n=#) wait loop exit late by #/#/#/># ticks: #/#/#/# clock jumps: #, total # us deadline already past at eret: # times, max # ticks; pick time -> eret max # ticks (margin #); tier-# budget overrun max # ticks (# times) budget left < exit tail, deadline moved to 12 ticks: 8 times select>
+@@ ...超 出 声 明 (timeout): measured
+- 421
++ 432
+@@ ...us > declared 400 us, period
+- 2330;
++ 2321;
+@@ ...己 的 缓 存 颜 色
+- 
++ 18 IPC 余 量 ： 用 过 余 量 的 调 用 者 本 周 期 新 调 用 扣 到 下 个 周 期
+@@ ...64M ok=True Quota OS microkernel Version:
+- 013 (36f3c33)
++ 014 (7065679)
+@@ ...己 的 缓 存 颜 色
+- 
++ 18 IPC 余 量 ： 用 过 余 量 的 调 用 者 本 周 期 新 调 用 扣 到 下 个 周 期

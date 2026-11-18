@@ -1,0 +1,17 @@
+=== 1 verbatim diff: 2 lines removed, 2 lines added ===
+--- docs/accept-v014/e1-icount-gicv3.txt
++++ docs/accept-v015/e1-icount-gicv3.txt
+@@ -3 +3 @@
+-Version: 014 (7065679)
++Version: 015 (559daed)
+@@ -13 +13 @@
+-[boot] kernel image+bss 553 KB of the 16384 KB system reserve
++[boot] kernel image+bss 562 KB of the 16384 KB system reserve
+
+=== 2 numbers-masked diff (every digit run -> #): 1 lines removed, 1 lines added ===
+--- docs/accept-v014/e1-icount-gicv3.txt
++++ docs/accept-v015/e1-icount-gicv3.txt
+@@ -3 +3 @@
+-Version: # (#)
++Version: # (#daed)
+

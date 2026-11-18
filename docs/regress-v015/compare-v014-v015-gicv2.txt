@@ -1,0 +1,1226 @@
+=== 1 verbatim diff: 322 lines removed, 502 lines added ===
+--- docs/regress-v014/menus-v014-gicv2.txt
++++ docs/regress-v015/menus-v015-gicv2.txt
+@@ -4 +4 @@
+-Version: 014 (7065679)
++Version: 015 (559daed)
+@@ -14 +14 @@
+-[boot] kernel image+bss 553 KB of the 16384 KB system reserve
++[boot] kernel image+bss 562 KB of the 16384 KB system reserve
+@@ -20 +20 @@
+-[boot] slot table from tick 1250000, period 625000 ticks, guard 1250 ticks
++[boot] slot table from tick 1875000, period 625000 ticks, guard 1250 ticks
+@@ -28 +28 @@
+-[dev] sim-cam: job 291/300 us, stop 8/30 us (measured/declared)
++[dev] sim-cam: job 295/300 us, stop 8/30 us (measured/declared)
+@@ -63 +63,6 @@
+-  measured since boot: max 102666 ticks/period (period 0 of 18)
++  measured since boot: max 95029 ticks/period (period 0 of 20)
++  that period ran menu 0; kernel ticks by entry (count):
++    timer IRQ 79106 (10), slot guard wait 5333 (1),
++    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 10590 (2);
++    of which period-boundary work 0, waits for a deadline 0
++    reserve 21875, margin -73154
+@@ -68,2 +73,2 @@
+-  display-vsync     0      1000    500          91      409   2048
+-  timer-server      1      3500    300          86      214   1024
++  display-vsync     0      1000    500          90      410   2048
++  timer-server      1      3500    300          68      232   1024
+@@ -199 +204,6 @@
+-  measured since boot: max 102666 ticks/period (period 0 of 365)
++  measured since boot: max 95029 ticks/period (period 0 of 369)
++  that period ran menu 0; kernel ticks by entry (count):
++    timer IRQ 79106 (10), slot guard wait 5333 (1),
++    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 10590 (2);
++    of which period-boundary work 0, waits for a deadline 0
++    reserve 21875, margin -73154
+@@ -204,2 +214,2 @@
+-  display-vsync     0      1000    500         113      387   2048
+-  timer-server      1      3500    300          86      214   1024
++  display-vsync     0      1000    500         121      379   2048
++  timer-server      1      3500    300          70      230   1024
+@@ -288,17 +298,19 @@
+-  display-vsync     0    200     1        135      30811   30676    21499
+-  timer-server      1    200     1        148      10319   10171    12867
+-  display-vsync last release: period 732, tick 458812500,
+-    epoch+k*P+offset 458812500
+-  timer-server last release: period 732, tick 458968750,
+-    epoch+k*P+offset 458968750
+-T1MISS task=display-vsync period=611 reason=unfinished start_t=30811
+-  lat_t=33086 lat_us=529 deadline_us=500 J_us=1454 class=a
+-T1MISS task=timer-server period=653 reason=not_started start_t=-1
+-  lat_t=26878 lat_us=430 deadline_us=300 J_us=1164 class=a
+-misses: class a (clock jump) 2, class b (kernel) 0, skipped periods 0
+-kernel per period: max 38251 avg 5041 ticks, reserve 21875, over 2
+-timer IRQ entry - CVAL: min 609 max 31531 ticks (n=2736)
+-kernel entry -> eret (no slot wait): min 96 max 15810 ticks
+-slot guard: path max 855 ticks, slack min 0 ticks of 1250 (n=223)
+-wait loop exit late by 0/1/2/>2 ticks: 30/25/36/132
+-clock jumps: 1242, total 69896 us
++  display-vsync     0    200     1        173      22370   22197    27576
++  timer-server      1    200     2        175      13453   13278    16000
++  display-vsync last release: period 736, tick 461937500,
++    epoch+k*P+offset 461937500
++  timer-server last release: period 736, tick 462093750,
++    epoch+k*P+offset 462093750
++T1MISS task=display-vsync period=577 reason=not_started start_t=-1
++  lat_t=213411 lat_us=3414 deadline_us=500 J_us=6850 class=a
++T1MISS task=timer-server period=577 reason=not_started start_t=-1
++  lat_t=57161 lat_us=914 deadline_us=300 J_us=6850 class=a
++T1MISS task=timer-server period=578 reason=not_started start_t=-1
++  lat_t=22915 lat_us=366 deadline_us=300 J_us=9260 class=a
++misses: class a (clock jump) 3, class b (kernel) 0, skipped periods 0
++kernel per period: max 25053 avg 7250 ticks, reserve 21875, over 1
++timer IRQ entry - CVAL: min 659 max 230835 ticks (n=2730)
++kernel entry -> eret (no slot wait): min 96 max 10647 ticks
++slot guard: path max 1136 ticks, slack min 0 ticks of 1250 (n=91)
++wait loop exit late by 0/1/2/>2 ticks: 6/5/5/75
++clock jumps: 1560, total 110004 us
+@@ -306 +318 @@
+-  pick time -> eret max 1715 ticks (margin 500); tier-2 budget
++  pick time -> eret max 1452 ticks (margin 700); tier-2 budget
+@@ -309,2 +321,2 @@
+-结果: Tier 1 错过 2 次，起点抖动 30676 tick，
+-  槽内 Tier 2/3 共 563198 tick。
++结果: Tier 1 错过 3 次，起点抖动 22197 tick，
++  槽内 Tier 2/3 共 807540 tick。
+@@ -315,2 +327,2 @@
+-bad-driver per period: min 0 max 36834 ticks, slot 25000 ticks
+-cut by the slot-end timer: IRQ entry at most 67423 ticks after slot end
++bad-driver per period: min 24104 max 26550 ticks, slot 25000 ticks
++cut by the slot-end timer: IRQ entry at most 121142 ticks after slot end
+@@ -319,6 +331,6 @@
+-  display-vsync     0    200     0        160      13463   13303    18507
+-  timer-server      1    200     1        156       1842    1686     4386
+-  display-vsync last release: period 953, tick 596937500,
+-    epoch+k*P+offset 596937500
+-  timer-server last release: period 953, tick 597093750,
+-    epoch+k*P+offset 597093750
++  display-vsync     0    200     0        170      18218   18048    23267
++  timer-server      1    200     1        167       3464    3297     6012
++  display-vsync last release: period 957, tick 600062500,
++    epoch+k*P+offset 600062500
++  timer-server last release: period 957, tick 600218750,
++    epoch+k*P+offset 600218750
+@@ -326 +338 @@
+-  lat_t=66173 lat_us=1058 deadline_us=300 J_us=2036 class=a
++  lat_t=21721 lat_us=347 deadline_us=300 J_us=482 class=a
+@@ -330,5 +342,5 @@
+-     0 display-vsync   62500  31250        5231 23066   519583
+-     1 timer-server   218750  18750        2704 15713    23752
+-     2 (empty)        375000  18750           0 18517    36957
+-     3 bad-driver     500000  25000       24313     0    67596
+-Tier 2/3 ticks inside any Tier 1 slot: 647888 (in 210 runs)
++     0 display-vsync   62500  31250        5239 25159    97394
++     1 timer-server   218750  18750        2721 15568    37437
++     2 (empty)        375000  18750           0 18214    84029
++     3 bad-driver     500000  25000       24846     0     6788
++Tier 2/3 ticks inside any Tier 1 slot: 225648 (in 142 runs)
+@@ -336 +348 @@
+-结果: bad-driver 每周期最多 36834 tick（槽长 25000）；
++结果: bad-driver 每周期最多 26550 tick（槽长 25000）；
+@@ -346,5 +358,5 @@
+-     0 display-vsync   62500  31250        5215 24743   196211
+-     1 timer-server   218750  18750        2680 13991   351674
+-     2 (empty)        375000  18750           0 16897   316371
+-     3 (empty)        500000  25000           0 23621   209071
+-Tier 2/3 ticks inside any Tier 1 slot: 1073327 (in 404 runs)
++     0 display-vsync   62500  31250        5344 25005    68862
++     1 timer-server   218750  18750        2790 13388   420135
++     2 (empty)        375000  18750           0 14381   789191
++     3 (empty)        500000  25000           0 22846   368638
++Tier 2/3 ticks inside any Tier 1 slot: 1646826 (in 663 runs)
+@@ -353,2 +365,2 @@
+-  greedy-app      1000    6000      7007     7032     7570      0
+-结果: 空出来的槽时间全部空转，Tier 2/3 在槽内 1073327 tick。
++  greedy-app      1000    6000      7006     7053     8968      0
++结果: 空出来的槽时间全部空转，Tier 2/3 在槽内 1646826 tick。
+@@ -361,2 +373,2 @@
+-  app-A           2000    1000      3009     3053     3379      0
+-  app-B           2000    2000      4000     4024     4250      0
++  app-A           2000    1000      3006     3028     3239      0
++  app-B           2000    2000      4000     4025     4223      0
+@@ -366,4 +378,4 @@
+-  app-A           2000    1000      2001     2027     2225      0
+-  app-B           2000    2000      2001     2024     2277      0
+-结果: 无压力时最少拿到 3009/4000 us，有压力时 2001/2001 us；
+-  低于最低值的周期 0 个。
++  app-A           2000    1000         0     1652     2284     37
++  app-B           2000    2000         0     1656     2421     37
++结果: 无压力时最少拿到 3006/4000 us，有压力时 0/0 us；
++  低于最低值的周期 74 个。
+@@ -376,7 +388,11 @@
+-  display-vsync     0    200     0        162      10753   10591    15798
+-  timer-server      1    200     0        160      11336   11176    13906
+-  display-vsync last release: period 1817, tick 1136937500,
+-    epoch+k*P+offset 1136937500
+-  timer-server last release: period 1817, tick 1137093750,
+-    epoch+k*P+offset 1137093750
+-misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
++  display-vsync     0    200     1        150      25439   25289    30481
++  timer-server      1    200     1        163       7432    7269     9994
++  display-vsync last release: period 5834, tick 3648187500,
++    epoch+k*P+offset 3648187500
++  timer-server last release: period 5834, tick 3648343750,
++    epoch+k*P+offset 3648343750
++T1MISS task=display-vsync period=5662 reason=not_started start_t=-1
++  lat_t=201947 lat_us=3231 deadline_us=500 J_us=8339 class=a
++T1MISS task=timer-server period=5662 reason=not_started start_t=-1
++  lat_t=45697 lat_us=731 deadline_us=300 J_us=8339 class=a
++misses: class a (clock jump) 2, class b (kernel) 0, skipped periods 0
+@@ -384,3 +400,3 @@
+-  game            2000    1000      3011     3022     3476      0
+-  audio-mix: jobs 200, misses 0, worst response 517 us (deadline 4000 us)
+-tier-3 per loop: avg 97..199 us/period, all 32 together 4805 us
++  game            2000    1000      3011     3024     3226      0
++  audio-mix: jobs 200, misses 1, worst response 4727 us (deadline 4000 us)
++tier-3 per loop: avg 130..188 us/period, all 32 together 4821 us
+@@ -389,5 +405,5 @@
+-     0 display-vsync   62500  31250        5216 25527    37632
+-     1 timer-server   218750  18750        2721 15646    27545
+-     2 (empty)        375000  18750           0 18336    47620
+-     3 (empty)        500000  25000           0 24505    40259
+-Tier 2/3 ticks inside any Tier 1 slot: 153056 (in 203 runs)
++     0 display-vsync   62500  31250        5233 25232    85781
++     1 timer-server   218750  18750        2754 15428    48301
++     2 (empty)        375000  18750           0 17253   241660
++     3 (empty)        500000  25000           0 24294   111068
++Tier 2/3 ticks inside any Tier 1 slot: 486810 (in 223 runs)
+@@ -395,6 +411,6 @@
+-kernel per period: max 11055 avg 5669 ticks, reserve 21875, over 0
+-timer IRQ entry - CVAL: min 626 max 70114 ticks (n=2798)
+-kernel entry -> eret (no slot wait): min 103 max 2586 ticks
+-slot guard: path max 380 ticks, slack min 0 ticks of 1250 (n=269)
+-wait loop exit late by 0/1/2/>2 ticks: 41/31/30/167
+-clock jumps: 1356, total 81638 us
++kernel per period: max 11556 avg 6442 ticks, reserve 21875, over 0
++timer IRQ entry - CVAL: min 631 max 515697 ticks (n=2772)
++kernel entry -> eret (no slot wait): min 96 max 5083 ticks
++slot guard: path max 377 ticks, slack min 0 ticks of 1250 (n=233)
++wait loop exit late by 0/1/2/>2 ticks: 27/29/22/155
++clock jumps: 1405, total 82884 us
+@@ -402,2 +418,2 @@
+-  pick time -> eret max 543 ticks (margin 500); tier-2 budget
+-  overrun max 29791 ticks (400 times)
++  pick time -> eret max 1202 ticks (margin 700); tier-2 budget
++  overrun max 14337 ticks (400 times)
+@@ -405,3 +421,3 @@
+-结果: Tier 1 错过 0 次，起点抖动 11176 tick，
+-  槽内 Tier 2/3 共 153056 tick。
+-结果: Tier 2 低于最低值 0 个周期，audio-mix 错过 0 次。
++结果: Tier 1 错过 2 次，起点抖动 25289 tick，
++  槽内 Tier 2/3 共 486810 tick。
++结果: Tier 2 低于最低值 0 个周期，audio-mix 错过 1 次。
+@@ -413,4 +429,4 @@
+-bad-driver  avg 404 max 428 us/period (slot 400)
+-bad-encoder avg 1026 max 3715 us/period (min 1000, no suggested)
+-bad-t3 avg 3403 us/period, polite-t3 avg 3456 us/period
+-  audio-mix: jobs 200, misses 1, worst response 2105 us (deadline 4000 us)
++bad-driver  avg 413 max 599 us/period (slot 400)
++bad-encoder avg 1018 max 1112 us/period (min 1000, no suggested)
++bad-t3 avg 3380 us/period, polite-t3 avg 3444 us/period
++  audio-mix: jobs 200, misses 0, worst response 624 us (deadline 4000 us)
+@@ -419,17 +435,11 @@
+-  display-vsync     0    200     2        152      24293   24141    29339
+-  timer-server      1    200     2        144       4452    4308     7033
+-  display-vsync last release: period 2038, tick 1275062500,
+-    epoch+k*P+offset 1275062500
+-  timer-server last release: period 2038, tick 1275218750,
+-    epoch+k*P+offset 1275218750
+-T1MISS task=display-vsync period=1941 reason=skipped lat_us=-
+-  deadline_us=500 J_us=13055 covered=yes uncovered_us=0 class=a
+-T1MISS task=timer-server period=1941 reason=skipped lat_us=-
+-  deadline_us=300 J_us=13055 covered=yes uncovered_us=0 class=a
+-T1MISS task=display-vsync period=1942 reason=not_started start_t=-1
+-  lat_t=69097 lat_us=1105 deadline_us=500 J_us=11429 class=a
+-T1MISS task=timer-server period=1942 reason=not_started start_t=-1
+-  lat_t=145554 lat_us=2328 deadline_us=300 J_us=14145 class=a
+-misses: class a (clock jump) 4, class b (kernel) 0, skipped periods 3
+-Tier 2/3 ticks inside tier-1 slots: 375294
+-结果: 守规矩的 Tier 1 错过 4 次，audio-mix 错过 1 次；
++  display-vsync     0    200     0        136      14380   14244    19472
++  timer-server      1    200     1        132       9250    9118    11799
++  display-vsync last release: period 6055, tick 3786312500,
++    epoch+k*P+offset 3786312500
++  timer-server last release: period 6055, tick 3786468750,
++    epoch+k*P+offset 3786468750
++T1MISS task=timer-server period=6006 reason=not_started start_t=-1
++  lat_t=81122 lat_us=1297 deadline_us=300 J_us=2364 class=a
++misses: class a (clock jump) 1, class b (kernel) 0, skipped periods 0
++Tier 2/3 ticks inside tier-1 slots: 157012
++结果: 守规矩的 Tier 1 错过 1 次，audio-mix 错过 0 次；
+@@ -449 +459 @@
+-  sim-cam      yes       yes     300      5         30 |     291         8 us
++  sim-cam      yes       yes     300      5         30 |     295         8 us
+@@ -507,4 +517,4 @@
+-calls 3259; measured by the kernel during the calls:
+-  driver running 42059451 ticks + IPC kernel path 466403 ticks
+-  = 42525854 ticks; caller budgets dropped by 42525854 ticks
+-  longest call 31305 ticks; max |drop - measured| per call: 0 ticks
++calls 3146; measured by the kernel during the calls:
++  driver running 40262531 ticks + IPC kernel path 416468 ticks
++  = 40678999 ticks; caller budgets dropped by 40678999 ticks
++  longest call 27581 ticks; max |drop - measured| per call: 0 ticks
+@@ -512,7 +522,7 @@
+-  reserve): 1252773 ticks
+-    = in-call window 466489 + entry and queueing 185024
+-    + reply return 601260 (sum 1252773)
+-  whole window (per-period budgets): caller budget drops 43126949
+-    = driver run 41896550 + in-call 457533
+-    + entry 182285 + reply 590581
+-    = 43126949; error 0 ticks
++  reserve): 1153887 ticks
++    = in-call window 416465 + entry and queueing 174679
++    + reply return 562743 (sum 1153887)
++  whole window (per-period budgets): caller budget drops 41407320
++    = driver run 40255403 + in-call 416465
++    + entry 172709 + reply 562743
++    = 41407320; error 0 ticks
+@@ -520,2 +530,2 @@
+-    cumulative: from stats reset 1313157510 to read 1438771824
+-    per-period: periods 2100..2299, ticks 1313750000..1438750000
++    cumulative: from stats reset 3824650558 to read 3950008175
++    per-period: periods 6117..6316, ticks 3825000000..3950000000
+@@ -523,7 +533,7 @@
+-  driver run   164362   41896550          0    42060912    0
+-  in-call        8956     457533          0      466489    0
+-  entry          2739     182285          0      185024    0
+-  reply         10679     590581          0      601260    0
+-  driver run per replied call 42059451 = charged 42060912
+-    + ran before reset in calls open then 0 - ran in 1 calls
+-    still open at the end 1461; error 0 ticks
++  driver run        0   40255403          0    40255403    0
++  in-call           0     416465          0      416465    0
++  entry          1970     172709          0      174679    0
++  reply             0     562743          0      562743    0
++  driver run per replied call 40262531 = charged 40255403
++    + ran before reset in calls open then 13010 - ran in 1 calls
++    still open at the end 5882; error 0 ticks
+@@ -532 +542 @@
+-    15 times, total 6149, max 714 ticks; most in one period 714;
++    11 times, total 7306, max 4619 ticks; most in one period 4619;
+@@ -534 +544 @@
+-  caller-periods with a draw 15, with draws in both the guaranteed
++  caller-periods with a draw 11, with draws in both the guaranteed
+@@ -536,0 +547,2 @@
++  caller-periods with 2 or more draws 0; forwarded calls 0,
++  replied 0
+@@ -539 +551 @@
+-  total 119897427 ticks
++  total 118673998 ticks
+@@ -542,6 +554,6 @@
+-  display-vsync     0    200     0        146       4011    3865     9097
+-  timer-server      1    200     0        151       2351    2200     5013
+-  display-vsync last release: period 2300, tick 1438812500,
+-    epoch+k*P+offset 1438812500
+-  timer-server last release: period 2300, tick 1438968750,
+-    epoch+k*P+offset 1438968750
++  display-vsync     0    200     0        175      10194   10019    15240
++  timer-server      1    200     0        173      11720   11547    14270
++  display-vsync last release: period 6317, tick 3950062500,
++    epoch+k*P+offset 3950062500
++  timer-server last release: period 6317, tick 3950218750,
++    epoch+k*P+offset 3950218750
+@@ -549,6 +561,6 @@
+-kernel per period: max 14499 avg 6692 ticks, reserve 21875, over 0
+-timer IRQ entry - CVAL: min 270 max 43055 ticks (n=1939)
+-kernel entry -> eret (no slot wait): min 114 max 5345 ticks
+-slot guard: path max 1181 ticks, slack min 0 ticks of 1250 (n=256)
+-wait loop exit late by 0/1/2/>2 ticks: 32/25/31/168
+-clock jumps: 1171, total 108895 us
++kernel per period: max 15573 avg 7473 ticks, reserve 21875, over 0
++timer IRQ entry - CVAL: min 265 max 38325 ticks (n=1927)
++kernel entry -> eret (no slot wait): min 120 max 4509 ticks
++slot guard: path max 1555 ticks, slack min 0 ticks of 1250 (n=135)
++wait loop exit late by 0/1/2/>2 ticks: 15/14/10/96
++clock jumps: 1500, total 130873 us
+@@ -556,3 +568,3 @@
+-  pick time -> eret max 2546 ticks (margin 500); tier-2 budget
+-  overrun max 9735 ticks (192 times)
+-  budget left < exit tail, deadline moved to 12 ticks: 0 times
++  pick time -> eret max 5325 ticks (margin 700); tier-2 budget
++  overrun max 4896 ticks (193 times)
++  budget left < exit tail, deadline moved to 12 ticks: 1 times
+@@ -570,4 +582,4 @@
+-[health] sim-dma timeout: measured 432 us > declared 400 us, period 2321
+-  job aborted; stop took 40 us (declared bound 20 us) [非 icount，仅供参考]
+-[health] sim-dma 实测超出声明 (timeout): measured 432 us > declared 400 us,
+-  period 2321; sim-dma demoted to Tier 3 [非 icount，仅供参考]
++[health] sim-dma timeout: measured 434 us > declared 400 us, period 6338
++  job aborted; stop took 46 us (declared bound 20 us) [非 icount，仅供参考]
++[health] sim-dma 实测超出声明 (timeout): measured 434 us > declared 400 us,
++  period 6338; sim-dma demoted to Tier 3 [非 icount，仅供参考]
+@@ -578,3 +590,3 @@
+-[health] sim-dma timeout: measured 430 us > declared 400 us, period 2321
+-  job aborted; stop took 7 us (declared bound 20 us) [非 icount，仅供参考]
+-device jobs: submitted 1088, completed 609, timed out 479
++[health] sim-dma timeout: measured 429 us > declared 400 us, period 6338
++  job aborted; stop took 3 us (declared bound 20 us) [非 icount，仅供参考]
++device jobs: submitted 1034, completed 558, timed out 476
+@@ -582 +594 @@
+-  period 2321
++  period 6338
+@@ -584,4 +596,4 @@
+-  guard 1397, device in Tier 3 and caller not Tier 3 29628
+-abort -> stopped: 479 aborts, max 40 us (declared bound 20 us,
+-  CPU guard 20 us); over the bound 1, over the guard 1
+-device jobs or aborts ending after the next tier-1 guard: 15
++  guard 1418, device in Tier 3 and caller not Tier 3 28956
++abort -> stopped: 476 aborts, max 46 us (declared bound 20 us,
++  CPU guard 20 us); over the bound 2, over the guard 2
++device jobs or aborts ending after the next tier-1 guard: 0
+@@ -589,2 +601,2 @@
+-device time charged to callers: 23565255 ticks
+-cam-app calls ok 1 / refused 29642; bg-caller ok 608 / refused 1861
++device time charged to callers: 22742796 ticks
++cam-app calls ok 0 / refused 28957; bg-caller ok 558 / refused 1893
+@@ -593,6 +605,6 @@
+-  display-vsync     0    200     0         83       2018    1935     7120
+-  timer-server      1    200     0        177        689     512     3232
+-  display-vsync last release: period 2522, tick 1577562500,
+-    epoch+k*P+offset 1577562500
+-  timer-server last release: period 2522, tick 1577718750,
+-    epoch+k*P+offset 1577718750
++  display-vsync     0    200     0         86       1634    1548     6739
++  timer-server      1    200     0        180       1094     914     3642
++  display-vsync last release: period 6539, tick 4088812500,
++    epoch+k*P+offset 4088812500
++  timer-server last release: period 6539, tick 4088968750,
++    epoch+k*P+offset 4088968750
+@@ -600,10 +612,10 @@
+-kernel per period: max 11698 avg 7396 ticks, reserve 21875, over 0
+-timer IRQ entry - CVAL: min 151 max 28222 ticks (n=1725)
+-kernel entry -> eret (no slot wait): min 109 max 1722 ticks
+-slot guard: path max 2673 ticks, slack min 0 ticks of 1250 (n=396)
+-wait loop exit late by 0/1/2/>2 ticks: 52/61/60/223
+-clock jumps: 1326, total 99800 us
+-deadline already past at eret: 0 times, max 0 ticks;
+-  pick time -> eret max 10120 ticks (margin 500); tier-2 budget
+-  overrun max 854 ticks (76 times)
+-  budget left < exit tail, deadline moved to 12 ticks: 12 times
++kernel per period: max 13771 avg 7912 ticks, reserve 21875, over 0
++timer IRQ entry - CVAL: min 169 max 32812 ticks (n=1740)
++kernel entry -> eret (no slot wait): min 124 max 4326 ticks
++slot guard: path max 1341 ticks, slack min 152 ticks of 1250 (n=399)
++wait loop exit late by 0/1/2/>2 ticks: 55/56/66/222
++clock jumps: 1536, total 98380 us
++deadline already past at eret: 1 times, max 314 ticks;
++  pick time -> eret max 3578 ticks (margin 700); tier-2 budget
++  overrun max 1324 ticks (118 times)
++  budget left < exit tail, deadline moved to 12 ticks: 9 times
+@@ -614,2 +626,2 @@
+-  missing: 实测超出声明 (timeout measured 432 us > declared 400 us,
+-    period 2321; device demoted to Tier 3)
++  missing: 实测超出声明 (timeout measured 434 us > declared 400 us,
++    period 6338; device demoted to Tier 3)
+@@ -623,5 +635,5 @@
+-IRQs raised by the device (its own counter) 125838, handled 8018,
+-  not delivered (limited) 117820; most handled in one period 40
+-  (limit 40); line masked for the rest of a period 202 times
+-device IRQs taken inside a tier-1 guard or slot: 0
+-cam-app (tier 2, min 3000 us): lowest per period 3009 us
++IRQs raised by the device (its own counter) 125916, handled 8013,
++  not delivered (limited) 117903; most handled in one period 40
++  (limit 40); line masked for the rest of a period 201 times
++device IRQs taken inside a tier-1 guard or slot: 1
++cam-app (tier 2, min 3000 us): lowest per period 3010 us
+@@ -630,10 +642,10 @@
+-  display-vsync     0    200     1        167      28855   28688    34258
+-  timer-server      1    200     1        157      16442   16285    18997
+-  display-vsync last release: period 2744, tick 1716312500,
+-    epoch+k*P+offset 1716312500
+-  timer-server last release: period 2744, tick 1716468750,
+-    epoch+k*P+offset 1716468750
+-T1MISS task=timer-server period=2656 reason=late start_t=16442
+-  lat_t=18997 lat_us=303 deadline_us=300 J_us=1178 class=a
+-T1MISS task=display-vsync period=2688 reason=late start_t=28855
+-  lat_t=34258 lat_us=548 deadline_us=500 J_us=2237 class=a
++  display-vsync     0    200     1        133      11469   11336    16510
++  timer-server      1    200     1        168      12820   12652    15362
++  display-vsync last release: period 6761, tick 4227562500,
++    epoch+k*P+offset 4227562500
++  timer-server last release: period 6761, tick 4227718750,
++    epoch+k*P+offset 4227718750
++T1MISS task=display-vsync period=6677 reason=not_started start_t=-1
++  lat_t=72891 lat_us=1166 deadline_us=500 J_us=7081 class=a
++T1MISS task=timer-server period=6677 reason=not_started start_t=-1
++  lat_t=376209 lat_us=6019 deadline_us=300 J_us=13120 class=a
+@@ -641,6 +653,6 @@
+-kernel per period: max 22343 avg 4823 ticks, reserve 21875, over 1
+-timer IRQ entry - CVAL: min 552 max 98444 ticks (n=2593)
+-kernel entry -> eret (no slot wait): min 102 max 10641 ticks
+-slot guard: path max 1590 ticks, slack min 0 ticks of 1250 (n=244)
+-wait loop exit late by 0/1/2/>2 ticks: 32/32/27/153
+-clock jumps: 1223, total 68767 us
++kernel per period: max 9317 avg 4258 ticks, reserve 21875, over 0
++timer IRQ entry - CVAL: min 513 max 441285 ticks (n=2580)
++kernel entry -> eret (no slot wait): min 91 max 2622 ticks
++slot guard: path max 1186 ticks, slack min 0 ticks of 1250 (n=210)
++wait loop exit late by 0/1/2/>2 ticks: 26/30/15/139
++clock jumps: 1171, total 69862 us
+@@ -648,2 +660,2 @@
+-  pick time -> eret max 17026 ticks (margin 500); tier-2 budget
+-  overrun max 18879 ticks (200 times)
++  pick time -> eret max 632 ticks (margin 700); tier-2 budget
++  overrun max 262389 ticks (200 times)
+@@ -660,2 +672,2 @@
+-  NOTICE: sim-dma 实测超出声明 (timeout): measured 432 us >
+-    declared 400 us, period 2321; Tier 1 on it refused. [非 icount，仅供参考]
++  NOTICE: sim-dma 实测超出声明 (timeout): measured 434 us >
++    declared 400 us, period 6338; Tier 1 on it refused. [非 icount，仅供参考]
+@@ -667 +679,6 @@
+-  measured since boot: max 102666 ticks/period (period 0 of 2764)
++  measured since boot: max 467246 ticks/period (period 5611 of 6781)
++  that period ran menu 8; kernel ticks by entry (count):
++    timer IRQ 467246 (1), slot guard wait 0 (0),
++    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 0 (0);
++    of which period-boundary work 461774, waits for a deadline 75
++    reserve 21875, margin -445371
+@@ -672,2 +689,2 @@
+-  display-vsync     0      1000    500         113      387   2048
+-  timer-server      1      3500    300         232       68   1024
++  display-vsync     0      1000    500         249      251   2048
++  timer-server      1      3500    300          71      229   1024
+@@ -706 +723 @@
+-  min 152504 max 165732 (budget 150000); most over the budget 15732
++  min 152836 max 243760 (budget 150000); most over the budget 93760
+@@ -708,3 +725,3 @@
+-  the same period 0; lowest in a period after a stall 152504
+-cam-app: accesses per period max 396922 (budget 400000), stalled 0;
+-  CPU per period min 3003 us (min 3000)
++  the same period 0; lowest in a period after a stall 152836
++cam-app: accesses per period max 488758 (budget 400000), stalled 8;
++  CPU per period min 3000 us (min 3000)
+@@ -713,13 +730,19 @@
+-  display-vsync     0    200     0        167      11535   11368    16619
+-  timer-server      1    200     0        162      14238   14076    16790
+-  display-vsync last release: period 2985, tick 1866937500,
+-    epoch+k*P+offset 1866937500
+-  timer-server last release: period 2985, tick 1867093750,
+-    epoch+k*P+offset 1867093750
+-misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
+-kernel per period: max 14319 avg 6573 ticks, reserve 21875, over 0
+-timer IRQ entry - CVAL: min 568 max 27243 ticks (n=2192)
+-kernel entry -> eret (no slot wait): min 107 max 6469 ticks
+-slot guard: path max 681 ticks, slack min 0 ticks of 1250 (n=97)
+-wait loop exit late by 0/1/2/>2 ticks: 3/9/0/85
+-clock jumps: 1407, total 116188 us
++  display-vsync     0    200     0        162      18489   18327    23573
++  timer-server      1    200     3        171      15603   15432    18188
++  display-vsync last release: period 7002, tick 4378187500,
++    epoch+k*P+offset 4378187500
++  timer-server last release: period 7002, tick 4378343750,
++    epoch+k*P+offset 4378343750
++T1MISS task=timer-server period=6814 reason=not_started start_t=-1
++  lat_t=20605 lat_us=329 deadline_us=300 J_us=1539 class=a
++T1MISS task=timer-server period=6886 reason=not_started start_t=-1
++  lat_t=19662 lat_us=314 deadline_us=300 J_us=896 class=a
++T1MISS task=timer-server period=6967 reason=not_started start_t=-1
++  lat_t=60513 lat_us=968 deadline_us=300 J_us=1525 class=a
++misses: class a (clock jump) 3, class b (kernel) 0, skipped periods 0
++kernel per period: max 14906 avg 6775 ticks, reserve 21875, over 0
++timer IRQ entry - CVAL: min 487 max 79293 ticks (n=2171)
++kernel entry -> eret (no slot wait): min 111 max 6793 ticks
++slot guard: path max 387 ticks, slack min 0 ticks of 1250 (n=11)
++wait loop exit late by 0/1/2/>2 ticks: 0/0/0/11
++clock jumps: 1753, total 133190 us
+@@ -727,2 +750,2 @@
+-  pick time -> eret max 2538 ticks (margin 500); tier-2 budget
+-  overrun max 10961 ticks (200 times)
++  pick time -> eret max 4912 ticks (margin 700); tier-2 budget
++  overrun max 56879 ticks (200 times)
+@@ -760,4 +783,4 @@
+-calls 26277; measured by the kernel during the calls:
+-  driver running 58481355 ticks + IPC kernel path 1569881 ticks
+-  = 60051236 ticks; caller budgets dropped by 60051236 ticks
+-  longest call 21702 ticks; max |drop - measured| per call: 0 ticks
++calls 25937; measured by the kernel during the calls:
++  driver running 59410411 ticks + IPC kernel path 1703408 ticks
++  = 61113819 ticks; caller budgets dropped by 61113819 ticks
++  longest call 56104 ticks; max |drop - measured| per call: 0 ticks
+@@ -765,7 +788,7 @@
+-  reserve): 8476016 ticks
+-    = in-call window 1569975 + entry and queueing 3673379
+-    + reply return 3232662 (sum 8476016)
+-  whole window (per-period budgets): caller budget drops 66918662
+-    = driver run 58446884 + in-call 1569239
+-    + entry 3671317 + reply 3231222
+-    = 66918662; error 0 ticks
++  reserve): 7734774 ticks
++    = in-call window 1703499 + entry and queueing 2514532
++    + reply return 3516743 (sum 7734774)
++  whole window (per-period budgets): caller budget drops 66830109
++    = driver run 59135770 + in-call 1695219
++    + entry 2496849 + reply 3502271
++    = 66830109; error 0 ticks
+@@ -773,2 +796,2 @@
+-    cumulative: from stats reset 1892456986 to read 2017513416
+-    per-period: periods 3026..3225, ticks 1892500000..2017500000
++    cumulative: from stats reset 4398291441 to read 4523754397
++    per-period: periods 7035..7234, ticks 4398750000..4523750000
+@@ -776,5 +799,5 @@
+-  driver run    34471   58446884          0    58481355    0
+-  in-call         736    1569239          0     1569975    0
+-  entry          2062    3671317          0     3673379    0
+-  reply          1440    3231222          0     3232662    0
+-  driver run per replied call 58481355 = charged 58481355
++  driver run   276113   59135770          0    59411883    0
++  in-call        8280    1695219          0     1703499    0
++  entry         17683    2496849          0     2514532    0
++  reply         14472    3502271          0     3516743    0
++  driver run per replied call 59410411 = charged 59411883
+@@ -782 +805 @@
+-    still open at the end 0; error 0 ticks
++    still open at the end 1472; error 0 ticks
+@@ -785 +808 @@
+-    157 times, total 31212, max 693 ticks; most in one period 1174;
++    167 times, total 44016, max 1176 ticks; most in one period 1176;
+@@ -787,2 +810,2 @@
+-  caller-periods with a draw 136, with draws in both the guaranteed
+-  and the suggested pass 21; new calls held to the next period 0,
++  caller-periods with a draw 146, with draws in both the guaranteed
++  and the suggested pass 20; new calls held to the next period 0,
+@@ -789,0 +813,2 @@
++  caller-periods with 2 or more draws 20; forwarded calls 0,
++  replied 0
+@@ -792 +817 @@
+-  total 94296563 ticks
++  total 93227196 ticks
+@@ -795,6 +820,6 @@
+-  display-vsync     0    200     0         91        727     636     5781
+-  timer-server      1    200     0         79       2085    2006     4630
+-  display-vsync last release: period 3226, tick 2017562500,
+-    epoch+k*P+offset 2017562500
+-  timer-server last release: period 3226, tick 2017718750,
+-    epoch+k*P+offset 2017718750
++  display-vsync     0    200     0         79       2347    2268     7396
++  timer-server      1    200     0        171       1519    1348     4063
++  display-vsync last release: period 7235, tick 4523812500,
++    epoch+k*P+offset 4523812500
++  timer-server last release: period 7235, tick 4523968750,
++    epoch+k*P+offset 4523968750
+@@ -802,6 +827,6 @@
+-kernel per period: max 11868 avg 6769 ticks, reserve 21875, over 0
+-timer IRQ entry - CVAL: min 252 max 26145 ticks (n=2002)
+-kernel entry -> eret (no slot wait): min 108 max 5515 ticks
+-slot guard: path max 964 ticks, slack min 0 ticks of 1250 (n=375)
+-wait loop exit late by 0/1/2/>2 ticks: 47/55/63/210
+-clock jumps: 1144, total 91694 us
++kernel per period: max 17122 avg 7255 ticks, reserve 21875, over 0
++timer IRQ entry - CVAL: min 307 max 43747 ticks (n=1960)
++kernel entry -> eret (no slot wait): min 123 max 11010 ticks
++slot guard: path max 1948 ticks, slack min 0 ticks of 1250 (n=304)
++wait loop exit late by 0/1/2/>2 ticks: 37/37/46/184
++clock jumps: 1236, total 94384 us
+@@ -809,3 +834,3 @@
+-  pick time -> eret max 2063 ticks (margin 500); tier-2 budget
+-  overrun max 11711 ticks (561 times)
+-  budget left < exit tail, deadline moved to 12 ticks: 4 times
++  pick time -> eret max 2017 ticks (margin 700); tier-2 budget
++  overrun max 27624 ticks (581 times)
++  budget left < exit tail, deadline moved to 12 ticks: 11 times
+@@ -825,4 +850,4 @@
+-calls 26288; measured by the kernel during the calls:
+-  driver running 58604557 ticks + IPC kernel path 1707362 ticks
+-  = 60311919 ticks; caller budgets dropped by 60311919 ticks
+-  longest call 19992 ticks; max |drop - measured| per call: 0 ticks
++calls 25592; measured by the kernel during the calls:
++  driver running 58336482 ticks + IPC kernel path 1949775 ticks
++  = 60286257 ticks; caller budgets dropped by 60286257 ticks
++  longest call 340951 ticks; max |drop - measured| per call: 0 ticks
+@@ -830,7 +855,7 @@
+-  reserve): 8273663 ticks
+-    = in-call window 1707360 + entry and queueing 3330515
+-    + reply return 3235788 (sum 8273663)
+-  whole window (per-period budgets): caller budget drops 66878308
+-    = driver run 58604914 + in-call 1707360
+-    + entry 3330246 + reply 3235788
+-    = 66878308; error 0 ticks
++  reserve): 8294769 ticks
++    = in-call window 1949705 + entry and queueing 2777238
++    + reply return 3567826 (sum 8294769)
++  whole window (per-period budgets): caller budget drops 66629210
++    = driver run 58334986 + in-call 1949705
++    + entry 2776963 + reply 3567556
++    = 66629210; error 0 ticks
+@@ -838,2 +863,2 @@
+-    cumulative: from stats reset 2018073727 to read 2143127448
+-    per-period: periods 3227..3426, ticks 2018125000..2143125000
++    cumulative: from stats reset 4524805823 to read 4650003104
++    per-period: periods 7237..7436, ticks 4525000000..4650000000
+@@ -841,7 +866,7 @@
+-  driver run        0   58604914          0    58604914    0
+-  in-call           0    1707360          0     1707360    0
+-  entry           269    3330246          0     3330515    0
+-  reply             0    3235788          0     3235788    0
+-  driver run per replied call 58604557 = charged 58604914
+-    + ran before reset in calls open then 2279 - ran in 1 calls
+-    still open at the end 2636; error 0 ticks
++  driver run     2853   58334986          0    58337839    0
++  in-call           0    1949705          0     1949705    0
++  entry           275    2776963          0     2777238    0
++  reply           270    3567556          0     3567826    0
++  driver run per replied call 58336482 = charged 58337839
++    + ran before reset in calls open then 0 - ran in 1 calls
++    still open at the end 1357; error 0 ticks
+@@ -850 +875 @@
+-    123 times, total 28572, max 1877 ticks; most in one period 1877;
++    116 times, total 33157, max 1248 ticks; most in one period 1248;
+@@ -852,2 +877,2 @@
+-  caller-periods with a draw 123, with draws in both the guaranteed
+-  and the suggested pass 0; new calls held to the next period 81,
++  caller-periods with a draw 115, with draws in both the guaranteed
++  and the suggested pass 0; new calls held to the next period 80,
+@@ -854,0 +880,2 @@
++  caller-periods with 2 or more draws 0; forwarded calls 0,
++  replied 0
+@@ -857 +884 @@
+-  total 97533951 ticks
++  total 93324708 ticks
+@@ -860,10 +887,10 @@
+-  display-vsync     0    200     1         89        990     901     7966
+-  timer-server      1    200     1        117        605     488     3156
+-  display-vsync last release: period 3427, tick 2143187500,
+-    epoch+k*P+offset 2143187500
+-  timer-server last release: period 3427, tick 2143343750,
+-    epoch+k*P+offset 2143343750
+-T1MISS task=display-vsync period=3341 reason=not_started start_t=-1
+-  lat_t=528277 lat_us=8452 deadline_us=500 J_us=11847 class=a
+-T1MISS task=timer-server period=3341 reason=not_started start_t=-1
+-  lat_t=372027 lat_us=5952 deadline_us=300 J_us=11847 class=a
++  display-vsync     0    200     1        168       2042    1874     7097
++  timer-server      1    200     1        174       2366    2192     5001
++  display-vsync last release: period 7437, tick 4650062500,
++    epoch+k*P+offset 4650062500
++  timer-server last release: period 7437, tick 4650218750,
++    epoch+k*P+offset 4650218750
++T1MISS task=display-vsync period=7277 reason=not_started start_t=-1
++  lat_t=186265 lat_us=2980 deadline_us=500 J_us=7954 class=a
++T1MISS task=timer-server period=7277 reason=not_started start_t=-1
++  lat_t=30015 lat_us=480 deadline_us=300 J_us=7954 class=a
+@@ -871,10 +898,148 @@
+-kernel per period: max 10589 avg 6425 ticks, reserve 21875, over 0
+-timer IRQ entry - CVAL: min 194 max 717027 ticks (n=1990)
+-kernel entry -> eret (no slot wait): min 112 max 6147 ticks
+-slot guard: path max 1154 ticks, slack min 0 ticks of 1250 (n=357)
+-wait loop exit late by 0/1/2/>2 ticks: 45/51/70/191
+-clock jumps: 1081, total 84232 us
+-deadline already past at eret: 0 times, max 0 ticks;
+-  pick time -> eret max 2320 ticks (margin 500); tier-2 budget
+-  overrun max 13088 ticks (546 times)
+-  budget left < exit tail, deadline moved to 12 ticks: 8 times
++kernel per period: max 14713 avg 7694 ticks, reserve 21875, over 0
++timer IRQ entry - CVAL: min 149 max 480015 ticks (n=1960)
++kernel entry -> eret (no slot wait): min 123 max 9075 ticks
++slot guard: path max 1744 ticks, slack min 0 ticks of 1250 (n=342)
++wait loop exit late by 0/1/2/>2 ticks: 50/46/45/201
++clock jumps: 1130, total 100416 us
++deadline already past at eret: 1 times, max 15019 ticks;
++  pick time -> eret max 17062 ticks (margin 700); tier-2 budget
++  overrun max 156548 ticks (542 times)
++  budget left < exit tail, deadline moved to 12 ticks: 11 times
++
++=== 18 对照（经转发服务端）：不扣住新调用 ===
++cam-app asks Tier 2 CPU 3000 us + IPC headroom 120 us
++  CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0
++    + this 3120 = 5050 <= 10000
++OK: admitted
++hud-app asks Tier 2 CPU 1500 us + IPC headroom 120 us
++  CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0
++    + admitted before 3120 + this 1620 = 6670 <= 10000
++OK: admitted
++cam-app (tier 2, min 3000 us, suggested 1000 us), hud-app
++(tier 2, min 1500 us, suggested 500 us) and bg-caller (tier 3)
++call sim-dma-drv for 5..60 us of device work each.
++cam-app and hud-app call via fwd-srv (server A), which forwards
++each call to sim-dma-drv (server B); both run on the caller's budget.
++calls 21433; measured by the kernel during the calls:
++  driver running 55573379 ticks + IPC kernel path 11076184 ticks
++  = 66649563 ticks; caller budgets dropped by 66649563 ticks
++  longest call 48435 ticks; max |drop - measured| per call: 0 ticks
++  IPC kernel path charged to callers in total (none to the system
++  reserve): 16955123 ticks
++    = in-call window 11076214 + entry and queueing 2744108
++    + reply return 3134801 (sum 16955123)
++  whole window (per-period budgets): caller budget drops 72365440
++    = driver run 55436706 + in-call 11059974
++    + entry 2744108 + reply 3124652
++    = 72365440; error 0 ticks
++  counting windows (ticks):
++    cumulative: from stats reset 4651052371 to read 4776266681
++    per-period: periods 7439..7638, ticks 4651250000..4776250000
++  part         before     window      after  cumulative  err
++  driver run   134120   55436706          0    55570826    0
++  in-call       16240   11059974          0    11076214    0
++  entry             0    2744108          0     2744108    0
++  reply         10149    3124652          0     3134801    0
++  driver run per replied call 55573379 = charged 55570826
++    + ran before reset in calls open then 2631 - ran in 2 calls
++    still open at the end 78; error 0 ticks
++  IPC kernel path past the end of a tier-2 caller's budget, taken
++  from its admitted IPC headroom (120 us = 7500 ticks per period):
++    186 times, total 58747, max 1433 ticks; most in one period 1433;
++    charged to the system reserve: 0
++  caller-periods with a draw 164, with draws in both the guaranteed
++  and the suggested pass 20; new calls held to the next period 0,
++  released at the next period start 0
++  caller-periods with 2 or more draws 20; forwarded calls 18811,
++  replied 18810
++  driver's own budget used during the window: 0 ticks
++  driver's own wall-clock timing incl. preemption (reference only):
++  total 75854892 ticks
++Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
++  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
++  display-vsync     0    200     0        176        769     593     5810
++  timer-server      1    200     0        173       1204    1031     3752
++  display-vsync last release: period 7639, tick 4776312500,
++    epoch+k*P+offset 4776312500
++  timer-server last release: period 7639, tick 4776468750,
++    epoch+k*P+offset 4776468750
++misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
++kernel per period: max 12507 avg 7238 ticks, reserve 21875, over 0
++timer IRQ entry - CVAL: min 181 max 37333 ticks (n=1756)
++kernel entry -> eret (no slot wait): min 123 max 3453 ticks
++slot guard: path max 1533 ticks, slack min 0 ticks of 1250 (n=380)
++wait loop exit late by 0/1/2/>2 ticks: 41/50/63/226
++clock jumps: 1011, total 66554 us
++deadline already past at eret: 1 times, max 23345 ticks;
++  pick time -> eret max 35767 ticks (margin 700); tier-2 budget
++  overrun max 36672 ticks (440 times)
++  budget left < exit tail, deadline moved to 12 ticks: 9 times
++
++=== 18 经转发服务端：用过余量的预算本周期新调用扣到下个周期 ===
++cam-app asks Tier 2 CPU 3000 us + IPC headroom 120 us
++  CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0
++    + this 3120 = 5050 <= 10000
++OK: admitted
++hud-app asks Tier 2 CPU 1500 us + IPC headroom 120 us
++  CPU: reserve 350 + tier-1 1500 + guard 80 + tier-2 min 0
++    + admitted before 3120 + this 1620 = 6670 <= 10000
++OK: admitted
++cam-app (tier 2, min 3000 us, suggested 1000 us), hud-app
++(tier 2, min 1500 us, suggested 500 us) and bg-caller (tier 3)
++call sim-dma-drv for 5..60 us of device work each.
++cam-app and hud-app call via fwd-srv (server A), which forwards
++each call to sim-dma-drv (server B); both run on the caller's budget.
++calls 24744; measured by the kernel during the calls:
++  driver running 62014504 ticks + IPC kernel path 10755585 ticks
++  = 72770089 ticks; caller budgets dropped by 72770089 ticks
++  longest call 84277 ticks; max |drop - measured| per call: 0 ticks
++  IPC kernel path charged to callers in total (none to the system
++  reserve): 16020542 ticks
++    = in-call window 10755323 + entry and queueing 2256629
++    + reply return 3008590 (sum 16020542)
++  whole window (per-period budgets): caller budget drops 78036451
++    = driver run 62016495 + in-call 10755323
++    + entry 2256043 + reply 3008590
++    = 78036451; error 0 ticks
++  counting windows (ticks):
++    cumulative: from stats reset 4777307700 to read 4902502729
++    per-period: periods 7641..7840, ticks 4777500000..4902500000
++  part         before     window      after  cumulative  err
++  driver run        0   62016495          0    62016495    0
++  in-call           0   10755323          0    10755323    0
++  entry           586    2256043          0     2256629    0
++  reply             0    3008590          0     3008590    0
++  driver run per replied call 62014504 = charged 62016495
++    + ran before reset in calls open then 73 - ran in 2 calls
++    still open at the end 2064; error 0 ticks
++  IPC kernel path past the end of a tier-2 caller's budget, taken
++  from its admitted IPC headroom (120 us = 7500 ticks per period):
++    161 times, total 104230, max 62236 ticks; most in one period 62236;
++    charged to the system reserve: 0
++  caller-periods with a draw 161, with draws in both the guaranteed
++  and the suggested pass 0; new calls held to the next period 83,
++  released at the next period start 83
++  caller-periods with 2 or more draws 0; forwarded calls 18246,
++  replied 18247
++  driver's own budget used during the window: 0 ticks
++  driver's own wall-clock timing incl. preemption (reference only):
++  total 79675523 ticks
++Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
++  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
++  display-vsync     0    200     0        171        868     697     5962
++  timer-server      1    200     0        172        794     622     3337
++  display-vsync last release: period 7841, tick 4902562500,
++    epoch+k*P+offset 4902562500
++  timer-server last release: period 7841, tick 4902718750,
++    epoch+k*P+offset 4902718750
++misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
++kernel per period: max 12922 avg 6877 ticks, reserve 21875, over 0
++timer IRQ entry - CVAL: min 140 max 68865 ticks (n=1680)
++kernel entry -> eret (no slot wait): min 121 max 2274 ticks
++slot guard: path max 1746 ticks, slack min 0 ticks of 1250 (n=377)
++wait loop exit late by 0/1/2/>2 ticks: 59/57/49/212
++clock jumps: 1005, total 72441 us
++deadline already past at eret: 1 times, max 68193 ticks;
++  pick time -> eret max 81420 ticks (margin 700); tier-2 budget
++  overrun max 10753 ticks (424 times)
++  budget left < exit tail, deadline moved to 12 ticks: 12 times
+@@ -890,2 +1055,2 @@
+-  NOTICE: sim-dma 实测超出声明 (timeout): measured 432 us >
+-    declared 400 us, period 2321; Tier 1 on it refused. [非 icount，仅供参考]
++  NOTICE: sim-dma 实测超出声明 (timeout): measured 434 us >
++    declared 400 us, period 6338; Tier 1 on it refused. [非 icount，仅供参考]
+@@ -897 +1062,6 @@
+-  measured since boot: max 102666 ticks/period (period 0 of 3437)
++  measured since boot: max 467246 ticks/period (period 5611 of 7861)
++  that period ran menu 8; kernel ticks by entry (count):
++    timer IRQ 467246 (1), slot guard wait 0 (0),
++    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 0 (0);
++    of which period-boundary work 461774, waits for a deadline 75
++    reserve 21875, margin -445371
+@@ -902,2 +1072,2 @@
+-  display-vsync     0      1000    500         115      385   2048
+-  timer-server      1      3500    300         232       68   1024
++  display-vsync     0      1000    500         249      251   2048
++  timer-server      1      3500    300          71      229   1024
+@@ -948 +1118 @@
+-Version: 014 (7065679)
++Version: 015 (559daed)
+@@ -958 +1128 @@
+-[boot] kernel image+bss 553 KB of the 16384 KB system reserve
++[boot] kernel image+bss 562 KB of the 16384 KB system reserve
+@@ -964 +1134 @@
+-[boot] slot table from tick 1250000, period 625000 ticks, guard 1250 ticks
++[boot] slot table from tick 3125000, period 625000 ticks, guard 1250 ticks
+@@ -968 +1138 @@
+-[dev] sim-dma: job 396/400 us, stop 16/20 us (measured/declared)
++[dev] sim-dma: job 396/400 us, stop 19/20 us (measured/declared)
+@@ -970 +1140 @@
+-[dev] sim-blk: job 1991/2000 us, stop 1770/2000 us (measured/declared)
++[dev] sim-blk: job 1991/2000 us, stop 1771/2000 us (measured/declared)
+@@ -972 +1142 @@
+-[dev] sim-cam: job 291/300 us, stop 8/30 us (measured/declared)
++[dev] sim-cam: job 291/300 us, stop 7/30 us (measured/declared)
+@@ -1007 +1177,6 @@
+-  measured since boot: max 96324 ticks/period (period 0 of 18)
++  measured since boot: max 110018 ticks/period (period 0 of 19)
++  that period ran menu 0; kernel ticks by entry (count):
++    timer IRQ 108899 (9), slot guard wait 0 (0),
++    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 1119 (1);
++    of which period-boundary work 0, waits for a deadline 0
++    reserve 21875, margin -88143
+@@ -1012,2 +1187,2 @@
+-  display-vsync     0      1000    500          90      410   2048
+-  timer-server      1      3500    300          59      241   1024
++  display-vsync     0      1000    500         122      378   2048
++  timer-server      1      3500    300          78      222   1024
+@@ -1098 +1273,6 @@
+-  measured since boot: max 96324 ticks/period (period 0 of 160)
++  measured since boot: max 110018 ticks/period (period 0 of 161)
++  that period ran menu 0; kernel ticks by entry (count):
++    timer IRQ 108899 (9), slot guard wait 0 (0),
++    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 1119 (1);
++    of which period-boundary work 0, waits for a deadline 0
++    reserve 21875, margin -88143
+@@ -1103,2 +1283,2 @@
+-  display-vsync     0      1000    500          96      404   2048
+-  timer-server      1      3500    300          61      239   1024
++  display-vsync     0      1000    500         122      378   2048
++  timer-server      1      3500    300        1055        0   1024
+
+=== 2 numbers-masked diff (every digit run -> #): 41 lines removed, 221 lines added ===
+--- docs/regress-v014/menus-v014-gicv2.txt
++++ docs/regress-v015/menus-v015-gicv2.txt
+@@ -4 +4 @@
+-Version: # (#)
++Version: # (#daed)
+@@ -63,0 +64,5 @@
++  that period ran menu #; kernel ticks by entry (count):
++    timer IRQ # (#), slot guard wait # (#),
++    device IRQ # (#), svc IPC/dev # (#), svc other # (#);
++    of which period-boundary work #, waits for a deadline #
++    reserve #, margin -#
+@@ -199,0 +205,5 @@
++  that period ran menu #; kernel ticks by entry (count):
++    timer IRQ # (#), slot guard wait # (#),
++    device IRQ # (#), svc IPC/dev # (#), svc other # (#);
++    of which period-boundary work #, waits for a deadline #
++    reserve #, margin -#
+@@ -294 +304,3 @@
+-T#MISS task=display-vsync period=# reason=unfinished start_t=#
++T#MISS task=display-vsync period=# reason=not_started start_t=-#
++  lat_t=# lat_us=# deadline_us=# J_us=# class=a
++T#MISS task=timer-server period=# reason=not_started start_t=-#
+@@ -330 +342 @@
+-     # display-vsync   #  #        # #   #
++     # display-vsync   #  #        # #    #
+@@ -333 +345 @@
+-     # bad-driver     #  #       #     #    #
++     # bad-driver     #  #       #     #     #
+@@ -346 +358 @@
+-     # display-vsync   #  #        # #   #
++     # display-vsync   #  #        # #    #
+@@ -366,2 +378,2 @@
+-  app-A           #    #      #     #     #      #
+-  app-B           #    #      #     #     #      #
++  app-A           #    #         #     #     #     #
++  app-B           #    #         #     #     #     #
+@@ -377 +389 @@
+-  timer-server      #    #     #        #      #   #    #
++  timer-server      #    #     #        #       #    #     #
+@@ -381,0 +394,4 @@
++T#MISS task=display-vsync period=# reason=not_started start_t=-#
++  lat_t=# lat_us=# deadline_us=# J_us=# class=a
++T#MISS task=timer-server period=# reason=not_started start_t=-#
++  lat_t=# lat_us=# deadline_us=# J_us=# class=a
+@@ -391,2 +407,2 @@
+-     # (empty)        #  #           # #    #
+-     # (empty)        #  #           # #    #
++     # (empty)        #  #           # #   #
++     # (empty)        #  #           # #   #
+@@ -420 +436 @@
+-  timer-server      #    #     #        #       #    #     #
++  timer-server      #    #     #        #       #    #    #
+@@ -425,6 +440,0 @@
+-T#MISS task=display-vsync period=# reason=skipped lat_us=-
+-  deadline_us=# J_us=# covered=yes uncovered_us=# class=a
+-T#MISS task=timer-server period=# reason=skipped lat_us=-
+-  deadline_us=# J_us=# covered=yes uncovered_us=# class=a
+-T#MISS task=display-vsync period=# reason=not_started start_t=-#
+-  lat_t=# lat_us=# deadline_us=# J_us=# class=a
+@@ -523,2 +533,2 @@
+-  driver run   #   #          #    #    #
+-  in-call        #     #          #      #    #
++  driver run        #   #          #    #    #
++  in-call           #     #          #      #    #
+@@ -526 +536 @@
+-  reply         #     #          #      #    #
++  reply             #     #          #      #    #
+@@ -536,0 +547,2 @@
++  caller-periods with # or more draws #; forwarded calls #,
++  replied #
+@@ -542,2 +554,2 @@
+-  display-vsync     #    #     #        #       #    #     #
+-  timer-server      #    #     #        #       #    #     #
++  display-vsync     #    #     #        #      #   #    #
++  timer-server      #    #     #        #      #   #    #
+@@ -594 +606 @@
+-  timer-server      #    #     #        #        #     #     #
++  timer-server      #    #     #        #       #     #     #
+@@ -636 +648 @@
+-T#MISS task=timer-server period=# reason=late start_t=#
++T#MISS task=display-vsync period=# reason=not_started start_t=-#
+@@ -638 +650 @@
+-T#MISS task=display-vsync period=# reason=late start_t=#
++T#MISS task=timer-server period=# reason=not_started start_t=-#
+@@ -667,0 +680,5 @@
++  that period ran menu #; kernel ticks by entry (count):
++    timer IRQ # (#), slot guard wait # (#),
++    device IRQ # (#), svc IPC/dev # (#), svc other # (#);
++    of which period-boundary work #, waits for a deadline #
++    reserve #, margin -#
+@@ -673 +690 @@
+-  timer-server      #      #    #         #       #   #
++  timer-server      #      #    #          #      #   #
+@@ -718,0 +736,6 @@
++T#MISS task=timer-server period=# reason=not_started start_t=-#
++  lat_t=# lat_us=# deadline_us=# J_us=# class=a
++T#MISS task=timer-server period=# reason=not_started start_t=-#
++  lat_t=# lat_us=# deadline_us=# J_us=# class=a
++T#MISS task=timer-server period=# reason=not_started start_t=-#
++  lat_t=# lat_us=# deadline_us=# J_us=# class=a
+@@ -776,4 +799,4 @@
+-  driver run    #   #          #    #    #
+-  in-call         #    #          #     #    #
+-  entry          #    #          #     #    #
+-  reply          #    #          #     #    #
++  driver run   #   #          #    #    #
++  in-call        #    #          #     #    #
++  entry         #    #          #     #    #
++  reply         #    #          #     #    #
+@@ -789,0 +813,2 @@
++  caller-periods with # or more draws #; forwarded calls #,
++  replied #
+@@ -795,2 +820,2 @@
+-  display-vsync     #    #     #         #        #     #     #
+-  timer-server      #    #     #         #       #    #     #
++  display-vsync     #    #     #         #       #    #     #
++  timer-server      #    #     #        #       #    #     #
+@@ -841 +866 @@
+-  driver run        #   #          #    #    #
++  driver run     #   #          #    #    #
+@@ -844 +869 @@
+-  reply             #    #          #     #    #
++  reply           #    #          #     #    #
+@@ -854,0 +880,2 @@
++  caller-periods with # or more draws #; forwarded calls #,
++  replied #
+@@ -860,2 +887,2 @@
+-  display-vsync     #    #     #         #        #     #     #
+-  timer-server      #    #     #        #        #     #     #
++  display-vsync     #    #     #        #       #    #     #
++  timer-server      #    #     #        #       #    #     #
+@@ -880,0 +908,138 @@
++
++=== # 对照（经转发服务端）：不扣住新调用 ===
++cam-app asks Tier # CPU # us + IPC headroom # us
++  CPU: reserve # + tier-# # + guard # + tier-# min #
++    + this # = # <= #
++OK: admitted
++hud-app asks Tier # CPU # us + IPC headroom # us
++  CPU: reserve # + tier-# # + guard # + tier-# min #
++    + admitted before # + this # = # <= #
++OK: admitted
++cam-app (tier #, min # us, suggested # us), hud-app
++(tier #, min # us, suggested # us) and bg-caller (tier #)
++call sim-dma-drv for #..# us of device work each.
++cam-app and hud-app call via fwd-srv (server A), which forwards
++each call to sim-dma-drv (server B); both run on the caller's budget.
++calls #; measured by the kernel during the calls:
++  driver running # ticks + IPC kernel path # ticks
++  = # ticks; caller budgets dropped by # ticks
++  longest call # ticks; max |drop - measured| per call: # ticks
++  IPC kernel path charged to callers in total (none to the system
++  reserve): # ticks
++    = in-call window # + entry and queueing #
++    + reply return # (sum #)
++  whole window (per-period budgets): caller budget drops #
++    = driver run # + in-call #
++    + entry # + reply #
++    = #; error # ticks
++  counting windows (ticks):
++    cumulative: from stats reset # to read #
++    per-period: periods #..#, ticks #..#
++  part         before     window      after  cumulative  err
++  driver run   #   #          #    #    #
++  in-call       #   #          #    #    #
++  entry             #    #          #     #    #
++  reply         #    #          #     #    #
++  driver run per replied call # = charged #
++    + ran before reset in calls open then # - ran in # calls
++    still open at the end #; error # ticks
++  IPC kernel path past the end of a tier-# caller's budget, taken
++  from its admitted IPC headroom (# us = # ticks per period):
++    # times, total #, max # ticks; most in one period #;
++    charged to the system reserve: #
++  caller-periods with a draw #, with draws in both the guaranteed
++  and the suggested pass #; new calls held to the next period #,
++  released at the next period start #
++  caller-periods with # or more draws #; forwarded calls #,
++  replied #
++  driver's own budget used during the window: # ticks
++  driver's own wall-clock timing incl. preemption (reference only):
++  total # ticks
++Tier # (ticks; # tick = # ns; start = first job instruction - slot start)
++  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
++  display-vsync     #    #     #        #        #     #     #
++  timer-server      #    #     #        #       #    #     #
++  display-vsync last release: period #, tick #,
++    epoch+k*P+offset #
++  timer-server last release: period #, tick #,
++    epoch+k*P+offset #
++misses: class a (clock jump) #, class b (kernel) #, skipped periods #
++kernel per period: max # avg # ticks, reserve #, over #
++timer IRQ entry - CVAL: min # max # ticks (n=#)
++kernel entry -> eret (no slot wait): min # max # ticks
++slot guard: path max # ticks, slack min # ticks of # (n=#)
++wait loop exit late by #/#/#/># ticks: #/#/#/#
++clock jumps: #, total # us
++deadline already past at eret: # times, max # ticks;
++  pick time -> eret max # ticks (margin #); tier-# budget
++  overrun max # ticks (# times)
++  budget left < exit tail, deadline moved to # ticks: # times
++
++=== # 经转发服务端：用过余量的预算本周期新调用扣到下个周期 ===
++cam-app asks Tier # CPU # us + IPC headroom # us
++  CPU: reserve # + tier-# # + guard # + tier-# min #
++    + this # = # <= #
++OK: admitted
++hud-app asks Tier # CPU # us + IPC headroom # us
++  CPU: reserve # + tier-# # + guard # + tier-# min #
++    + admitted before # + this # = # <= #
++OK: admitted
++cam-app (tier #, min # us, suggested # us), hud-app
++(tier #, min # us, suggested # us) and bg-caller (tier #)
++call sim-dma-drv for #..# us of device work each.
++cam-app and hud-app call via fwd-srv (server A), which forwards
++each call to sim-dma-drv (server B); both run on the caller's budget.
++calls #; measured by the kernel during the calls:
++  driver running # ticks + IPC kernel path # ticks
++  = # ticks; caller budgets dropped by # ticks
++  longest call # ticks; max |drop - measured| per call: # ticks
++  IPC kernel path charged to callers in total (none to the system
++  reserve): # ticks
++    = in-call window # + entry and queueing #
++    + reply return # (sum #)
++  whole window (per-period budgets): caller budget drops #
++    = driver run # + in-call #
++    + entry # + reply #
++    = #; error # ticks
++  counting windows (ticks):
++    cumulative: from stats reset # to read #
++    per-period: periods #..#, ticks #..#
++  part         before     window      after  cumulative  err
++  driver run        #   #          #    #    #
++  in-call           #   #          #    #    #
++  entry           #    #          #     #    #
++  reply             #    #          #     #    #
++  driver run per replied call # = charged #
++    + ran before reset in calls open then # - ran in # calls
++    still open at the end #; error # ticks
++  IPC kernel path past the end of a tier-# caller's budget, taken
++  from its admitted IPC headroom (# us = # ticks per period):
++    # times, total #, max # ticks; most in one period #;
++    charged to the system reserve: #
++  caller-periods with a draw #, with draws in both the guaranteed
++  and the suggested pass #; new calls held to the next period #,
++  released at the next period start #
++  caller-periods with # or more draws #; forwarded calls #,
++  replied #
++  driver's own budget used during the window: # ticks
++  driver's own wall-clock timing incl. preemption (reference only):
++  total # ticks
++Tier # (ticks; # tick = # ns; start = first job instruction - slot start)
++  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
++  display-vsync     #    #     #        #        #     #     #
++  timer-server      #    #     #        #        #     #     #
++  display-vsync last release: period #, tick #,
++    epoch+k*P+offset #
++  timer-server last release: period #, tick #,
++    epoch+k*P+offset #
++misses: class a (clock jump) #, class b (kernel) #, skipped periods #
++kernel per period: max # avg # ticks, reserve #, over #
++timer IRQ entry - CVAL: min # max # ticks (n=#)
++kernel entry -> eret (no slot wait): min # max # ticks
++slot guard: path max # ticks, slack min # ticks of # (n=#)
++wait loop exit late by #/#/#/># ticks: #/#/#/#
++clock jumps: #, total # us
++deadline already past at eret: # times, max # ticks;
++  pick time -> eret max # ticks (margin #); tier-# budget
++  overrun max # ticks (# times)
++  budget left < exit tail, deadline moved to # ticks: # times
+@@ -897,0 +1063,5 @@
++  that period ran menu #; kernel ticks by entry (count):
++    timer IRQ # (#), slot guard wait # (#),
++    device IRQ # (#), svc IPC/dev # (#), svc other # (#);
++    of which period-boundary work #, waits for a deadline #
++    reserve #, margin -#
+@@ -903 +1073 @@
+-  timer-server      #      #    #         #       #   #
++  timer-server      #      #    #          #      #   #
+@@ -948 +1118 @@
+-Version: # (#)
++Version: # (#daed)
+@@ -1007,0 +1178,5 @@
++  that period ran menu #; kernel ticks by entry (count):
++    timer IRQ # (#), slot guard wait # (#),
++    device IRQ # (#), svc IPC/dev # (#), svc other # (#);
++    of which period-boundary work #, waits for a deadline #
++    reserve #, margin -#
+@@ -1012 +1187 @@
+-  display-vsync     #      #    #          #      #   #
++  display-vsync     #      #    #         #      #   #
+@@ -1098,0 +1274,5 @@
++  that period ran menu #; kernel ticks by entry (count):
++    timer IRQ # (#), slot guard wait # (#),
++    device IRQ # (#), svc IPC/dev # (#), svc other # (#);
++    of which period-boundary work #, waits for a deadline #
++    reserve #, margin -#
+@@ -1103,2 +1283,2 @@
+-  display-vsync     #      #    #          #      #   #
+-  timer-server      #      #    #          #      #   #
++  display-vsync     #      #    #         #      #   #
++  timer-server      #      #    #        #        #   #
+

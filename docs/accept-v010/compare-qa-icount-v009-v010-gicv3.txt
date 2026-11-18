@@ -1,0 +1,39 @@
+@@ ...Quota OS microkernel Version:
+- 009 (d2c58c4)
++ 010 (4f077b3)
+@@ ...tier-1 1500 us/period, 13312 KB; guard
+- 40
++ 80
+@@ ...(none) minimum sum: CPU 0 /
+- 8110
++ 8070
+@@ ...+ tier-2 min 0 + guard
+- 40
++ 80
+@@ ...min 0 + guard 40 =
+- 1890
++ 1930
+@@ ...only CPU not promised to anyone:
+- 8110
++ 8070
+@@ ...resources for Studio Cut CPU left
+- 2110
++ 2070
+@@ ...=== apps get at most CPU
+- 8110
++ 8070
+@@ ...requirements minimum CPU 9000 us >
+- 8110
++ 8070
+@@ ...(none) minimum sum: CPU 0 /
+- 8110
++ 8070
+@@ ...+ tier-2 min 0 + guard
+- 40
++ 80
+@@ ...min 0 + guard 40 =
+- 1890
++ 1930
+@@ ...only CPU not promised to anyone:
+- 8110
++ 8070

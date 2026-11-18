@@ -1,0 +1,12 @@
+# 2259e51 prebuilt/quotaos.bin, cmd: qemu-system-aarch64 -machine virt,gic-version=3 -cpu cortex-a72 -m 128M -nographic -nic none -kernel prebuilt/quotaos.bin
+
+Quota OS microkernel
+三级资源声明的教学微内核。保证来自启动前的整机预分配，不来自事后抢占补救。
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB memory 134217728 bytes
+[boot] tier-1 reserved 13312 KB and 1500 us/period
+
+PANIC sync ec=0x25 esr=0x96000050 elr=0x400821e0
+QEMU: Terminated
+

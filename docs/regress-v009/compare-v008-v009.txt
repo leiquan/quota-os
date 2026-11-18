@@ -1,0 +1,24 @@
+@@ ...128M ok=True Quota OS microkernel Version:
+- 008 (f9119e9)
++ 009 (d2c58c4)
+@@ ...务 只 拖 慢 自 己
+- 
++ 11 设 备 申 请 Tier 1 ： 不 能 打 断 的 设 备 被 拒 （ 说 明 缺 哪 一 条 ） 12 超 额 申 请 被 拒 （ 说 明 是 哪 种 资 源 ）
+@@ ...period #, tick #, epoch+k*P+offset #
+- <T1MISS rows>
++ 
+@@ ...period #, tick #, epoch+k*P+offset #
+- <T1MISS rows>
++ 
+@@ ...己 的 额 度 。 select>
+- 
++ 11 === 11 设 备 申 请 Tier 1 ： 不 能 打 断 的 设 备 被 拒 === Two simulated devices (software models, not real hardware). The system measures each one (8 full jobs, 8 aborts) with IRQs masked, only where the job ends before the next tier-1 guard. device preempt divisible max_job switch stop_bound | measured: job_max stop_max sim-dma yes yes 400 5 20 | 396 21 us sim-blk no no 2000 10 20 | 1991 1770 us display-vsync already declares sim-dma 2000 us (Tier 1). cam-app asks Tier 1 (per 10000 us): sim-dma 1000 us REFUSED: (device not allowed in Tier 1) missing: forcibly stoppable (measured stop 21 us > bound 20 us) rec-app asks Tier 1 (per 10000 us): sim-blk 1000 us REFUSED: (device not allowed in Tier 1) missing: forcibly stoppable (sim-blk is non-preemptible; measured stop 1770 us > bound 20 us) rec-app asks Tier 2 (per 10000 us): sim-blk 1000 us OK: admitted (not started; released again) select> 12 === 12 超 额 申 请 在 启 动 时 被 拒 ， 并 说 明 是 哪 种 资 源 === cpu-hog asks Tier 2 (per 10000 us): CPU 8200 us, memory 1024 KB REFUSED: CPU CPU overcommitted: reserve 350 + tier-1 1500 + tier-2 min 0 + guard 40 + this 8200 = 10090 > capacity 10000 us mem-hog asks Tier 2 (per 10000 us): CPU 1000 us, memory 110000 KB REFUSED: memory memory overcommitted: reserve 16384 + tier-1 13312 + tier-2 min 0 + guard 0 + this 110000 = 139696 > capacity 131072 KB dma-hog asks Tier 2 (per 10000 us): CPU 1000 us, memory 1024 KB, sim-dma 8500 us REFUSED: sim-dma sim-dma overcommitted: reserve 0 + tier-1 2000 + tier-2 min 0 + guard 21 + this 8500 = 10521 > capacity 10000 us all-hog asks Tier 2 (per 10000 us): CPU 8200 us, memory 110000 KB, sim-dma 8500 us REFUSED: CPU memory sim-dma CPU overcommitted: reserve 350 + tier-1 1500 + tier-2 min 0 + guard 40 + this 8200 = 10090 > capacity 10000 us memory overcommitted: reserve 16384 + tier-1 13312 + tier-2 min 0 + guard 0 + this 110000 = 139696 > capacity 131072 KB sim-dma overcommitted: reserve 0 + tier-1 2000 + tier-2 min 0 + guard 21 + this 8500 = 10521 > capacity 10000 us fits asks Tier 2 (per 10000 us): CPU 8000 us, memory 90000 KB, sim-dma 7000 us OK: admitted (not started; released again) select>
+@@ ...务 只 拖 慢 自 己
+- 
++ 11 设 备 申 请 Tier 1 ： 不 能 打 断 的 设 备 被 拒 （ 说 明 缺 哪 一 条 ） 12 超 额 申 请 被 拒 （ 说 明 是 哪 种 资 源 ）
+@@ ...64M ok=True Quota OS microkernel Version:
+- 008 (f9119e9)
++ 009 (d2c58c4)
+@@ ...务 只 拖 慢 自 己
+- 
++ 11 设 备 申 请 Tier 1 ： 不 能 打 断 的 设 备 被 拒 （ 说 明 缺 哪 一 条 ） 12 超 额 申 请 被 拒 （ 说 明 是 哪 种 资 源 ）

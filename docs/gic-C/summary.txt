@@ -1,0 +1,8 @@
+gicv2         virt,gic-version=2                       select>=True panic/error=False  [boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+gicv3         virt,gic-version=3                       select>=True panic/error=False  [boot] GICv3 from DTB: distributor 0x8000000, redistributor 0x80a0000
+gicv2-el2     virt,gic-version=2,virtualization=on     select>=True panic/error=False  [boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+gicv3-el2     virt,gic-version=3,virtualization=on     select>=True panic/error=False  [boot] GICv3 from DTB: distributor 0x8000000, redistributor 0x80a0000
+gic-max       virt,gic-version=max                     select>=True panic/error=False  [boot] GICv3 from DTB: distributor 0x8000000, redistributor 0x80a0000
+virt-default  virt                                     select>=True panic/error=False  [boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+gicv3-smp2    virt,gic-version=3 -smp 2                select>=True panic/error=False  [boot] GICv3 from DTB: distributor 0x8000000, redistributor 0x80a0000
+kernel sha256: a22c54189f97c4b90bd7608210be383ba8b16ad9f846a76d75fdbd7d1c08fac7

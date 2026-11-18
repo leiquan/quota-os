@@ -1,0 +1,14 @@
+Previous serial drop-in. Not the default kernel anymore.
+
+quotaos-serial.bin
+  93744 bytes
+  sha256 afed7949f5b3adc6dcb3d6c86e05356ed69fd315eca55fbeafae656f62880e05
+quotaos-serial.elf
+  sha256 bf6338345233296ffac12393f37e477078299ec91c65ce68ab90fa5e656b8f64
+
+Banner Version: 016 (af050b5). These are the bytes that used to be
+prebuilt/quotaos.bin and prebuilt/quotaos.elf. Empty boot arguments
+on this file still reach select>. It has no LVGL screen.
+
+The default names quotaos.bin and quotaos.elf are now the LVGL image.
+See RUN.txt.

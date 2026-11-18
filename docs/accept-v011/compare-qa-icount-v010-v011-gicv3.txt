@@ -1,0 +1,21 @@
+@@ ...Quota OS microkernel Version:
+- 010 (4f077b3)
++ 011 (181e8ac)
+@@ ...ns), virtual timer PPI 27 [boot]
+- 
++ clock: icount (counter driven by instruction count) [boot] simulated device IRQ line: EL1 physical timer, PPI 30 [boot]
+@@ ...# ticks [boot] shell task running
+- 
++ [dev] 3 new simulated devices start in Tier 3; verifying (8 jobs, 8 aborts each, IRQs masked, before the next guard) [dev] sim-dma: job 396/400 us, stop 7/20 us (measured/declared) [dev] sim-blk: job 1991/2000 us, stop 1770/2000 us (measured/declared) [dev] sim-cam: job 291/300 us, stop 8/30 us (measured/declared)
+@@ ...us. 1 tick = 16 ns.
+- 
++ [Devices] simulated (software models) sim-dma: verified sim-blk: verified sim-cam: verified
+@@ ...clock jumps: #, total # us
+- 
++ deadline already past at eret: # times, max # ticks; pick time -> eret max # ticks (margin #); tier-# budget overrun max # ticks (# times)
+@@ ...clock jumps: #, total # us
+- 
++ deadline already past at eret: # times, max # ticks; pick time -> eret max # ticks (margin #); tier-# budget overrun max # ticks (# times)
+@@ ...us. 1 tick = 16 ns.
+- 
++ [Devices] simulated (software models) sim-dma: verified sim-blk: verified sim-cam: verified

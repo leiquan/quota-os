@@ -1,0 +1,144 @@
+v016 developer logs. Not independent QA. Not an e4 PASS.
+Not a WebKit graphics milestone: the engine is not linked.
+
+Image under test (make on this machine, banner Version: 016 (4c2a559)):
+  build/quotaos.bin
+  8dbd8a40329c16a2c7c5de704cb1ea5c5ffc9abb9867977818b69f81aa18c95a
+  92024 bytes
+  build/quotaos.elf
+  5198db4917af447668b84292c8f8f16e0cc808125f3a6c5b66bb0f9501b80642
+prebuilt/ in this commit is that pair. cmp against build/ was equal
+at copy time.
+
+Host: Ubuntu 24.04.5 x86_64
+Toolchain: aarch64-linux-gnu-gcc / g++ 13.3.0
+  (Ubuntu 13.3.0-6ubuntu2~24.04.1)
+QEMU: 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)
+This is not the QEMU 10.0 named in older README notes.
+
+EL and MMU
+----------
+Every boot log here prints:
+  [boot] EL1h, MMU off. No hardware isolation.
+That is the prototype. Cache coloring and Tier-1 slots are accounting.
+They are not hardware isolation.
+
+What booted (raw serial, unedited QEMU stdout)
+----------------------------------------------
+128M, gic-version=2, no icount, menu 1:
+  final-128-command.txt
+  final-128-serial.raw
+Reached select>. Admission line still
+  reserve 350 + tier-1 1500 + tier-2 min 0
+  minimum sum CPU 0 / 8070 us, memory 0 / 89600 KB
+Padding 11776 KB. GICv2 found.
+DTB snapshot 7512 bytes (header said 1048576).
+
+64M, same machine, menu 1:
+  final-64-command.txt
+  final-64-serial.raw
+Reached select>. On the delivered v015 image, QEMU 8.2.2 halted here
+(see docs/baseline-4c2a559/boot-64m-serial.raw) because color_init
+wrote into the DTB. The snapshot runs before coloring.
+Padding 3584 KB. App memory capacity on the menu line: 32256 KB.
+GICv2 found.
+
+-append webkit, ramfb, virtio-keyboard (developer self-test):
+  final-webkit-command.txt
+  final-webkit-serial.raw
+  final-webkit-stderr.raw
+  fb-device-self-test.ppm
+Engine linked: no.
+Line in the log: "HTML/CSS/JS is not running".
+Framebuffer is a four-band device pattern (blue, green, red, white),
+checksum 0xfffda800. The PPM is 640x480 and those bands are the pixels.
+It is not a WebKit paint.
+Keyboard: virtio-mmio version 1 at 0xa000000, name "QEMU Virtio Keyboard".
+sendkey a produced EV_KEY code 30 value 1 then value 0.
+The log says the event is not a PlatformKeyboardEvent.
+App mem capacity on this boot: 89600 KB.
+
+WebKit source that was inspected, not linked
+---------------------------------------------
+tag WebKit-7625.2.8.18.3
+commit 4d967f4ca7bdd75319e732247e714c2bc634555e
+WPE project version in that tree: 2.53.3
+The tree was a sparse checkout under /tmp/WebKit. It is not vendored.
+Compile attempt:
+  compile-OSAllocatorPOSIX.txt
+Command:
+  aarch64-linux-gnu-g++ -std=c++20 -ffreestanding -fno-exceptions
+    -fno-rtti -fno-threadsafe-statics -c
+    -I /tmp/WebKit/Source/WTF
+    -o /tmp/OSAllocatorPOSIX.o
+    Source/WTF/wtf/posix/OSAllocatorPOSIX.cpp
+Result: exit 1. First error:
+  wtf/FastMalloc.h:23:10: fatal error: bmalloc/BPlatform.h: No such file or directory
+That is one translation unit of WTF's POSIX allocator. It is not WebCore.
+
+e4 icount: not PASS
+-------------------
+tools/acceptance.py buffers until "QA DONE", so a hang prints nothing.
+A ~14 minute run of the modified image was killed (SIGKILL) still inside
+device verification. Its captured prefix is e4-sigterm-ignored-serial.raw.
+The filename records the earlier `timeout 20` attempt: QEMU ignored
+SIGTERM, so that capture is not a 20 second run. Last line is the
+verify banner. No "E4 item9", no "QA DONE".
+
+Bounded comparison, identical config, external 75s, then SIGKILL,
+serial flushed while the guest ran. QEMU 8.2.2
+(Debian 1:8.2.2+ds-0ubuntu1.18). Command (only the kernel path differs):
+
+  qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72
+    -m 128M -nographic -nic none -kernel <image> -append e4
+    -icount shift=4,sleep=off
+
+Images, untouched except the v016 build:
+  v014  commit 559daede18af8e201a41e41ab5e046ba7c8b66ec
+        git blob 13839a8fd6e508556af9c9f08508eafdc54f0fca
+        sha256 cbca322f60f042c317c2cf02657c733df3010a2258e7a3f929720d86ddafcba0
+        82032 bytes. Banner in the log: Version: 014 (7065679)
+        extracted with git cat-file, not rebuilt, worktree not checked out
+  v015  delivered prebuilt from 4c2a5599af53df6d87fe9a10ffe7fbec29768c5c
+        sha256 99ec3fa2ea6ab795a3297feeda020a175afae126b894323267b22614e7078bb6
+        Banner: Version: 015 (559daed)
+  v016  this build
+        sha256 8dbd8a40329c16a2c7c5de704cb1ea5c5ffc9abb9867977818b69f81aa18c95a
+        Banner: Version: 016 (4c2a559)
+
+Logs: e4-bounded/v014-559daed-* v015-delivered-* v016-modified-*
+      plus e4-bounded/sha256.txt and source.txt for the v014 blob.
+
+All three stopped on this line and did not print another byte after
+the first sample:
+  [dev] 3 new simulated devices start in Tier 3; verifying
+        (8 jobs, 8 aborts each, IRQs masked, before the next guard)
+Bytes at SIGKILL: v014 1145, v015 1145, v016 1245.
+The extra v016 bytes are the EL1h line and the DTB snapshot line.
+None printed [dev] sim-dma:, E4 item9, E4 item10, or QA DONE.
+None is PASS.
+
+What this does not say: v015 and v016 stopping together does not
+rule out a defect those two share. The v014 control is the same stop,
+so this run does not show a stall that first appears in v015. It also
+does not name a cause. The historical e4 PASS logs were not reproduced.
+
+Next native port dependency
+---------------------------
+WTF::OSAllocator (Source/WTF/wtf/OSAllocator.h in that WebKit commit):
+reserve / commit / decommit, guard pages, and executable pages.
+OSAllocatorPOSIX.cpp implements those with mmap and mprotect.
+A Quota OS allocator would have to refuse executable mappings and
+guard pages while the MMU is off, and take its bytes from a contiguous
+arena carved out before Tier-1 coloring, only for -append webkit, so
+the 128M admission figures above stay put. That allocator is not in
+this commit. Without it, JavaScriptCore and WebCore are not linkable.
+WebKitCommon.cmake turns WebCore off when JavaScriptCore is off, and
+turns WebKit off when WebCore is off. ALL_PORTS has no QuotaOS port.
+
+Still unfinished after that allocator: a freestanding C++ runtime
+(this kernel is -ffreestanding C), bmalloc, ICU, libxml2, sqlite,
+harfbuzz, libpng, libjpeg, libwebp, then WebCore's GraphicsContext
+aimed at the existing XRGB8888 surface, and PlatformKeyboardEvent
+fed by the virtio EV_KEY events. The WPE 2.53.3 options file also
+requires glib, libsoup, and epoxy. None of that is built here.

@@ -1,0 +1,46 @@
+
+Quota OS microkernel
+Version: 010 (4f077b3)
+基于三级资源声明的微内核，
+保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB memory 134217728 bytes
+[boot] system reserve 350 us/period, 16384 KB;
+       tier-1 1500 us/period, 13312 KB; guard 80 us/period
+[boot] kernel image+bss 481 KB of the 16384 KB system reserve
+[boot] GICv2 from DTB: distributor 0x8000000, cpu interface 0x8010000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 625000, period 625000 ticks, guard 1250 ticks
+[boot] shell task running
+
+=== 13 预算令牌：驱动替谁干活就扣谁的预算 ===
+cam-app (tier 2, min 3000 us) and bg-caller (tier 3) call
+sim-dma-drv (passive server) for 50..400 us of device work each.
+calls 15045; measured by the kernel during the calls:
+  driver running 189502915 ticks + IPC kernel path 7547640 ticks
+  = 197050555 ticks; caller budgets dropped by 197050555 ticks
+  longest call 25720 ticks; max |drop - measured| per call: 0 ticks
+  IPC kernel path charged to callers in total (not to the system
+  reserve): 26395743 ticks
+  driver's own budget used during the window: 0 ticks
+  driver's own wall-clock timing incl. preemption (reference only):
+  total 561725700 ticks
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0   1000     0         46         46       0     5059
+  timer-server      1   1000     0         46         46       0     2559
+  display-vsync last release: period 1001, tick 626312500,
+    epoch+k*P+offset 626312500
+  timer-server last release: period 1001, tick 626468750,
+    epoch+k*P+offset 626468750
+misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
+kernel per period: max 11861 avg 9270 ticks, reserve 21875, over 0
+timer IRQ entry - CVAL: min 3 max 342 ticks (n=9688)
+kernel entry -> eret (no slot wait): min 474 max 4822 ticks
+slot guard: path max 1103 ticks, slack min 153 ticks of 1250 (n=2000)
+wait loop exit late by 0/1/2/>2 ticks: 81/89/1830/0
+clock jumps: 0, total 0 us
+E2 item8 PASS
+QA DONE

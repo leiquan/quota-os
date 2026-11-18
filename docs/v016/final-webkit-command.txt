@@ -1,0 +1,6 @@
+label: developer self-test of -append webkit. Not independent QA. Not a WebKit render.
+image_sha256: 8dbd8a40329c16a2c7c5de704cb1ea5c5ffc9abb9867977818b69f81aa18c95a
+utc: 2026-11-17T06:06:57Z
+qemu: 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)
+command:
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M -kernel /workspace/build/quotaos.bin -append webkit -nic none -device ramfb -device virtio-keyboard-device,bus=virtio-mmio-bus.0 -display vnc=127.0.0.1:7 -serial stdio -monitor tcp:127.0.0.1:4455,server,nowait

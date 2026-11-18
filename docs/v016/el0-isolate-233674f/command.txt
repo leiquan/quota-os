@@ -1,0 +1,1 @@
+qemu-system-aarch64 -machine virt,gic-version=2 -cpu cortex-a72 -m 128M -display none -nic none -device ramfb -device virtio-keyboard-device -device virtio-tablet-device -kernel build/quotaos-lvgl.bin -append isolate -serial file:/tmp/el0-ship/serial.log -qmp unix:/tmp/el0-ship/qmp.sock,server,nowait

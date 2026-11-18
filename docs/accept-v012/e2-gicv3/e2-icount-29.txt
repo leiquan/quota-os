@@ -1,0 +1,67 @@
+
+Quota OS microkernel
+Version: 012 (fb77426)
+基于三级资源声明的微内核，
+保证一级任务永远不卡顿、二级任务运行不卡顿，三级任务则不保证。
+[boot] x0=0x44000000 physical RAM span 128 MB (probed)
+[boot] DTB at 0x44000000
+[boot] DTB memory 134217728 bytes
+[boot] system reserve 350 us/period, 16384 KB;
+       tier-1 1500 us/period, 13312 KB; guard 80 us/period
+[boot] cache colors: 32 (model: 2 MB 16-way cache, 4 KB pages);
+       tier-1 pages in 7 own colors, padding 11776 KB
+[boot] kernel image+bss 548 KB of the 16384 KB system reserve
+[boot] GICv3 from DTB: distributor 0x8000000, redistributor 0x80a0000
+[boot] CNTFRQ 62500000 Hz (1 tick = 16 ns), virtual timer PPI 27
+[boot] clock: icount (counter driven by instruction count)
+[boot] simulated device IRQ line: EL1 physical timer, PPI 30
+[boot] tier-1 display-vsync and timer-server bound to their slots
+[boot] slot table from tick 625000, period 625000 ticks, guard 1250 ticks
+[boot] shell task running
+[dev] 3 new simulated devices start in Tier 3; verifying
+      (8 jobs, 8 aborts each, IRQs masked, before the next guard)
+[dev] sim-dma: job 396/400 us, stop 7/20 us (measured/declared)
+[dev] sim-blk: job 1991/2000 us, stop 1770/2000 us (measured/declared)
+[dev] sim-cam: job 291/300 us, stop 8/30 us (measured/declared)
+
+=== 13 预算令牌：驱动替谁干活就扣谁的预算 ===
+cam-app (tier 2, min 3000 us) and bg-caller (tier 3) call
+sim-dma-drv (passive server) for 50..400 us of device work each.
+calls 16318; measured by the kernel during the calls:
+  driver running 205806484 ticks + IPC kernel path 11460971 ticks
+  = 217267455 ticks; caller budgets dropped by 217267455 ticks
+  longest call 26942 ticks; max |drop - measured| per call: 0 ticks
+  IPC kernel path charged to callers in total (not to the system
+  reserve): 26331404 ticks
+    = in-call window 11461753 + entry and queueing 1681762
+    + reply return 13187889 (sum 26331404)
+  whole window (per-period budgets): caller budget drops 231958764
+    = driver run 205646283 + in-call 11452417
+    + entry 1680889 + reply 13179175
+    = 231958764; error 0 ticks
+  IPC kernel path past the end of the caller's budget, charged to
+  the system reserve instead: 145 times, total 76531, max 892 ticks
+  driver's own budget used during the window: 0 ticks
+  driver's own wall-clock timing incl. preemption (reference only):
+  total 570844478 ticks
+Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+  display-vsync     0   1000     0         41         41       0     5054
+  timer-server      1   1000     0         41         41       0     2554
+  display-vsync last release: period 1009, tick 631312500,
+    epoch+k*P+offset 631312500
+  timer-server last release: period 1009, tick 631468750,
+    epoch+k*P+offset 631468750
+misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
+kernel per period: max 15600 avg 12172 ticks, reserve 21875, over 0
+timer IRQ entry - CVAL: min 3 max 3 ticks (n=10485)
+kernel entry -> eret (no slot wait): min 628 max 5275 ticks
+slot guard: path max 1285 ticks, slack min 576 ticks of 1250 (n=2000)
+wait loop exit late by 0/1/2/>2 ticks: 1844/81/75/0
+clock jumps: 0, total 0 us
+deadline already past at eret: 0 times, max 0 ticks;
+  pick time -> eret max 437 ticks (margin 500); tier-2 budget
+  overrun max 14 ticks (855 times)
+  budget left < exit tail, deadline moved to 12 ticks: 7 times
+E2 item8 PASS
+QA DONE

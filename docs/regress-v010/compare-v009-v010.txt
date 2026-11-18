@@ -1,0 +1,156 @@
+@@ ...128M ok=True Quota OS microkernel Version:
+- 009 (d2c58c4)
++ 010 (4f077b3)
+@@ ...tier-1 1500 us/period, 13312 KB; guard
+- 40
++ 80
+@@ ...是 哪 种 资 源 ）
+- 
++ 13 预 算 令 牌 ： 驱 动 替 谁 干 活 就 扣 谁 的 预 算
+@@ ...(none) minimum sum: CPU 0 /
+- 8110
++ 8070
+@@ ...+ tier-2 min 0 + guard
+- 40
++ 80
+@@ ...min 0 + guard 40 =
+- 1890
++ 1930
+@@ ...only CPU not promised to anyone:
+- 8110
++ 8070
+@@ ...resources for Studio Cut CPU left
+- 2110
++ 2070
+@@ ...KB minimum sum: CPU 6000 /
+- 8110
++ 8070
+@@ ...+ tier-2 min 6000 + guard
+- 40
++ 80
+@@ ...min 6000 + guard 40 =
+- 7890
++ 7930
+@@ ...only CPU not promised to anyone:
+- 2110
++ 2070
+@@ ...resources for Studio Cut CPU left
+- 2110
++ 2070
+@@ ...=== apps get at most CPU
+- 8110
++ 8070
+@@ ...requirements minimum CPU 9000 us >
+- 8110
++ 8070
+@@ ...period #, tick #, epoch+k*P+offset #
+- 
++ <T1MISS rows>
+@@ ...period #, tick #, epoch+k*P+offset #
+- 
++ <T1MISS rows>
+@@ ...的 设 备 被 拒 ===
+- Two
++ Three
+@@ ...ends before the next tier-1 guard.
+- 
++ Admission uses only the declared (factory) values; the measured ones are for verification.
+@@ ...yes 400 5 20 | 396
+- 21
++ 17
+@@ ...2000 10 20 | 1991 1770
+- 
++ us sim-cam yes yes 300 5 30 | 294 8
+@@ ...(per 10000 us): sim-dma 1000 us
+- REFUSED: (device not allowed in Tier 1) missing: forcibly stoppable (measured stop 21 us > bound 20 us)
++ OK: admitted (not started; released again)
+@@ ...not allowed in Tier 1) missing:
+- forcibly stoppable
++ 不 能 强 制 叫 停
+@@ ...1) missing: forcibly stoppable (sim-blk is
+- non-preemptible; measured stop 1770 us > bound 20 us)
++ non-preemptible) missing: 不 可 切 分 (not divisible); exclusive use would waive this one
+@@ ...OK: admitted (not started; released again)
+- 
++ scan-app asks Tier 1 (per 10000 us): sim-cam 500 us REFUSED: (device not allowed in Tier 1) missing: 停 止 上 限 超 过 Tier 1 限 值 (declared stop 30 us > 20 us)
+@@ ...+ tier-2 min 0 + guard
+- 40
++ 80
+@@ ...guard 40 + this 8200 =
+- 10090
++ 10130
+@@ ...+ tier-2 min 0 + guard
+- 21
++ 20
+@@ ...guard 21 + this 8500 =
+- 10521
++ 10520
+@@ ...+ tier-2 min 0 + guard
+- 40
++ 80
+@@ ...guard 40 + this 8200 =
+- 10090
++ 10130
+@@ ...+ tier-2 min 0 + guard
+- 21
++ 20
+@@ ...guard 21 + this 8500 =
+- 10521
++ 10520
+@@ ...OK: admitted (not started; released again)
+- 
++ select> 13 === 13 预 算 令 牌 ： 驱 动 替 谁 干 活 就 扣 谁 的 预 算 === cam-app (tier 2, min 3000 us) and bg-caller (tier 3) call sim-dma-drv (passive server) for 50..400 us of device work each. calls 3233; measured by the kernel during the calls: driver running 41391924 ticks + IPC kernel path 238149 ticks = 41630073 ticks; caller budgets dropped by 41630073 ticks longest call 72970 ticks; max |drop - measured| per call: 0 ticks IPC kernel path charged to callers in total (not to the system reserve): 763200 ticks driver's own budget used during the window: 0 ticks driver's own wall-clock timing incl. preemption (reference only): total 120507985 ticks Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start) task slot jobs miss start_min start_max jitter lat_max display-vsync # # # # # # # timer-server # # # # # # # display-vsync last release: period #, tick #, epoch+k*P+offset # timer-server last release: period #, tick #, epoch+k*P+offset # misses: class a (clock jump) #, class b (kernel) #, skipped periods # kernel per period: max # avg # ticks, reserve #, over # timer IRQ entry - CVAL: min # max # ticks (n=#) kernel entry -> eret (no slot wait): min # max # ticks slot guard: path max # ticks, slack min # ticks of # (n=#) wait loop exit late by #/#/#/># ticks: #/#/#/# clock jumps: #, total # us
+@@ ...(none) minimum sum: CPU 0 /
+- 8110
++ 8070
+@@ ...+ tier-2 min 0 + guard
+- 40
++ 80
+@@ ...min 0 + guard 40 =
+- 1890
++ 1930
+@@ ...only CPU not promised to anyone:
+- 8110
++ 8070
+@@ ...是 哪 种 资 源 ）
+- 
++ 13 预 算 令 牌 ： 驱 动 替 谁 干 活 就 扣 谁 的 预 算
+@@ ...64M ok=True Quota OS microkernel Version:
+- 009 (d2c58c4)
++ 010 (4f077b3)
+@@ ...tier-1 1500 us/period, 13312 KB; guard
+- 40
++ 80
+@@ ...是 哪 种 资 源 ）
+- 
++ 13 预 算 令 牌 ： 驱 动 替 谁 干 活 就 扣 谁 的 预 算
+@@ ...(none) minimum sum: CPU 0 /
+- 8110
++ 8070
+@@ ...+ tier-2 min 0 + guard
+- 40
++ 80
+@@ ...min 0 + guard 40 =
+- 1890
++ 1930
+@@ ...only CPU not promised to anyone:
+- 8110
++ 8070
+@@ ...=== apps get at most CPU
+- 8110
++ 8070
+@@ ...requirements minimum CPU 9000 us >
+- 8110
++ 8070
+@@ ...KB minimum sum: CPU 3000 /
+- 8110
++ 8070
+@@ ...+ tier-2 min 3000 + guard
+- 40
++ 80
+@@ ...min 3000 + guard 40 =
+- 4890
++ 4930
+@@ ...only CPU not promised to anyone:
+- 5110
++ 5070

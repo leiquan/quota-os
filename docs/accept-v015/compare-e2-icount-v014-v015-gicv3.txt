@@ -1,0 +1,90 @@
+=== 1 verbatim diff: 31 lines removed, 33 lines added ===
+--- docs/accept-v014/e2-icount-gicv3.txt
++++ docs/accept-v015/e2-icount-gicv3.txt
+@@ -3 +3 @@
+-Version: 014 (7065679)
++Version: 015 (559daed)
+@@ -13 +13 @@
+-[boot] kernel image+bss 553 KB of the 16384 KB system reserve
++[boot] kernel image+bss 562 KB of the 16384 KB system reserve
+@@ -34,4 +34,4 @@
+-calls 16372; measured by the kernel during the calls:
+-  driver running 206563792 ticks + IPC kernel path 11732129 ticks
+-  = 218295921 ticks; caller budgets dropped by 218295921 ticks
+-  longest call 26998 ticks; max |drop - measured| per call: 0 ticks
++calls 16521; measured by the kernel during the calls:
++  driver running 208962421 ticks + IPC kernel path 12601588 ticks
++  = 221564009 ticks; caller budgets dropped by 221564009 ticks
++  longest call 26214 ticks; max |drop - measured| per call: 0 ticks
+@@ -39,7 +39,7 @@
+-  reserve): 26723042 ticks
+-    = in-call window 11732132 + entry and queueing 1705335
+-    + reply return 13285575 (sum 26723042)
+-  whole window (per-period budgets): caller budget drops 233285224
+-    = driver run 206563048 + in-call 11732132
+-    + entry 1704469 + reply 13285575
+-    = 233285224; error 0 ticks
++  reserve): 28530864 ticks
++    = in-call window 12601591 + entry and queueing 1785834
++    + reply return 14143439 (sum 28530864)
++  whole window (per-period budgets): caller budget drops 237486117
++    = driver run 208956182 + in-call 12601591
++    + entry 1784905 + reply 14143439
++    = 237486117; error 0 ticks
+@@ -47 +47 @@
+-    cumulative: from stats reset 6232734 to read 631254788
++    cumulative: from stats reset 6233325 to read 631254973
+@@ -50,7 +50,7 @@
+-  driver run        0  206563048          0   206563048    0
+-  in-call           0   11732132          0    11732132    0
+-  entry           866    1704469          0     1705335    0
+-  reply             0   13285575          0    13285575    0
+-  driver run per replied call 206563792 = charged 206563048
+-    + ran before reset in calls open then 7420 - ran in 1 calls
+-    still open at the end 6676; error 0 ticks
++  driver run        0  208956182          0   208956182    0
++  in-call           0   12601591          0    12601591    0
++  entry           929    1784905          0     1785834    0
++  reply             0   14143439          0    14143439    0
++  driver run per replied call 208962421 = charged 208956182
++    + ran before reset in calls open then 7166 - ran in 1 calls
++    still open at the end 927; error 0 ticks
+@@ -59 +59 @@
+-    147 times, total 79499, max 911 ticks; most in one period 911;
++    159 times, total 83186, max 940 ticks; most in one period 940;
+@@ -61 +61 @@
+-  caller-periods with a draw 147, with draws in both the guaranteed
++  caller-periods with a draw 159, with draws in both the guaranteed
+@@ -63,0 +64,2 @@
++  caller-periods with 2 or more draws 0; forwarded calls 0,
++  replied 0
+@@ -66 +68 @@
+-  total 571124654 ticks
++  total 569992058 ticks
+@@ -76,5 +78,5 @@
+-kernel per period: max 15627 avg 12152 ticks, reserve 21875, over 0
+-timer IRQ entry - CVAL: min 3 max 3 ticks (n=10444)
+-kernel entry -> eret (no slot wait): min 629 max 5294 ticks
+-slot guard: path max 1281 ticks, slack min 587 ticks of 1250 (n=2000)
+-wait loop exit late by 0/1/2/>2 ticks: 101/92/1807/0
++kernel per period: max 15009 avg 12641 ticks, reserve 21875, over 0
++timer IRQ entry - CVAL: min 3 max 3 ticks (n=10398)
++kernel entry -> eret (no slot wait): min 665 max 3176 ticks
++slot guard: path max 1510 ticks, slack min 567 ticks of 1250 (n=2000)
++wait loop exit late by 0/1/2/>2 ticks: 90/1800/110/0
+@@ -83,2 +85,2 @@
+-  pick time -> eret max 437 ticks (margin 500); tier-2 budget
+-  overrun max 9 ticks (856 times)
++  pick time -> eret max 473 ticks (margin 700); tier-2 budget
++  overrun max 14 ticks (841 times)
+
+=== 2 numbers-masked diff (every digit run -> #): 1 lines removed, 3 lines added ===
+--- docs/accept-v014/e2-icount-gicv3.txt
++++ docs/accept-v015/e2-icount-gicv3.txt
+@@ -3 +3 @@
+-Version: # (#)
++Version: # (#daed)
+@@ -63,0 +64,2 @@
++  caller-periods with # or more draws #; forwarded calls #,
++  replied #
+

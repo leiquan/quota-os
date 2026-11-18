@@ -1,0 +1,6 @@
+commit 559daede18af8e201a41e41ab5e046ba7c8b66ec
+subject: v014: hold new IPC calls for the rest of a period once the caller drew IPC headroom; demo 18 with rule-off reference
+author: leiquan <8409312+leiquan@users.noreply.github.com>
+date: 2026-11-14T06:23:06+08:00
+13839a8fd6e508556af9c9f08508eafdc54f0fca
+QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)

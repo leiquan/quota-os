@@ -1,6 +1,6 @@
 /*
  * QEMU virt 的 PL011，物理地址 0x09000000。
- * 控制台是这个教学系统唯一的人机界面：菜单、准入询问、四类演示都从这里进出。
+ * 控制台是这个教学系统唯一的人机界面：菜单、准入询问和演示输出都走这里。
  */
 #include "quotaos.h"
 
@@ -13,44 +13,34 @@
 #define UART_CR   (UART_BASE + 0x30)
 #define UART_ICR  (UART_BASE + 0x44)
 
-static inline void wr(uint64_t a, uint32_t v)
-{
-    *(volatile uint32_t *)a = v;
-}
-
-static inline uint32_t rd(uint64_t a)
-{
-    return *(volatile uint32_t *)a;
-}
-
 void uart_init(void)
 {
-    wr(UART_CR, 0);
-    wr(UART_ICR, 0x7ff);
+    mmio_wr(UART_CR, 0);
+    mmio_wr(UART_ICR, 0x7ff);
     /* 24 MHz / (16 * 115200) ≈ 13.02 */
-    wr(UART_IBRD, 13);
-    wr(UART_FBRD, 1);
-    wr(UART_LCRH, (3u << 5) | (1u << 4));
-    wr(UART_CR, (1u << 0) | (1u << 8) | (1u << 9));
+    mmio_wr(UART_IBRD, 13);
+    mmio_wr(UART_FBRD, 1);
+    mmio_wr(UART_LCRH, (3u << 5) | (1u << 4));
+    mmio_wr(UART_CR, (1u << 0) | (1u << 8) | (1u << 9));
 }
 
 void uart_putc(char c)
 {
     if (c == '\n')
         uart_putc('\r');
-    while (rd(UART_FR) & (1u << 5))
+    while (mmio_rd(UART_FR) & (1u << 5))
         ;
-    wr(UART_DR, (uint32_t)c);
+    mmio_wr(UART_DR, (uint32_t)c);
 }
 
-int uart_getc_nonblock(void)
+static int uart_getc_nonblock(void)
 {
-    if (rd(UART_FR) & (1u << 4))
+    if (mmio_rd(UART_FR) & (1u << 4))
         return -1;
-    return (int)(rd(UART_DR) & 0xff);
+    return (int)(mmio_rd(UART_DR) & 0xff);
 }
 
-char uart_getc(void)
+static char uart_getc(void)
 {
     int c;
     for (;;) {
@@ -91,3 +81,14 @@ void readline(char *buf, int cap)
     }
     buf[n] = 0;
 }
+
+__attribute__((weak)) void mmu_init(void) {}
+__attribute__((weak)) int mmu_protect(uint64_t addr, uint64_t len, int prot)
+{
+    (void)addr;
+    (void)len;
+    (void)prot;
+    return -1;
+}
+__attribute__((weak)) int mmu_fault_expected(void) { return 0; }
+__attribute__((weak)) void mmu_note_fault(void) {}

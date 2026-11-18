@@ -1,0 +1,140 @@
+=== 1 verbatim diff: 45 lines removed, 55 lines added ===
+--- docs/accept-v014/qa-icount-gicv3.txt
++++ docs/accept-v015/qa-icount-gicv3.txt
+@@ -3 +3 @@
+-Version: 014 (7065679)
++Version: 015 (559daed)
+@@ -13 +13 @@
+-[boot] kernel image+bss 553 KB of the 16384 KB system reserve
++[boot] kernel image+bss 562 KB of the 16384 KB system reserve
+@@ -37 +37,6 @@
+-  measured since boot: max 12152 ticks/period (period 1 of 8)
++  measured since boot: max 12777 ticks/period (period 1 of 8)
++  that period ran menu 0; kernel ticks by entry (count):
++    timer IRQ 8894 (10), slot guard wait 2562 (2),
++    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 1321 (2);
++    of which period-boundary work 933, waits for a deadline 0
++    reserve 21875, margin 9098
+@@ -99,6 +104,6 @@
+-  display-vsync last release: period 1010, tick 631937500,
+-    epoch+k*P+offset 631937500
+-  timer-server last release: period 1010, tick 632093750,
+-    epoch+k*P+offset 632093750
+-misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
+-kernel per period: max 17797 avg 14621 ticks, reserve 21875, over 0
++  display-vsync last release: period 1009, tick 631312500,
++    epoch+k*P+offset 631312500
++  timer-server last release: period 1009, tick 631468750,
++    epoch+k*P+offset 631468750
++misses: class a (clock jump) 0, class b (kernel) 0, skipped periods 0
++kernel per period: max 16508 avg 15235 ticks, reserve 21875, over 0
+@@ -106,3 +111,3 @@
+-kernel entry -> eret (no slot wait): min 629 max 5434 ticks
+-slot guard: path max 655 ticks, slack min 592 ticks of 1250 (n=2000)
+-wait loop exit late by 0/1/2/>2 ticks: 0/1/1999/0
++kernel entry -> eret (no slot wait): min 666 max 3595 ticks
++slot guard: path max 681 ticks, slack min 566 ticks of 1250 (n=2000)
++wait loop exit late by 0/1/2/>2 ticks: 2000/0/0/0
+@@ -111 +116 @@
+-  pick time -> eret max 337 ticks (margin 500); tier-2 budget
++  pick time -> eret max 365 ticks (margin 700); tier-2 budget
+@@ -125,4 +130,4 @@
+-  display-vsync last release: period 2011, tick 1257562500,
+-    epoch+k*P+offset 1257562500
+-  timer-server last release: period 2011, tick 1257718750,
+-    epoch+k*P+offset 1257718750
++  display-vsync last release: period 2010, tick 1256937500,
++    epoch+k*P+offset 1256937500
++  timer-server last release: period 2010, tick 1257093750,
++    epoch+k*P+offset 1257093750
+@@ -132,2 +137,2 @@
+-     0 display-vsync   62500  31250        5019 25564        0
+-     1 timer-server   218750  18750        2519 15561        0
++     0 display-vsync   62500  31250        5019 25527        0
++     1 timer-server   218750  18750        2519 15524        0
+@@ -147,2 +152,2 @@
+-     0 display-vsync   62500  31250        5019 25567        0
+-     1 timer-server   218750  18750        2519 15564        0
++     0 display-vsync   62500  31250        5019 25530        0
++     1 timer-server   218750  18750        2519 15527        0
+@@ -177,4 +182,4 @@
+-  display-vsync last release: period 6015, tick 3760062500,
+-    epoch+k*P+offset 3760062500
+-  timer-server last release: period 6015, tick 3760218750,
+-    epoch+k*P+offset 3760218750
++  display-vsync last release: period 6014, tick 3759437500,
++    epoch+k*P+offset 3759437500
++  timer-server last release: period 6014, tick 3759593750,
++    epoch+k*P+offset 3759593750
+@@ -184,2 +189,2 @@
+-  audio-mix: jobs 1000, misses 0, worst response 498 us (deadline 4000 us)
+-tier-3 per loop: avg 113..188 us/period, all 32 together 4818 us
++  audio-mix: jobs 1000, misses 0, worst response 491 us (deadline 4000 us)
++tier-3 per loop: avg 112..188 us/period, all 32 together 4808 us
+@@ -188,2 +193,2 @@
+-     0 display-vsync   62500  31250        5019 25567        0
+-     1 timer-server   218750  18750        2519 15564        0
++     0 display-vsync   62500  31250        5019 25530        0
++     1 timer-server   218750  18750        2519 15527        0
+@@ -194 +199 @@
+-kernel per period: max 20058 avg 17791 ticks, reserve 21875, over 0
++kernel per period: max 20355 avg 18532 ticks, reserve 21875, over 0
+@@ -196,3 +201,3 @@
+-kernel entry -> eret (no slot wait): min 629 max 6117 ticks
+-slot guard: path max 656 ticks, slack min 591 ticks of 1250 (n=2000)
+-wait loop exit late by 0/1/2/>2 ticks: 1/0/1999/0
++kernel entry -> eret (no slot wait): min 666 max 5711 ticks
++slot guard: path max 682 ticks, slack min 565 ticks of 1250 (n=2000)
++wait loop exit late by 0/1/2/>2 ticks: 1999/1/0/0
+@@ -201 +206 @@
+-  pick time -> eret max 422 ticks (margin 500); tier-2 budget
++  pick time -> eret max 465 ticks (margin 700); tier-2 budget
+@@ -213,10 +218,10 @@
+-bad-t3 avg 3415 us/period, polite-t3 avg 3415 us/period
+-  audio-mix: jobs 1000, misses 0, worst response 486 us (deadline 4000 us)
+-Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
+-  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
+-  display-vsync     0   1000     0         41         41       0     5054
+-  timer-server      1   1000     0         41         41       0     2554
+-  display-vsync last release: period 7016, tick 4385687500,
+-    epoch+k*P+offset 4385687500
+-  timer-server last release: period 7016, tick 4385843750,
+-    epoch+k*P+offset 4385843750
++bad-t3 avg 3409 us/period, polite-t3 avg 3409 us/period
++  audio-mix: jobs 1000, misses 0, worst response 453 us (deadline 4000 us)
++Tier 1 (ticks; 1 tick = 16 ns; start = first job instruction - slot start)
++  task           slot   jobs  miss  start_min  start_max  jitter  lat_max
++  display-vsync     0   1000     0         41         41       0     5054
++  timer-server      1   1000     0         41         41       0     2554
++  display-vsync last release: period 7015, tick 4385062500,
++    epoch+k*P+offset 4385062500
++  timer-server last release: period 7015, tick 4385218750,
++    epoch+k*P+offset 4385218750
+@@ -238 +243,6 @@
+-  measured since boot: max 20943 ticks/period (period 6016 of 7016)
++  measured since boot: max 20355 ticks/period (period 5014 of 7015)
++  that period ran menu 9; kernel ticks by entry (count):
++    timer IRQ 15634 (12), slot guard wait 2562 (2),
++    device IRQ 0 (0), svc IPC/dev 0 (0), svc other 2159 (3);
++    of which period-boundary work 4893, waits for a deadline 0
++    reserve 21875, margin 1520
+
+=== 2 numbers-masked diff (every digit run -> #): 1 lines removed, 11 lines added ===
+--- docs/accept-v014/qa-icount-gicv3.txt
++++ docs/accept-v015/qa-icount-gicv3.txt
+@@ -3 +3 @@
+-Version: # (#)
++Version: # (#daed)
+@@ -37,0 +38,5 @@
++  that period ran menu #; kernel ticks by entry (count):
++    timer IRQ # (#), slot guard wait # (#),
++    device IRQ # (#), svc IPC/dev # (#), svc other # (#);
++    of which period-boundary work #, waits for a deadline #
++    reserve #, margin #
+@@ -238,0 +244,5 @@
++  that period ran menu #; kernel ticks by entry (count):
++    timer IRQ # (#), slot guard wait # (#),
++    device IRQ # (#), svc IPC/dev # (#), svc other # (#);
++    of which period-boundary work #, waits for a deadline #
++    reserve #, margin #
+
